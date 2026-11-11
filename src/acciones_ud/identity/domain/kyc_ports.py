@@ -1,0 +1,32 @@
+from contextlib import AbstractAsyncContextManager
+from datetime import datetime
+from typing import Protocol
+from uuid import UUID
+
+from acciones_ud.identity.domain.auth_ports import Record
+from acciones_ud.identity.domain.kyc import AlpacaAccount
+from acciones_ud.identity.domain.kyc_submission import AccountOpeningRequest
+
+
+class AlpacaAccountsPort(Protocol):
+    async def create_account(self, request: AccountOpeningRequest) -> AlpacaAccount: ...
+    async def get_account(self, account_id: str, timeout: float = 10) -> AlpacaAccount: ...
+
+
+class KycRepository(Protocol):
+    async def get(self, user_id: UUID) -> Record | None: ...
+    async def update_status(self, user_id: UUID, account: AlpacaAccount) -> None: ...
+    async def reserve(self, user_id: UUID, now: datetime) -> bool: ...
+    async def complete(
+        self, user_id: UUID, reservation: datetime, account: AlpacaAccount, tax_last4: str
+    ) -> bool: ...
+    async def release(self, user_id: UUID, reservation: datetime) -> None: ...
+
+
+class KycWork(Protocol):
+    @property
+    def kyc(self) -> KycRepository: ...
+
+
+class KycWorkFactory(Protocol):
+    def __call__(self) -> AbstractAsyncContextManager[KycWork]: ...
