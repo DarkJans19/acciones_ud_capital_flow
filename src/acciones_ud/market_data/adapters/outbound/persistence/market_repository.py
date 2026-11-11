@@ -91,8 +91,8 @@ class MarketRepository:
             sa.text(
                 f"SELECT {OVERRIDE_COLUMNS} FROM schedule_overrides "
                 "WHERE market_code = :code "
-                "AND (:start IS NULL OR date >= :start) "
-                "AND (:end IS NULL OR date <= :end) "
+                "AND (CAST(:start AS date) IS NULL OR date >= CAST(:start AS date)) "
+                "AND (CAST(:end AS date) IS NULL OR date <= CAST(:end AS date)) "
                 "ORDER BY date"
             ),
             {"code": code, "start": start, "end": end},

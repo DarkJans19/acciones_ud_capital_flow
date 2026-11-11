@@ -30,13 +30,17 @@ COLUMNS = (
     "updated_at",
 )
 
+# asyncpg rejects statements with more than 32767 bound parameters. With 10
+# bound columns per instrument, 500 rows stay far below that ceiling.
+UPSERT_BATCH_SIZE = 500
+
 SEARCH_SQL = sa.text(
     """
     SELECT {columns}
     FROM instruments
     WHERE (symbol LIKE :prefix ESCAPE '\\' OR lower(name) LIKE :contains ESCAPE '\\')
-      AND (:exchange IS NULL OR exchange = :exchange)
-      AND (:tradable IS NULL OR tradable = :tradable)
+      AND (CAST(:exchange AS text) IS NULL OR exchange = CAST(:exchange AS text))
+      AND (CAST(:tradable AS boolean) IS NULL OR tradable = CAST(:tradable AS boolean))
     ORDER BY CASE
         WHEN symbol = :exact THEN 0
         WHEN symbol LIKE :prefix ESCAPE '\\' THEN 1
@@ -51,8 +55,8 @@ COUNT_SQL = sa.text(
     SELECT count(*)
     FROM instruments
     WHERE (symbol LIKE :prefix ESCAPE '\\' OR lower(name) LIKE :contains ESCAPE '\\')
-      AND (:exchange IS NULL OR exchange = :exchange)
-      AND (:tradable IS NULL OR tradable = :tradable)
+      AND (CAST(:exchange AS text) IS NULL OR exchange = CAST(:exchange AS text))
+      AND (CAST(:tradable AS boolean) IS NULL OR tradable = CAST(:tradable AS boolean))
     """
 )
 
@@ -204,11 +208,18 @@ class InstrumentRepository:
 
     async def upsert_catalog(self, assets: list[Instrument], now: datetime) -> None:
         symbols = [asset.symbol.upper() for asset in assets]
-        await self.session.execute(
-            sa.update(instruments)
-            .where(instruments.c.symbol.notin_(symbols))
-            .values(listed=False)
-        )
+        if symbols:
+            await self.session.execute(
+                sa.text(
+                    "UPDATE instruments SET listed = false "
+                    "WHERE symbol <> ALL(CAST(:symbols AS text[]))"
+                ),
+                {"symbols": symbols},
+            )
+        else:
+            await self.session.execute(
+                sa.text("UPDATE instruments SET listed = false")
+            )
         await self._upsert(assets, now)
         await self._ensure_exchanges({asset.exchange for asset in assets if asset.exchange})
 
@@ -217,27 +228,29 @@ class InstrumentRepository:
         await self._ensure_exchanges({asset.exchange} if asset.exchange else set())
 
     async def _upsert(self, assets: list[Instrument], now: datetime) -> None:
-        if not assets:
-            return
-        statement = pg_insert(instruments).values([_values(asset, now) for asset in assets])
-        statement = statement.on_conflict_do_update(
-            index_elements=[instruments.c.symbol],
-            set_={
-                "alpaca_asset_id": statement.excluded.alpaca_asset_id,
-                "name": statement.excluded.name,
-                "exchange": statement.excluded.exchange,
-                "asset_class": statement.excluded.asset_class,
-                "status": statement.excluded.status,
-                "tradable": statement.excluded.tradable,
-                "marginable": statement.excluded.marginable,
-                "shortable": statement.excluded.shortable,
-                "easy_to_borrow": statement.excluded.easy_to_borrow,
-                "fractionable": statement.excluded.fractionable,
-                "listed": True,
-                "updated_at": statement.excluded.updated_at,
-            },
-        )
-        await self.session.execute(statement)
+        for start in range(0, len(assets), UPSERT_BATCH_SIZE):
+            batch = assets[start : start + UPSERT_BATCH_SIZE]
+            statement = pg_insert(instruments).values(
+                [_values(asset, now) for asset in batch]
+            )
+            statement = statement.on_conflict_do_update(
+                index_elements=[instruments.c.symbol],
+                set_={
+                    "alpaca_asset_id": statement.excluded.alpaca_asset_id,
+                    "name": statement.excluded.name,
+                    "exchange": statement.excluded.exchange,
+                    "asset_class": statement.excluded.asset_class,
+                    "status": statement.excluded.status,
+                    "tradable": statement.excluded.tradable,
+                    "marginable": statement.excluded.marginable,
+                    "shortable": statement.excluded.shortable,
+                    "easy_to_borrow": statement.excluded.easy_to_borrow,
+                    "fractionable": statement.excluded.fractionable,
+                    "listed": True,
+                    "updated_at": statement.excluded.updated_at,
+                },
+            )
+            await self.session.execute(statement)
 
     async def _ensure_exchanges(self, codes: set[str]) -> None:
         if not codes:
