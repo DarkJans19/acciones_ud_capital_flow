@@ -621,6 +621,28 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
     - 403 for non-premium; limits 20 and 50; 409 duplicate symbol; 404 ownership; failed sender marks only its delivery `failed`; `db`: two racing evaluations create exactly one notification
     - _Requirements: 14.1, 14.3, 14.7, 14.8, 14.9, 14.11, 14.12, 14.13_
 
+  - [x] 17.10 Add Recipient contact fields and read them in the recipient directory
+    - `market_data/domain/entities.py`: add optional `email: str | None = None` and `telegram_chat_id: str | None = None` to `Recipient`, keeping it a pure frozen dataclass
+    - `persistence/recipient_directory.py`: join `notification_preferences` with `users` to read `users.email` and `users.telegram_chat_id` (the column `PUT /users/me/telegram` writes for 7.5) and populate the new fields; keep the `recipients(event_type) -> list[Recipient]` signature
+    - _Requirements: 14.7, 14.15, 14.16, 14.18_
+
+  - [x] 17.11 Implement the real email and Telegram senders
+    - `domain/notifications.py`: `NoDestinationError` (in the domain so the application `Notifier` catches it without importing an adapter)
+    - `adapters/outbound/senders/smtp.py`: `SmtpEmailSender(channel="email")` with `host`, `port`, `user`, `password`, `from_addr`; builds a plain-text `EmailMessage` from the Notification and sends it with `aiosmtplib`; raises `NoDestinationError` when `recipient.email` is `None`
+    - `adapters/outbound/senders/telegram.py`: `TelegramBotSender(channel="telegram")` with the bot token and an `httpx.AsyncClient`; `POST .../bot<token>/sendMessage` with `chat_id` and `text`; raises `NoDestinationError` when `recipient.telegram_chat_id` is `None` and raises on a non-success status
+    - `notifier.py`: map `NoDestinationError` to delivery status `failed` with error code `no_destination`, keeping `sender_error` for any other exception (Property 25 unchanged)
+    - Add `aiosmtplib` to `[project].dependencies` in `pyproject.toml`
+    - _Requirements: 14.11, 14.15, 14.16, 14.17, 14.18_
+
+  - [x] 17.12 Wire sender selection in composition
+    - `market_data/composition.py`: `build_senders(settings) -> list[ChannelSender]` returns `SmtpEmailSender` when `settings.smtp_host` is set else `LogEmailSender`, `TelegramBotSender` when `settings.telegram_bot_token` is set else `LogTelegramSender`, and always `SimulatedSmsSender`; use it in `notifier(request)` and in the Alert_Engine startup `Notifier`, keeping the `request.app.state.notifier` override
+    - _Requirements: 14.15, 14.16, 14.17_
+
+  - [ ]* 17.13 Write tests for sender selection and no-destination handling
+    - Real sender chosen when its env var is set, log sender when unset, sms always simulated; a recipient with no email / no telegram chat id records `failed` `no_destination` and never contacts the network; use fakes/monkeypatch so no real SMTP or Telegram call happens
+    - File: `tests/market_data/test_senders.py`
+    - _Requirements: 14.15, 14.16, 14.17, 14.18_
+
 - [ ] 18. Dashboard (RFP-08)
   - [x] 18.1 Implement dashboard assembly
     - `market_data/domain/dashboard.py`: interest matching by Market code or sector, fallback to default symbols, at most 10 in ascending symbol order, quote-unavailable flags, beginner flag and level

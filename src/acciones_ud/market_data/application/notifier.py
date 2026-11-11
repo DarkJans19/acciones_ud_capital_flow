@@ -3,7 +3,7 @@
 from uuid import UUID
 
 from acciones_ud.market_data.domain.entities import Notification, Recipient
-from acciones_ud.market_data.domain.notifications import IN_APP
+from acciones_ud.market_data.domain.notifications import IN_APP, NoDestinationError
 from acciones_ud.market_data.domain.ports import (
     ChannelSender,
     NotificationWorkFactory,
@@ -55,6 +55,8 @@ class Notifier:
                 continue
             try:
                 await sender.send(recipient, notification)
+            except NoDestinationError:
+                await self._mark(notification.id, channel, "failed", "no_destination")
             except Exception:
                 await self._mark(notification.id, channel, "failed", "sender_error")
             else:

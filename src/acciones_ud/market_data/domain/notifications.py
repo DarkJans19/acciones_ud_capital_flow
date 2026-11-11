@@ -8,6 +8,15 @@ IN_APP = "in_app"
 EXTERNAL_CHANNELS = tuple(channel for channel in CHANNELS if channel != IN_APP)
 
 
+class NoDestinationError(Exception):
+    """A recipient lacks the address for an enabled external channel.
+
+    A channel sender raises this before any network call. The Notifier maps it
+    to a ``no_destination`` delivery failure instead of the generic
+    ``sender_error`` code, so dispatch never crashes (14.18).
+    """
+
+
 def channels_for(
     preferences: Iterable[tuple[str, str, bool]], event_type: str
 ) -> set[str]:

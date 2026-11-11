@@ -220,6 +220,8 @@ class Notification:
 class Recipient:
     user_id: UUID
     channels: frozenset[str]
+    email: str | None = None
+    telegram_chat_id: str | None = None
 
 
 @dataclass(frozen=True)

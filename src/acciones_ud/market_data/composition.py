@@ -37,7 +37,13 @@ from acciones_ud.market_data.adapters.outbound.persistence.user_profile_reader i
 from acciones_ud.market_data.adapters.outbound.persistence.watchlist_repository import (
     WatchlistRepository,
 )
-from acciones_ud.market_data.adapters.outbound.senders.log import default_senders
+from acciones_ud.market_data.adapters.outbound.senders.log import (
+    LogEmailSender,
+    LogTelegramSender,
+    SimulatedSmsSender,
+)
+from acciones_ud.market_data.adapters.outbound.senders.smtp import SmtpEmailSender
+from acciones_ud.market_data.adapters.outbound.senders.telegram import TelegramBotSender
 from acciones_ud.market_data.application.alerts import AlertService
 from acciones_ud.market_data.application.asset_detail import AssetDetailService
 from acciones_ud.market_data.application.calendar import (
@@ -61,6 +67,7 @@ from acciones_ud.market_data.domain.ports import (
     AlpacaBrokerMarketPort,
     AlpacaDataPort,
     CatalogWork,
+    ChannelSender,
     DashboardWork,
     MarketWork,
     NotificationWork,
@@ -95,6 +102,35 @@ def register(app: FastAPI) -> None:
 
 def _override(request: Request, name: str) -> Any:
     return getattr(request.app.state, name, None)
+
+
+def build_senders(settings: Any) -> list[ChannelSender]:
+    """Pick a real sender per external channel when its configuration is set.
+
+    Email uses SMTP when SMTP_HOST is set, Telegram uses the Bot API when
+    TELEGRAM_BOT_TOKEN is set; otherwise each logs. SMS is always simulated (A3).
+    """
+    email: ChannelSender
+    if settings.smtp_host:
+        email = SmtpEmailSender(
+            host=settings.smtp_host,
+            port=int(settings.smtp_port or 587),
+            user=settings.smtp_user,
+            password=(
+                settings.smtp_password.get_secret_value()
+                if settings.smtp_password
+                else None
+            ),
+            from_addr=settings.smtp_from or settings.smtp_user or "no-reply@acciones-ud",
+        )
+    else:
+        email = LogEmailSender()
+    telegram: ChannelSender
+    if settings.telegram_bot_token:
+        telegram = TelegramBotSender(settings.telegram_bot_token.get_secret_value())
+    else:
+        telegram = LogTelegramSender()
+    return [email, SimulatedSmsSender(), telegram]
 
 
 def clock(request: Request) -> Clock:
@@ -331,7 +367,9 @@ def notifier(request: Request) -> Notifier:
     override = _override(request, "notifier")
     if isinstance(override, Notifier):
         return override
-    return Notifier(notification_uow, list(default_senders()), clock(request))
+    return Notifier(
+        notification_uow, build_senders(request.app.state.settings), clock(request)
+    )
 
 
 def dashboard_service(request: Request) -> DashboardService:
@@ -381,7 +419,7 @@ async def startup(app: FastAPI) -> None:
 
     if settings.alert_engine_enabled.lower() == "true":
         notifier_instance = Notifier(
-            notification_uow, list(default_senders()), SystemClock()
+            notification_uow, build_senders(settings), SystemClock()
         )
         alert_loop = PriceAlertLoop(
             alert_uow,
