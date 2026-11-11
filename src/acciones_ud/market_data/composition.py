@@ -209,7 +209,7 @@ async def directory_uow() -> AsyncIterator[RecipientDirectory]:
 
 
 def data_client(request: Request) -> AlpacaDataPort:
-    override = _override(request, "alpaca_data")
+    override = _override(request, "alpaca_data_port")
     if override is not None:
         return cast(AlpacaDataPort, override)
     settings = request.app.state.settings
