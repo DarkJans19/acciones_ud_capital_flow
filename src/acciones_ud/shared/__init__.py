@@ -1,0 +1,1 @@
+"""Primitivas compartidas entre módulos."""

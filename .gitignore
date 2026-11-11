@@ -173,6 +173,9 @@ venv.bak/
 .mypy_cache/
 .dmypy.json
 dmypy.json
+.ruff_cache/
+.coverage
+.coverage.*
 
 # Pyre type checker
 .pyre/
