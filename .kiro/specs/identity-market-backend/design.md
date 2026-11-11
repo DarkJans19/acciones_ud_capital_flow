@@ -5,14 +5,15 @@
 This design describes the backend for MOD-01 (Identity, Security and Access Control) and MOD-02 (Market Explorer and Stock Quotes) of AccionesUD Capital Flow. It is a single FastAPI application that:
 
 - implements authentication in-app (Argon2id, TOTP MFA with single-use recovery codes, JWT access token and opaque rotating refresh token in HTTP-only cookies) per decisions D1 and D2; Supabase Auth is not used;
-- protects every cookie-authenticated mutation with a double-submit CSRF token plus an Origin/Referer check (Requirement 18);
 - implements simplified RBAC with time-bounded role assignments per decision D3, with broker accounts that start as `pending_broker_activation` until an Administrator activates them (Requirement 2);
 - stores everything in Supabase Postgres, used as plain Postgres through a connection string;
 - integrates with Alpaca Broker API (sandbox) for accounts, assets, calendar and clock, and with Alpaca Market Data API for snapshots, latest quotes, bars and optional streaming;
-- labels every price with currency, source, feed, age, delayed and stale flags, falls back to the stored snapshot when a quote call fails (Requirement 13), and reports market depth only as far as the feed supplies it (Requirement 20);
+- labels every price with currency, source, feed, age, delayed and stale flags, falls back to the stored snapshot when a quote call fails (Requirement 13), and reports market depth only as far as the feed supplies it (Requirement 19);
 - runs the Alert_Engine (price alerts and market open/close notices) as in-process asyncio tasks.
 
-HTTP paths follow the Plan Maestro paths of `specs/01-identity-security` and `specs/02-market-data` under `/api/v1` (see "Endpoint table" and "Path mapping to specs/").
+HTTP paths follow the Plan Maestro paths under `/api/v1` (see "Endpoint table"). This spec (`.kiro/specs/identity-market-backend`) is the single documentation base for MOD-01 and MOD-02; `specs/01-identity-security` and `specs/02-market-data` are superseded and are not a source of requirements or paths.
+
+Cookie-authenticated requests carry no CSRF token and get no Origin or Referer check (decision D4). Cookie protection relies on the `SameSite=Lax` or `Strict` attribute, and CORS allows only the configured origins.
 
 The design optimizes for delivery speed. There is no extra infrastructure (no Redis, no Celery, no message broker) and no gate that requires other people. The database schema is the Migration_Set: Alembic revisions in `migrations/versions/` that a developer applies manually with `uv run alembic upgrade head` through `MIGRATION_DATABASE_URL`, using the Alembic setup already in the repository (`alembic.ini`, `migrations/env.py`). The frontend team works from the OpenAPI document that FastAPI generates at `/openapi.json`; the endpoint table in this document lets them start before the code exists.
 
@@ -30,8 +31,8 @@ The design optimizes for delivery speed. There is no extra infrastructure (no Re
 | DD8 | In-memory fakes (`FakeAlpacaAccounts`, `FakeAlpacaBrokerMarket`, `FakeAlpacaData`, `FakeAlpacaStream`) implement the same ports as the httpx adapters and are wired in tests through `composition.py` overrides. | Tests never hit Alpaca; error paths (timeout, 5xx, 429, validation) are scripted. |
 | DD9 | Instruments that disappear from a catalog reload are marked `listed = false` instead of deleted. | "Replace the catalog" (12.5) without breaking watchlist and alert rows that reference the symbol. Unlisted instruments behave as absent from the catalog. |
 | DD10 | KYC submission reserves a `kyc_accounts` row before calling Alpaca. | Prevents two concurrent submissions from opening two Alpaca accounts, and satisfies 17.9 (DB is checked before any account request). |
-| DD11 | CSRF and Origin checks run in a pure ASGI middleware (`shared/infrastructure/csrf.py`), not in a FastAPI dependency. | FastAPI decodes the JSON body before it resolves dependencies and answers malformed JSON with 422 at that point, so only a middleware guarantees 18.8 (403 `CSRF_FAILED` even when the body is invalid). |
-| DD12 | Recovery codes are hashed with Argon2id (random salt per code) and consumed with one conditional `UPDATE ... WHERE used_at IS NULL AND invalidated_at IS NULL RETURNING`. | Meets "salted one-way hash" (19.1) and makes concurrent use of one code succeed exactly once (19.10) without locks. Verifying up to 10 hashes costs a few hundred milliseconds on a rare path. |
+| D4 | No CSRF token and no Origin or Referer validation, neither on HTTP endpoints nor on the WebSocket handshake (requirements decision D4). Cookies use `SameSite=Lax` or `Strict` (3.3) and CORS allows only the configured origins (17.4). The former DD11 (CSRF middleware) is retired and its ID is not reused. | Team decision for a university project: no middleware, cookie or header for the frontend to handle. Known limit: SameSite keeps the cookies off requests from other sites, but not off requests from sibling subdomains of the same registrable domain. CSRF tokens and Origin checks can be added later if the frontend team asks. |
+| DD12 | Recovery codes are hashed with Argon2id (random salt per code) and consumed with one conditional `UPDATE ... WHERE used_at IS NULL AND invalidated_at IS NULL RETURNING`. | Meets "salted one-way hash" (18.1) and makes concurrent use of one code succeed exactly once (18.10) without locks. Verifying up to 10 hashes costs a few hundred milliseconds on a rare path. |
 | DD13 | Instruments are addressed by `{symbol}` in paths (Plan Maestro), not by a surrogate `instrument_id`. | The active catalog holds only Alpaca `us_equity` assets, where the symbol identifies one asset and is the `instruments` primary key. See "Instrument identifier in paths". |
 | DD14 | Broker activation is one conditional `UPDATE users ... WHERE account_status = 'pending_broker_activation' RETURNING` followed by the broker Role_Assignment insert, in one transaction. | Atomic (2.12) and exactly-one-winner under concurrency (2.14): a second request waits on the row lock, re-reads the row, finds it active, and gets 409. |
 
@@ -45,8 +46,7 @@ The design optimizes for delivery speed. There is no extra infrastructure (no Re
 - **Postgres UUIDs**: `gen_random_uuid()` is built into Postgres 13 and later, so the Migration_Set needs no `pgcrypto` extension on Supabase.
 - **Windows development**: Python's `zoneinfo` needs the `tzdata` package on Windows, which has no system IANA database. It is a runtime dependency.
 - **Latest quote and depth**: Alpaca's stock latest-quote endpoint (`GET /v2/stocks/{symbol}/quotes/latest`, `feed` parameter) returns the best bid and best ask with their sizes ([Alpaca: Latest quote, single symbol](https://docs.alpaca.markets/us/reference/stocklatestquotesingle-1)). The stock Market Data API documents no order book endpoint (order books are documented only for crypto), which supports assumption A9: stock depth is one top-of-book level. This must still be checked against the contracted plan before release.
-- **CSRF**: OWASP's CSRF cheat sheet treats the plain double-submit cookie as weaker than a session-bound token because a sibling subdomain can inject a cookie, and recommends Origin/Referer verification as a complementary defense ([OWASP CSRF Prevention Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html)). Requirement 18 combines both: a forged request from a sibling subdomain carries that subdomain's Origin, which is not an Allowed_Origin, so the injected-cookie attack is still rejected.
-- **FastAPI request handling**: `fastapi/routing.py` (`get_request_handler`) reads and JSON-decodes the body before `solve_dependencies` runs, and raises `RequestValidationError` immediately on malformed JSON. Dependencies run before the collected validation errors of a well-formed body are raised. This is why the CSRF check is a middleware (DD11).
+- **FastAPI request handling**: `fastapi/routing.py` (`get_request_handler`) reads and JSON-decodes the body before `solve_dependencies` runs, and raises `RequestValidationError` immediately on malformed JSON. Dependencies run before the collected validation errors of a well-formed body are raised. This fixes the order of checks described under "Dependencies".
 - **Cookies**: requirement 3.3 allows only `SameSite=Lax` or `Strict`. Those cookies are not sent on cross-site requests, so the frontend must be served same-site with the API (same registrable domain in deployment, a dev-server proxy such as Vite `server.proxy` locally). Browsers accept `Secure` cookies on `http://localhost`, so local development works with `Secure` always on.
 
 Content from the cited pages was rephrased for compliance with licensing restrictions.
@@ -55,7 +55,7 @@ Content from the cited pages was rephrased for compliance with licensing restric
 
 - **Migrations (resolved, follows `AGENTS.md`):** the schema is versioned with Alembic in `migrations/versions/`, applied manually with `uv run alembic upgrade head` through `MIGRATION_DATABASE_URL`; `DATABASE_URL` is the application connection. Applying migrations is a developer step, not a CI gate or an approval step.
 - **Scope (resolved by explicit user decision):** RFP-01 (KYC, Requirement 10) and RFP-08 (interests and dashboard, Requirement 11) are in scope. This decision overrides the "pending approval" status recorded for them in `specs/01-identity-security`.
-- **specs/ alignment:** `specs/01-identity-security` and `specs/02-market-data` stay unchanged and are a read-only reference. This design takes from them the HTTP paths, CSRF/Origin protection, recovery codes, no self-assignment of privileged roles, price freshness labels and plan-limited depth. The error format stays Error_Body; the `application/problem+json` proposal of specs/ is a pending team decision, and switching later only changes `shared/errors.py`.
+- **Single documentation base (resolved by team decision):** `.kiro/specs/identity-market-backend` is the only source of requirements and design for MOD-01 and MOD-02. `specs/01-identity-security` and `specs/02-market-data` are superseded. The requirements keep these rules from them: recovery codes (Requirement 18), no self-assignment of privileged roles (Requirement 2), price freshness labels (Requirement 13) and plan-limited depth (Requirement 19). CSRF and Origin validation are left out (D4). The error format is Error_Body; `application/problem+json` is not adopted.
 - **Existing code is extended, not replaced:** `src/acciones_ud/config/settings.py` (`Settings`, `get_settings`), `src/acciones_ud/shared/infrastructure/db.py` (`require_database_url`, `engine`, `session_factory`, `get_session`) and `migrations/env.py` keep their names and behavior; this design only adds fields, options and helpers to them (see Data Models, "Migration_Set structure" and "Configuration").
 
 Every other `AGENTS.md` convention (hexagonal modules, `uv`, Python 3.12+, SQLAlchemy 2.x async + asyncpg, ruff, mypy, pytest) is followed.
@@ -71,7 +71,7 @@ flowchart LR
 
     subgraph API[FastAPI process]
         direction TB
-        CSRF[CORS + CSRF/Origin middleware<br/>shared/infrastructure] --> R
+        CORS[CORS middleware<br/>configured origins only] --> R
         R[Routers<br/>adapters/inbound/http] --> D[Dependencies<br/>auth, permission, premium]
         R --> S[Use cases<br/>application]
         S --> DOM[Entities, rules, ports<br/>domain - pure]
@@ -113,8 +113,7 @@ src/acciones_ud/
     errors.py                       # AppError, ErrorCode, Error_Body model, exception handlers
     infrastructure/db.py            # exists: engine, session_factory, get_session; extended with build_engine,
                                     #   unit-of-work helper, DB error translation
-    infrastructure/csrf.py          # pure check_csrf() decision + CsrfMiddleware (pure ASGI), token generator
-    infrastructure/cookies.py       # set/clear access_token, refresh_token and csrf_token together
+    infrastructure/cookies.py       # set/clear access_token and refresh_token together
     clock.py                        # Clock port (now()) + system implementation, injectable in tests
     alpaca/                         # shared httpx client factory, error classification, Alpaca dataclasses
     tools/hash_password.py          # prints an Argon2id hash for INITIAL_ADMIN_PASSWORD_HASH
@@ -164,15 +163,12 @@ Layer rules:
 ```mermaid
 sequenceDiagram
     participant C as Client
-    participant MW as CORS + CSRF middleware
+    participant MW as CORS middleware
     participant DEP as get_current_user
     participant DB as Postgres
     participant SVC as Service
-    C->>MW: request + access_token cookie (+ X-CSRF-Token on POST/PUT/PATCH/DELETE)
-    alt mutating request fails CSRF/Origin check
-        MW-->>C: 403 CSRF_FAILED (body not read)
-    end
-    MW->>DEP: request passes
+    C->>MW: request + access_token cookie
+    MW->>DEP: request (CORS headers only for allowed origins)
     DEP->>DEP: verify JWT signature and exp
     DEP->>DB: load session (not revoked), user, effective permissions
     alt token invalid / session revoked
@@ -220,53 +216,31 @@ sequenceDiagram
     else valid
         A->>DB: mark challenge used; TOTP: set totp_last_step, confirm enrollment and insert 10 recovery code hashes if it was pending
         A->>DB: insert session + refresh token; auth_events; COMMIT
-        A-->>C: 200 {user, recovery_codes?, recovery_codes_remaining?} + Set-Cookie access_token, refresh_token, csrf_token
+        A-->>C: 200 {user, recovery_codes?, recovery_codes_remaining?} + Set-Cookie access_token, refresh_token
     end
 ```
 
 ### Recovery codes
 
 - **Format and generation** (`identity.domain.recovery_codes`): 10 characters from `A-Z0-9`, drawn with `secrets.choice` (about 51.7 bits each). A set is 10 distinct codes; generation redraws on a collision.
-- **Hashing:** each code is hashed with the same Argon2id `PasswordHasher` used for passwords, so each hash has its own random salt. Only the hash is stored; the plaintext exists only in the response that issues the set (19.1, 19.7) and is never passed to a logger.
+- **Hashing:** each code is hashed with the same Argon2id `PasswordHasher` used for passwords, so each hash has its own random salt. Only the hash is stored; the plaintext exists only in the response that issues the set (18.1, 18.7) and is never passed to a logger.
 - **Issuance:** when a TOTP verification confirms a pending enrollment, the same transaction inserts the 10 hashes under a new `set_id`, and the response carries `recovery_codes` (the 10 plaintext codes). Every other response sets `recovery_codes` to null.
-- **Verification:** `MfaVerifyIn` accepts exactly one of `code` (TOTP, `^\d{6}$`) and `recovery_code`. The recovery code is trimmed and uppercased, then must match `^[A-Z0-9]{10}$`; any other combination is 422 before the challenge is read, so no attempt is used (19.9). With the challenge row locked, the use case checks, in order: challenge unknown, expired, used or invalidated → 401 (19.6); TOTP enrollment pending → 401 and the code stays unused (19.6); then it verifies the submitted code against every unused hash of the user's current set. No match, or a match whose conditional `UPDATE` returns no row because a concurrent request used it first, is a failed attempt: `failed_attempts += 1`, the challenge is invalidated at 5 (3.10), and the response is 401 `MFA_FAILED`, the same code as a wrong TOTP (19.5). A match whose `UPDATE` returns a row completes the login like a TOTP success, and the response adds `recovery_codes_remaining` (count of unused codes left in the current set) (19.3).
-- **Concurrency (19.10):** two logins can hold different challenges, so the challenge lock does not serialize them. The conditional `UPDATE` does: Postgres lets one statement change the row, and the other re-reads it with `used_at` set and returns no row.
-- **Audit (19.4):** `auth_events` gets `method = 'recovery_code'` and result `success`, `invalid_recovery_code` or one of the 3.7 reasons. The submitted code is never stored.
-- **Regeneration (19.7, 19.8):** `POST /users/me/mfa/recovery-codes`. Without a confirmed enrollment the response is 409 `MFA_NOT_ENROLLED`. Otherwise one transaction locks the user row (`SELECT ... FOR UPDATE`, so two concurrent regenerations cannot leave two valid sets), sets `invalidated_at = now()` on every code of the current set, inserts 10 new hashes under a new `set_id`, and returns the 10 plaintext codes.
+- **Verification:** `MfaVerifyIn` accepts exactly one of `code` (TOTP, `^\d{6}$`) and `recovery_code`. The recovery code is trimmed and uppercased, then must match `^[A-Z0-9]{10}$`; any other combination is 422 before the challenge is read, so no attempt is used (18.9). With the challenge row locked, the use case checks, in order: challenge unknown, expired, used or invalidated → 401 (18.6); TOTP enrollment pending → 401 and the code stays unused (18.6); then it verifies the submitted code against every unused hash of the user's current set. No match, or a match whose conditional `UPDATE` returns no row because a concurrent request used it first, is a failed attempt: `failed_attempts += 1`, the challenge is invalidated at 5 (3.10), and the response is 401 `MFA_FAILED`, the same code as a wrong TOTP (18.5). A match whose `UPDATE` returns a row completes the login like a TOTP success, and the response adds `recovery_codes_remaining` (count of unused codes left in the current set) (18.3).
+- **Concurrency (18.10):** two logins can hold different challenges, so the challenge lock does not serialize them. The conditional `UPDATE` does: Postgres lets one statement change the row, and the other re-reads it with `used_at` set and returns no row.
+- **Audit (18.4):** `auth_events` gets `method = 'recovery_code'` and result `success`, `invalid_recovery_code` or one of the 3.7 reasons. The submitted code is never stored.
+- **Regeneration (18.7, 18.8):** `POST /users/me/mfa/recovery-codes`. Without a confirmed enrollment the response is 409 `MFA_NOT_ENROLLED`. Otherwise one transaction locks the user row (`SELECT ... FOR UPDATE`, so two concurrent regenerations cannot leave two valid sets), sets `invalidated_at = now()` on every code of the current set, inserts 10 new hashes under a new `set_id`, and returns the 10 plaintext codes.
 
-### CSRF and Origin protection
+### Cookies and CORS
 
-`CsrfMiddleware` is a pure ASGI middleware registered inside `CORSMiddleware` (so a 403 still carries CORS headers for an allowed origin) and outside the routers. It never reads the body, so it runs before body validation and before any credential check (18.8). The decision is the pure function `check_csrf(method, path, cookies, headers, allowed_origins) -> CsrfOk | CsrfRejected(reason)`, property tested on its own.
-
-| Item | Value |
-|------|-------|
-| Cookie names | `access_token` (HttpOnly, `Path=/`), `refresh_token` (HttpOnly, `Path=/api/v1/auth`), `csrf_token` (not HttpOnly, `Path=/`) |
-| CSRF token | `secrets.token_urlsafe(32)` (256 bits), new on every MFA verification success and every refresh (18.1) |
-| CSRF cookie attributes | `Secure`, `SameSite=<COOKIE_SAMESITE>` (same as the access cookie), `Domain=<COOKIE_DOMAIN>` when set, `Max-Age=REFRESH_TOKEN_TTL_SECONDS` (same expiry as the refresh token) |
-| Header | `X-CSRF-Token`, compared with the cookie using `hmac.compare_digest` |
-| Exempt methods | `GET`, `HEAD`, `OPTIONS` (18.7); no endpoint changes state on these methods |
-| Pre_Session_Endpoints | `POST /api/v1/auth/register`, `POST /api/v1/auth/register/broker`, `POST /api/v1/auth/login`, `POST /api/v1/auth/mfa/verify` (exact path match) |
-
-Decision for `POST`, `PUT`, `PATCH`, `DELETE`:
-
-1. **Origin source:** the `Origin` header when present; otherwise `scheme://host[:port]` of the `Referer` header (no path, no user info); otherwise none. The value matches when it equals an entry of `CORS_ALLOWED_ORIGINS` exactly. `Origin: null` never matches.
-2. **Pre_Session_Endpoint:** allowed only if the origin matches (18.5, 18.6). No token is required.
-3. **Other endpoint with an `access_token` or `refresh_token` cookie:** allowed only if the origin matches, the `csrf_token` cookie and the `X-CSRF-Token` header are both present and non-empty, and they are equal (18.3, 18.4).
-4. **Other endpoint without either auth cookie:** passed through; the endpoint answers 401 as usual (no cookie means no ambient credential to abuse).
-
-A rejection returns 403 Error_Body `{"code": "CSRF_FAILED", "message": "CSRF validation failed.", "details": {"reason": "origin_not_allowed" | "token_missing" | "token_mismatch"}}`. The reason never contains a cookie, header or origin value (18.9). Request headers are never logged, so the token values cannot reach the log either.
-
-Cookie helpers in `shared/infrastructure/cookies.py` set the three cookies together after MFA verification and refresh, and clear the three together on every path that clears the token cookies (4.2, 4.4, 4.6, 4.8 → 18.2).
-
-The WebSocket handshake is a `GET` and keeps its own Origin check (see "Price streaming").
+- Cookie helpers in `shared/infrastructure/cookies.py` set `access_token` and `refresh_token` together after MFA verification and refresh, and clear both together on every path that clears the token cookies (4.2, 4.4, 4.6, 4.8). Cookie attributes are listed under "Configuration".
+- `CORSMiddleware` runs with `allow_origins` equal to `CORS_ALLOWED_ORIGINS` (exact strings, `*` rejected at startup), `allow_credentials=True`, the methods `GET`, `POST`, `PUT`, `DELETE`, `OPTIONS`, and the request header `Content-Type`. A request whose `Origin` is not in the list gets no `Access-Control-Allow-Origin` header (17.4).
+- There is no CSRF token, no CSRF header and no Origin or Referer check, neither on HTTP endpoints nor on the WebSocket handshake (D4).
 
 **Frontend integration notes:**
 
-- Read `csrf_token` from `document.cookie` and send it as `X-CSRF-Token` on every `POST`, `PUT`, `PATCH` and `DELETE`, including `/auth/refresh` and `/auth/logout`. After a refresh, read the cookie again because it rotates.
-- Send requests with `credentials: "include"`. Browsers add `Origin` to these requests; non-browser clients (scripts, tests) must set `Origin` to an allowed origin themselves.
-- JavaScript can read the cookie only if the page and the cookie share a host or the cookie has a `Domain`. Locally the dev-server proxy serves both on one origin. In deployment, either serve frontend and API on one origin, or set `COOKIE_DOMAIN` to the shared parent domain and list the frontend origin in `CORS_ALLOWED_ORIGINS`.
-- `X-CSRF-Token` is listed in the CORS `allow_headers`.
-- Swagger UI at `/docs` sends `Origin` of the API host, so that origin must be in `CORS_ALLOWED_ORIGINS` for "Try it out" on mutating endpoints.
+- Send requests with `credentials: "include"`.
+- The cookies use `SameSite=Lax` or `Strict` (3.3), so browsers send them only on same-site requests. Serve the frontend same-site with the API: a dev-server proxy (for example Vite `server.proxy`) locally, and the same registrable domain in deployment, with the frontend origin listed in `CORS_ALLOWED_ORIGINS`.
+- Swagger UI at `/docs` is served by the API itself, so "Try it out" needs no CORS entry.
 
 ### Refresh rotation and reuse detection
 
@@ -284,11 +258,9 @@ UPDATE refresh_tokens rt
 RETURNING rt.session_id;
 ```
 
-The refresh request carries the `refresh_token` cookie, so the CSRF middleware requires `X-CSRF-Token` and an allowed origin before this statement runs.
-
-- One row returned: insert the new refresh token for the same session, update `sessions.last_used_at`, issue a new access token, set the access, refresh and CSRF cookies (new CSRF value).
-- No row returned, but the hash exists: the token is expired, rotated or revoked. Revoke its session, clear the three cookies, return 401 (4.2). Concurrent refreshes with the same token (4.10) resolve the same way: Postgres row locking lets exactly one `UPDATE` win, and every loser sees `rotated_at IS NOT NULL`. As required by 4.10 plus 4.2, a loser revokes the session, which also ends the winner's session. This is standard reuse detection; the frontend must serialize refresh calls (one in-flight refresh at a time).
-- Hash unknown, token missing or malformed: clear the three cookies, return 401, change nothing (4.8).
+- One row returned: insert the new refresh token for the same session, update `sessions.last_used_at`, issue a new access token, set the access and refresh cookies.
+- No row returned, but the hash exists: the token is expired, rotated or revoked. Revoke its session, clear both cookies, return 401 (4.2). Concurrent refreshes with the same token (4.10) resolve the same way: Postgres row locking lets exactly one `UPDATE` win, and every loser sees `rotated_at IS NOT NULL`. As required by 4.10 plus 4.2, a loser revokes the session, which also ends the winner's session. This is standard reuse detection; the frontend must serialize refresh calls (one in-flight refresh at a time).
+- Hash unknown, token missing or malformed: clear both cookies, return 401, change nothing (4.8).
 
 ### Broker registration and activation
 
@@ -344,7 +316,7 @@ Each loop iteration catches and logs every exception, so one failed Alpaca call 
 | server → client | `{"type": "price", "symbol": "AAPL", "price": 189.12, "timestamp": "2025-01-02T15:04:05.123Z"}` |
 | server → client | `{"type": "error", "error": <Error_Body>}` (subscription rejected, previous subscription kept) |
 
-Authentication uses the `access_token` cookie sent with the WebSocket handshake. The handshake `Origin` must be in `CORS_ALLOWED_ORIGINS` (protects against cross-site WebSocket hijacking). If streaming is disabled, the token is invalid, or the origin is not allowed, the server accepts the socket, sends one `error` message, and closes with code 1008. The server closes the connection when the access token expires; the client refreshes and reconnects. Clients connect to `WS /ws/v1/market-feed` (outside the `/api/v1` prefix, as in specs/02); the `access_token` cookie has `Path=/`, so the browser sends it with the handshake.
+Authentication uses the `access_token` cookie sent with the WebSocket handshake; the handshake `Origin` is not checked (D4). If streaming is disabled or the token is missing, invalid or expired, the server accepts the socket, sends one `error` message, and closes with code 1008. The server closes the connection when the access token expires; the client refreshes and reconnects. Clients connect to `WS /ws/v1/market-feed` (outside the `/api/v1` prefix, as in specs/02); the `access_token` cookie has `Path=/`, so the browser sends it with the handshake.
 
 ### Price freshness
 
@@ -355,7 +327,7 @@ Authentication uses the `access_token` cookie sent with the WebSocket handshake.
 | `currency` | `"USD"` when the Instrument's `asset_class` is `us_equity`, else null | 13.11 |
 | `source` | always `"alpaca"` | 13.11 |
 | `feed` | feed of the returned data (`iex`, `sip` or `delayed_sip`) | 13.11 |
-| `as_of` | quote: update timestamp of 13.1 (later of quote and trade timestamps); depth: latest quote timestamp; cached: stored `quote_updated_at` | 13.11, 13.14, 20.1 |
+| `as_of` | quote: update timestamp of 13.1 (later of quote and trade timestamps); depth: latest quote timestamp; cached: stored `quote_updated_at` | 13.11, 13.14, 19.1 |
 | `data_age_seconds` | `max(0, floor((now - as_of).total_seconds()))`, null when `as_of` is null | 13.11 |
 | `is_delayed` | `feed == "delayed_sip"` | 13.12 |
 | `is_stale` | `data_age_seconds is None or data_age_seconds > PRICE_STALENESS_THRESHOLD_SECONDS`; forced true when served from cache | 13.13, 13.14 |
@@ -383,25 +355,25 @@ The fallback never writes: the stored snapshot stays unchanged on any failure (1
 
 ### Market depth
 
-`GET /api/v1/instruments/{symbol}/depth` (Requirement 20):
+`GET /api/v1/instruments/{symbol}/depth` (Requirement 19):
 
-1. Validate the symbol (422, no Alpaca call, 20.6) and check the catalog (404 `SYMBOL_NOT_FOUND`, no Alpaca call, 20.7).
+1. Validate the symbol (422, no Alpaca call, 19.6) and check the catalog (404 `SYMBOL_NOT_FOUND`, no Alpaca call, 19.7).
 2. Call `AlpacaDataPort.get_latest_quote(symbol)` (`GET /v2/stocks/{symbol}/quotes/latest?feed=<ALPACA_DATA_FEED>`, 10 s).
 3. Map with the pure `market_data.domain.depth.from_latest_quote(doc) -> DepthResult`:
-   - no `quote` object in the response → `levels = []` (20.5);
-   - otherwise exactly one `DepthLevel {bid_price, bid_size, ask_price, ask_size}` taken from `bp`, `bs`, `ap`, `as`; a missing or null key gives null for that value (20.2, 20.4). The mapper never computes, copies or pads values, so `len(levels)` is at most the number of levels in the response (20.3);
+   - no `quote` object in the response → `levels = []` (19.5);
+   - otherwise exactly one `DepthLevel {bid_price, bid_size, ask_price, ask_size}` taken from `bp`, `bs`, `ap`, `as`; a missing or null key gives null for that value (19.2, 19.4). The mapper never computes, copies or pads values, so `len(levels)` is at most the number of levels in the response (19.3);
    - `full_depth_available = false` for every supported feed (A9).
-4. Annotate with the freshness fields (`as_of` = quote `t`, `served_from_cache = false`) and return 200 (20.1).
-5. Alpaca failures map as in 17.5/17.6 with no cache fallback and no database write (20.8).
+4. Annotate with the freshness fields (`as_of` = quote `t`, `served_from_cache = false`) and return 200 (19.1).
+5. Alpaca failures map as in 17.5/17.6 with no cache fallback and no database write (19.8).
 
-Open verification item (A9): before release, confirm against the contracted Alpaca plan that stocks have no multi-level book, and check in the sandbox whether Alpaca reports an absent side as missing keys or as `0` values. This design maps only missing or null keys to null; if Alpaca uses zeros, 20.4 needs a team decision before the mapper treats zero as absent.
+Open verification item (A9): before release, confirm against the contracted Alpaca plan that stocks have no multi-level book, and check in the sandbox whether Alpaca reports an absent side as missing keys or as `0` values. This design maps only missing or null keys to null; if Alpaca uses zeros, 19.4 needs a team decision before the mapper treats zero as absent.
 
 ### Instrument identifier in paths
 
 Instrument paths use `{symbol}` (Plan Maestro), not a surrogate `instrument_id`:
 
 - The catalog reload requests only `asset_class=us_equity`. In that class Alpaca addresses an asset by its symbol (`GET /v1/assets/{symbol_or_asset_id}`), and `instruments.symbol` is the primary key, so one symbol is one Instrument in the active scope.
-- specs/02 asks that a `{symbol}` path be exposed only with the market or after showing there is no ambiguity. For the active scope the argument above is that evidence. The ambiguity becomes real only if a later spec adds other asset classes (crypto pairs such as `BTC/USD`) or non-US venues; that spec must then move to `/instruments/{market_code}/{symbol}` or to `alpaca_asset_id`. `instruments.alpaca_asset_id` is stored now so that change needs no data backfill.
+- The superseded specs/02 asked that a `{symbol}` path be exposed only with the market or after showing there is no ambiguity; the argument above shows there is none in the active scope. The ambiguity becomes real only if a later spec adds other asset classes (crypto pairs such as `BTC/USD`) or non-US venues; that spec must then move to `/instruments/{market_code}/{symbol}` or to `alpaca_asset_id`. `instruments.alpaca_asset_id` is stored now so that change needs no data backfill.
 - A catalog reload that returns the same symbol twice keeps the `active` asset (or the first one) and logs the duplicate.
 - Symbols may contain `.`, `/` and `-` (16.4). Routes declare the parameter as `{symbol:path}` so `/` does not break routing, and the suffix routes (`/quote`, `/candles`, `/depth`) and `/instruments/search` are registered before `GET /instruments/{symbol:path}`.
 
@@ -411,14 +383,13 @@ Instrument paths use `{symbol}` (Plan Maestro), not a surrogate `instrument_id`:
 
 | Component | Main methods | Requirements |
 |-----------|--------------|--------------|
-| Auth_Service | `register_investor`, `register_broker`, `create_administrator`, `login`, `verify_mfa` (TOTP or recovery code), `regenerate_recovery_codes` | 1, 2.1-2.10, 3, 19 |
+| Auth_Service | `register_investor`, `register_broker`, `create_administrator`, `login`, `verify_mfa` (TOTP or recovery code), `regenerate_recovery_codes` | 1, 2.1-2.10, 3, 18 |
 | Session_Service | `refresh`, `list_sessions`, `close_session`, `close_other_sessions`, `logout` | 4 |
 | RBAC_Service | `list_roles`, `add_permission`, `remove_permission`, `list_assignments`, `create_assignment`, `update_assignment`, `revoke_assignment`, `activate_broker`, `set_premium` | 2.11-2.15, 5 |
 | Account_Service | `me` (current user and account information), `get/put_channel_preferences`, `set_telegram_chat`, `get/put_portfolio_view`, `get/put_order_controls`, `put_interests` | 3.8, 6, 7, 8, 9, 11.1-11.2 |
 | KYC_Service | `submit`, `status` | 10 |
 | Dashboard_Service | `dashboard` | 11.3-11.7 |
-| Market_Service | `search`, `markets`, `asset_detail`, `quote` (freshness + cache fallback), `candles`, `depth`, `calendar`, `clock`, `market_status`, schedule admin | 12, 13, 15, 16, 20 |
-| CSRF middleware | `check_csrf`, `CsrfMiddleware`, `new_csrf_token` | 18 |
+| Market_Service | `search`, `markets`, `asset_detail`, `quote` (freshness + cache fallback), `candles`, `depth`, `calendar`, `clock`, `market_status`, schedule admin | 12, 13, 15, 16, 19 |
 | CatalogService (part of Market_Service) | `ensure_fresh`, `reload`, `exists(symbol)` | 12.5, 12.7-12.9, 13.5 |
 | Watchlist_Service | watchlists, symbols, price alerts | 14.1-14.5, 14.8-14.13 |
 | Notifier | `create(user_id, event_type, payload)`, `broadcast(event_type, payload)`, `list_in_app` | 14.7, 14.10, 14.11, 15.9 |
@@ -430,7 +401,7 @@ Instrument paths use `{symbol}` (Plan Maestro), not a surrogate `instrument_id`:
 - `require_permission(code)`: dependency factory; raises 403 `FORBIDDEN` if `code not in current.permissions`.
 - `require_premium`: raises 403 `PREMIUM_REQUIRED` if `not current.is_premium`.
 
-Order of checks on every protected endpoint: CSRF/Origin for mutating methods (403 `CSRF_FAILED`, middleware) → authentication (401) → permission and premium (403) → body/query validation (422) → resource existence (404) → conflicts (409) → limits (422). FastAPI runs an endpoint's dependencies before it raises the collected request validation errors, and an `AppError` raised inside a dependency stops the request immediately, so declaring the auth dependencies on each router (`APIRouter(dependencies=[...])`) gives this order without extra code. One exception: a body that is not valid JSON is rejected with 422 when FastAPI decodes it, before dependencies run; this rejection executes no operation, so 3.9 still holds. Pre_Session_Endpoints check Origin/Referer (middleware) and then validate.
+Order of checks on every protected endpoint: authentication (401) → permission and premium (403) → body/query validation (422) → resource existence (404) → conflicts (409) → limits (422). FastAPI runs an endpoint's dependencies before it raises the collected request validation errors, and an `AppError` raised inside a dependency stops the request immediately, so declaring the auth dependencies on each router (`APIRouter(dependencies=[...])`) gives this order without extra code. One exception: a body that is not valid JSON is rejected with 422 when FastAPI decodes it, before dependencies run; this rejection executes no operation, so 3.9 still holds. Public endpoints only validate their input.
 
 ### Alpaca ports (`identity/domain/ports.py`, `market_data/domain/ports.py`)
 
@@ -454,7 +425,7 @@ class AlpacaDataPort(Protocol):
     async def get_snapshots(self, symbols: list[str], timeout: float = 10) -> dict[str, Snapshot]: ...
     async def get_bars(self, symbol: str, timeframe: str, start: datetime, end: datetime,
                        limit: int, page_token: str | None) -> BarsPage: ...
-    async def get_latest_quote(self, symbol: str, timeout: float = 10) -> LatestQuoteDoc: ...  # depth (Req 20)
+    async def get_latest_quote(self, symbol: str, timeout: float = 10) -> LatestQuoteDoc: ...  # depth (Req 19)
 ```
 
 `LatestQuoteDoc` keeps the optional keys of Alpaca's `quote` object as `None` instead of filling defaults, so the depth mapper can tell an omitted side from a real value.
@@ -484,18 +455,18 @@ Implementations: `SmtpEmailSender` when `SMTP_HOST` is set, otherwise `LogEmailS
 
 ### Endpoint table
 
-All REST paths are prefixed with `/api/v1`; the WebSocket path is `/ws/v1/market-feed`. "Auth" values: **public** (no token), **user** (valid access token), **refresh** (refresh cookie only). "Permission" lists the RBAC permission code required (see Data Models for the seed). Every error response uses Error_Body. Every endpoint with a body or query returns 422 `VALIDATION_ERROR` on invalid input; every protected endpoint returns 401 and, when it needs a permission, 403; every endpoint can return 500 `INTERNAL_ERROR` and 503 `DATABASE_UNAVAILABLE`. Every `POST`, `PUT`, `PATCH` and `DELETE` can return 403 `CSRF_FAILED` (Requirement 18; Pre_Session_Endpoints for the Origin check only). The "Errors" column lists the additional ones.
+All REST paths are prefixed with `/api/v1`; the WebSocket path is `/ws/v1/market-feed`. "Auth" values: **public** (no token), **user** (valid access token), **refresh** (refresh cookie only). "Permission" lists the RBAC permission code required (see Data Models for the seed). Every error response uses Error_Body. Every endpoint with a body or query returns 422 `VALIDATION_ERROR` on invalid input; every protected endpoint returns 401 and, when it needs a permission, 403; every endpoint can return 500 `INTERNAL_ERROR` and 503 `DATABASE_UNAVAILABLE`. The "Errors" column lists the additional ones.
 
 #### Authentication (MOD-01)
 
 | Method | Path | Auth | Permission | Request | Success response | Errors | Req |
 |--------|------|------|------------|---------|------------------|--------|-----|
-| POST | `/auth/register` | public (pre-session) | – | `RegisterInvestorIn` | 201 `{user_id, account_status: "active"}` | 409 `EMAIL_ALREADY_REGISTERED` | 1, 2.9, 2.15 |
-| POST | `/auth/register/broker` | public (pre-session) | – | `RegisterBrokerIn` (= investor fields + `firm_name`, `license_number`) | 201 `{user_id, account_status: "pending_broker_activation"}` | 409 | 2.1, 2.4, 2.6, 2.15 |
-| POST | `/auth/login` | public (pre-session) | – | `{email, password}` | 200 `LoginOut {mfa_token, mfa_expires_at, totp_enrollment: {secret, otpauth_uri} \| null}` | 401 `INVALID_CREDENTIALS` | 3.1, 3.2, 3.5, 3.11 |
-| POST | `/auth/mfa/verify` | public (pre-session) | – | `MfaVerifyIn {mfa_token, code?, recovery_code?}` (exactly one of `code`, `recovery_code`) | 200 `MfaVerifyOut {user: AuthUserOut, recovery_codes: string[10] \| null, recovery_codes_remaining: int \| null}` + `Set-Cookie` access, refresh, CSRF | 401 `MFA_FAILED` | 3.3, 3.4, 3.6, 3.10, 18.1, 19.1, 19.3, 19.5, 19.6, 19.9 |
-| POST | `/auth/refresh` | refresh | – | – | 200 `{access_expires_at, refresh_expires_at}` + `Set-Cookie` access, refresh, CSRF | 401 `REFRESH_INVALID` | 4.1, 4.2, 4.8, 4.10, 18.1 |
-| POST | `/auth/logout` | user | – | – | 204 + three cookies cleared | – | 4.6, 18.2 |
+| POST | `/auth/register` | public | – | `RegisterInvestorIn` | 201 `{user_id, account_status: "active"}` | 409 `EMAIL_ALREADY_REGISTERED` | 1, 2.9, 2.15 |
+| POST | `/auth/register/broker` | public | – | `RegisterBrokerIn` (= investor fields + `firm_name`, `license_number`) | 201 `{user_id, account_status: "pending_broker_activation"}` | 409 | 2.1, 2.4, 2.6, 2.15 |
+| POST | `/auth/login` | public | – | `{email, password}` | 200 `LoginOut {mfa_token, mfa_expires_at, totp_enrollment: {secret, otpauth_uri} \| null}` | 401 `INVALID_CREDENTIALS` | 3.1, 3.2, 3.5, 3.11 |
+| POST | `/auth/mfa/verify` | public | – | `MfaVerifyIn {mfa_token, code?, recovery_code?}` (exactly one of `code`, `recovery_code`) | 200 `MfaVerifyOut {user: AuthUserOut, recovery_codes: string[10] \| null, recovery_codes_remaining: int \| null}` + `Set-Cookie` access, refresh | 401 `MFA_FAILED` | 3.3, 3.4, 3.6, 3.10, 18.1, 18.3, 18.5, 18.6, 18.9 |
+| POST | `/auth/refresh` | refresh | – | – | 200 `{access_expires_at, refresh_expires_at}` + `Set-Cookie` access, refresh | 401 `REFRESH_INVALID` | 4.1, 4.2, 4.8, 4.10 |
+| POST | `/auth/logout` | user | – | – | 204 + both cookies cleared | – | 4.6 |
 
 `AuthUserOut`: `{user_id, first_names, last_names, email, account_status, roles[], is_premium}`. `recovery_codes` is set only when this verification confirmed the enrollment; `recovery_codes_remaining` only when a recovery code was used.
 
@@ -512,9 +483,9 @@ All REST paths are prefixed with `/api/v1`; the WebSocket path is `/ws/v1/market
 | PUT | `/users/preferences/orders` | user | `account:manage` | `OrderControlsIn` (all 4 fields) | 200 `OrderControlsOut` | – | 9.1, 9.2, 9.6 |
 | PUT | `/users/me/telegram` | user | `account:manage` | `{chat_id: string \| null}` | 200 `{chat_id}` | – | supports 7.5 |
 | PUT | `/users/me/interests` | user | `account:manage` | `{interests: string[1..20], level: "beginner" \| "experienced"}` | 200 `{interests, level}` | – | 11.1, 11.2 |
-| POST | `/users/me/mfa/recovery-codes` | user | – | – | 200 `{recovery_codes: string[10]}` | 409 `MFA_NOT_ENROLLED` | 19.7, 19.8 |
+| POST | `/users/me/mfa/recovery-codes` | user | – | – | 200 `{recovery_codes: string[10]}` | 409 `MFA_NOT_ENROLLED` | 18.7, 18.8 |
 | GET | `/users/me/sessions` | user | – | – | 200 `[SessionOut {session_id, user_agent, ip_address, created_at, last_used_at, current}]` | – | 4.3 |
-| DELETE | `/users/me/sessions/{session_id}` | user | – | – | 204 (three cookies cleared if current) | 404 `SESSION_NOT_FOUND` | 4.4, 4.7, 18.2 |
+| DELETE | `/users/me/sessions/{session_id}` | user | – | – | 204 (both cookies cleared if current) | 404 `SESSION_NOT_FOUND` | 4.4, 4.7 |
 | POST | `/users/me/sessions/revoke-others` | user | – | – | 200 `{revoked_count}` | – | 4.5 |
 | GET | `/dashboard` | user | `market:read` | – | 200 `DashboardOut` (see below) | – | 11.3-11.7 |
 | POST | `/kyc/account` | user | `kyc:submit` | `KycSubmissionIn` (see below) | 201 `{alpaca_account_id, status}` | 409 `KYC_ACCOUNT_EXISTS`, 422 `ALPACA_REJECTED`, 502, 503 | 10.1, 10.2, 10.6-10.9 |
@@ -522,7 +493,7 @@ All REST paths are prefixed with `/api/v1`; the WebSocket path is `/ws/v1/market
 
 `GET /users/me` merges the current-user endpoint (3.8) and account information (6) into one response, so the frontend has one bootstrap call. It needs only a valid access token, not `account:manage`, so a User without Effective_Roles (for example a pending broker) can still see `account_status`. It calls Alpaca only when the User has a linked Alpaca account (6.4); that call has the 10-second limit and degraded result of 6.5. Session, logout and recovery-code endpoints also need no permission (5.9 note under "RBAC seed").
 
-`UserMeOut`: `{user_id, first_names, last_names, email, phone, country, account_status, registered_at, contracted_plan: null, is_premium, associated_broker: null, roles[], kyc_status: string | null, kyc_status_unavailable: bool, interests[], investor_level, mfa_enrolled: bool}`. `roles` holds the Effective_Roles. `contracted_plan` and `associated_broker` are always null until MOD-04 and MOD-06 exist (A2). `interests`, `investor_level` and `mfa_enrolled` are extra fields so the frontend can prefill the interests form and show the recovery-code action. The password hash, TOTP secret and recovery codes are never part of it (3.8, 19.2).
+`UserMeOut`: `{user_id, first_names, last_names, email, phone, country, account_status, registered_at, contracted_plan: null, is_premium, associated_broker: null, roles[], kyc_status: string | null, kyc_status_unavailable: bool, interests[], investor_level, mfa_enrolled: bool}`. `roles` holds the Effective_Roles. `contracted_plan` and `associated_broker` are always null until MOD-04 and MOD-06 exist (A2). `interests`, `investor_level` and `mfa_enrolled` are extra fields so the frontend can prefill the interests form and show the recovery-code action. The password hash, TOTP secret and recovery codes are never part of it (3.8, 18.2).
 
 `PUT /users/me/telegram` is a design addition: requirement 7.5 depends on a stored Telegram chat identifier, and no other requirement provides a way to store it.
 
@@ -542,7 +513,7 @@ All REST paths are prefixed with `/api/v1`; the WebSocket path is `/ws/v1/market
 | POST | `/admin/roles/{role}/permissions` | user | `admin:rbac` | `{permission_code}` | 200 `{role, permissions[]}` | 404 `NOT_FOUND` | 5.6, 5.12 |
 | DELETE | `/admin/roles/{role}/permissions/{permission_code}` | user | `admin:rbac` | – | 200 `{role, permissions[]}` | 404 | 5.6, 5.12 |
 
-An `assignment_id` that belongs to a different `user_id` is 404 `NOT_FOUND`. specs/01 sketches a single `PUT /admin/users/{user_id}/roles` that replaces the whole set; this design keeps fine-grained assignment endpoints under that path because 5.2 returns one created assignment (201), 5.5 revokes by setting `valid_to` instead of deleting (5.7 must still list past assignments), and 5.10 checks one change at a time.
+An `assignment_id` that belongs to a different `user_id` is 404 `NOT_FOUND`. The superseded specs/01 sketched a single `PUT /admin/users/{user_id}/roles` that replaces the whole set; this design uses fine-grained assignment endpoints under that path because 5.2 returns one created assignment (201), 5.5 revokes by setting `valid_to` instead of deleting (5.7 must still list past assignments), and 5.10 checks one change at a time.
 
 `DashboardOut`: `{market_status: "open" | "closed" | null, market_status_unavailable: bool, level: "beginner" | "experienced" | null, beginner: bool, source: "interests" | "default", instruments: [{symbol, name, price: number | null, quote_timestamp: string | null, quote_unavailable: bool}]}`. The requirements do not cover a clock failure on the dashboard; this design returns `market_status: null` with `market_status_unavailable: true` instead of failing the whole dashboard.
 
@@ -577,7 +548,7 @@ Income and net worth ranges are enums the service translates to Alpaca `*_min`/`
 | GET | `/instruments/{symbol}` | user | `market:read` | – | 200 `AssetDetailOut {symbol, name, exchange, asset_class, status, tradable, marginable, shortable, easy_to_borrow, fractionable}` | 404 `SYMBOL_NOT_FOUND`, 502, 503 | 16 |
 | GET | `/instruments/{symbol}/quote` | user | `market:read` | – | 200 `QuoteOut {symbol, last_trade_price, bid_price, ask_price, bid_size, ask_size, daily_volume, updated_at, currency, source, feed, as_of, data_age_seconds, is_delayed, is_stale, served_from_cache}` | 404, 502, 503 (only without a stored snapshot) | 13.1, 13.5, 13.6, 13.9, 13.11-13.15 |
 | GET | `/instruments/{symbol}/candles` | user | `market:read` | query `timeframe`, `start`, `end`, `page_size?` (1-10000, default 1000), `page_token?` | 200 `{symbol, timeframe, currency, source, feed, is_delayed, bars: [{timestamp, open, high, low, close, volume}], next_page_token}` | 404, 502, 503 | 13.2-13.5, 13.8, 13.16 |
-| GET | `/instruments/{symbol}/depth` | user | `market:read` | – | 200 `DepthOut {symbol, levels: [{bid_price, bid_size, ask_price, ask_size}], full_depth_available: false, currency, source, feed, as_of, data_age_seconds, is_delayed, is_stale, served_from_cache: false}` | 404, 502, 503 | 20 |
+| GET | `/instruments/{symbol}/depth` | user | `market:read` | – | 200 `DepthOut {symbol, levels: [{bid_price, bid_size, ask_price, ask_size}], full_depth_available: false, currency, source, feed, as_of, data_age_seconds, is_delayed, is_stale, served_from_cache: false}` | 404, 502, 503 | 19 |
 | PUT | `/admin/markets/{market_code}/default-schedule` | user | `admin:markets` | `{open_time: "HH:MM", close_time: "HH:MM"}` | 200 `{market, open_time, close_time}` | 404 | 15.7, 15.10, 15.11 |
 | DELETE | `/admin/markets/{market_code}/default-schedule` | user | `admin:markets` | – | 204 | 404 | 15.7 |
 | GET | `/admin/markets/{market_code}/schedule-overrides` | user | `admin:markets` | query `from?`, `to?` | 200 `[ScheduleOverrideOut]` | 404 | 15.7 |
@@ -626,11 +597,11 @@ All watchlist and alert endpoints require `watchlist:manage` and the premium fla
 | GET | `/docs` | public | Swagger UI (17.1) |
 | GET | `/health` | public | Liveness: returns `{status: "ok"}`; no DB call. Already exists in `main.py` (unprefixed) and is kept as is. |
 
-#### Path mapping to specs/
+#### Historical notes: differences from the superseded specs/
 
-Paths not listed here match `specs/01-identity-security` and `specs/02-market-data` exactly (under `/api/v1`, or `/ws/v1` for the WebSocket).
+The endpoint tables above are the only path contract. `.kiro/specs/identity-market-backend` is the single documentation base, and `specs/01-identity-security` and `specs/02-market-data` are superseded. This table is kept only for readers who know those older sketches; it lists where this design differs from them.
 
-| This design | specs/ | Why it differs |
+| This design | Superseded specs/ | Why it differs |
 |-------------|--------|----------------|
 | `/instruments/{symbol}/...` | `/instruments/{instrument_id}/...` | Symbol is unique in the active `us_equity` catalog (DD13); the Plan Maestro uses symbols |
 | `DELETE /watchlists/{watchlist_id}/items/{symbol}` | `.../items/{instrument_id}` | Symbol instead of `instrument_id` (DD13); returns 200 with the Watchlist, not 204 |
@@ -642,10 +613,11 @@ Paths not listed here match `specs/01-identity-security` and `specs/02-market-da
 | `GET /markets/{market_code}/status` | `/markets/{market_id}/status` | `market_code` is the Alpaca exchange code (`NYSE`, `NASDAQ`, ...) that Instruments reference, not a MIC; the market model of specs/02 (MIC, country, currency) is not adopted |
 | `GET /markets/calendar`, `GET /markets/clock` | not listed | 15.1, 15.2 |
 | `GET /instruments/{symbol}` (detail) | not listed | 16 |
-| `/users/me/sessions/revoke-others`, `/users/me/telegram`, `/users/me/interests`, `/users/me/mfa/recovery-codes` | not listed | 4.5, 7.5, 11.1, 19.7 |
+| `/users/me/sessions/revoke-others`, `/users/me/telegram`, `/users/me/interests`, `/users/me/mfa/recovery-codes` | not listed | 4.5, 7.5, 11.1, 18.7 |
 | `/dashboard`, `/kyc/account`, `/kyc/status`, `/notifications` | not listed | 11, 10, 14.10 (RFP-01 and RFP-08 were pending in specs/01) |
 | `/admin/users/{user_id}/broker-activation`, `/admin/users/{user_id}/premium`, `/admin/roles...`, `/admin/permissions`, `/admin/markets/...` | not listed | 2.12, 5.6, 5.11, 15.7 |
-| Error_Body | `application/problem+json` | Pending team decision |
+| Error_Body | `application/problem+json` | Not adopted (requirements Introduction) |
+| No CSRF token, no Origin/Referer check | CSRF and Origin validation | Left out by team decision D4 |
 
 ### Validation rules (Pydantic schemas in each module's `adapters/inbound/http/schemas.py`)
 
@@ -667,8 +639,8 @@ All request models use `model_config = ConfigDict(extra="ignore", str_strip_whit
 | firm_name / license_number | trimmed, 1-200 / 1-50 chars | 2.1, 2.4 |
 | valid_from / valid_to | `AwareDatetime` (offset required), `valid_to > valid_from` | 5.3 |
 | TOTP code | regex `^\d{6}$` | 3.11 |
-| recovery_code | trimmed, uppercased, then `^[A-Z0-9]{10}$` | 19.9 |
-| MFA verify body | exactly one of `code` and `recovery_code` (model validator; both or neither → 422 naming `code` and `recovery_code`) | 19.9 |
+| recovery_code | trimmed, uppercased, then `^[A-Z0-9]{10}$` | 18.9 |
+| MFA verify body | exactly one of `code` and `recovery_code` (model validator; both or neither → 422 naming `code` and `recovery_code`) | 18.9 |
 | channel preferences (PUT) | known event type and channel, StrictBool, no duplicate pair, no `in_app=false` | 7.6 |
 | hide_threshold | 0.00-999,999,999.99, ≤2 decimals | 8.2 |
 | daily_order_limit | StrictInt 1-1000 | 9.2 |
@@ -732,7 +704,7 @@ erDiagram
 
 An active Session (4.1) is `revoked_at is null` and its newest refresh token has `expires_at > now()`.
 
-The current recovery-code set of a User is the rows with `invalidated_at is null`; a code "belongs to a previous set" when `invalidated_at` is set (19.5). The User's `users` row lock serializes regenerations (19.7).
+The current recovery-code set of a User is the rows with `invalidated_at is null`; a code "belongs to a previous set" when `invalidated_at` is set (18.5). The User's `users` row lock serializes regenerations (18.7).
 
 **Preferences and settings**
 
@@ -800,7 +772,7 @@ uv run alembic current             # show the applied revision
 
 | Revision (file) | Revises | `upgrade()` | `downgrade()` | Req |
 |-----------------|---------|-------------|---------------|-----|
-| `0001_identity_schema` (`0001_identity_schema.py`) | – | Creates `roles`, `permissions`, `role_permissions`, `users` (including the `account_status` check), `role_assignments`, `mfa_challenges`, `mfa_recovery_codes`, `sessions`, `refresh_tokens`, `auth_events` (including `method` and the `invalid_recovery_code` result), `notification_preferences`, `portfolio_view_settings`, `order_controls`, `kyc_accounts` with every column, constraint and index in "Tables"; enables RLS on each and on `alembic_version`; seeds the three roles, the permission codes and the role-permission pairs of "RBAC seed" | Drops those tables in reverse foreign-key order | 2.1, 2.11, 5.1, 17.7, 19.1 |
+| `0001_identity_schema` (`0001_identity_schema.py`) | – | Creates `roles`, `permissions`, `role_permissions`, `users` (including the `account_status` check), `role_assignments`, `mfa_challenges`, `mfa_recovery_codes`, `sessions`, `refresh_tokens`, `auth_events` (including `method` and the `invalid_recovery_code` result), `notification_preferences`, `portfolio_view_settings`, `order_controls`, `kyc_accounts` with every column, constraint and index in "Tables"; enables RLS on each and on `alembic_version`; seeds the three roles, the permission codes and the role-permission pairs of "RBAC seed" | Drops those tables in reverse foreign-key order | 2.1, 2.11, 5.1, 17.7, 18.1 |
 | `0002_initial_admin` (`0002_initial_admin.py`) | `0001_identity_schema` | Creates the initial Administrator from the `INITIAL_ADMIN_*` variables (see below), with `account_status = 'active'` | No-op (see below) | 2.5, 2.8, 2.10, 7.3 |
 | `0003_market_data_schema` (`0003_market_data_schema.py`) | `0002_initial_admin` | Creates `markets`, `schedule_overrides`, `instruments`, `catalog_state`, `instrument_snapshots` (including the `feed` check), `market_clock_state`, `watchlists`, `watchlist_items`, `price_alerts`, `notifications`, `notification_deliveries`; enables RLS on each; seeds the Market codes, the `catalog_state` row (`id = 1`) and the `market_clock_state` row (`id = 1`) | Drops those tables in reverse foreign-key order | 13.14, 17.7 |
 
@@ -851,7 +823,7 @@ Loaded by `pydantic-settings` from the environment (and `.env` in development) t
 | `JWT_SECRET` | ✓ | – | ≥32 bytes, checked at startup |
 | `ACCESS_TOKEN_TTL_SECONDS` | ✓ | – | 1-900; `.env.example` uses 900 (A7) |
 | `REFRESH_TOKEN_TTL_SECONDS` | ✓ | – | 1-604800; `.env.example` uses 604800 (A7) |
-| `CORS_ALLOWED_ORIGINS` | ✓ | – | comma-separated exact origins; `*` is rejected at startup. This list is also the Allowed_Origin list of the CSRF/Origin check (18.3-18.6) and of the WebSocket handshake |
+| `CORS_ALLOWED_ORIGINS` | ✓ | – | comma-separated exact origins allowed for credentialed CORS (17.4); `*` is rejected at startup |
 | `TOTP_ENCRYPTION_KEY` | ✓ | – | Fernet key (DD5) |
 | `PRICE_STREAMING_ENABLED` | | `false` | 13.7, 13.10 |
 | `ALERT_ENGINE_ENABLED` | | `true` | disable in tests |
@@ -859,8 +831,8 @@ Loaded by `pydantic-settings` from the environment (and `.env` in development) t
 | `MARKET_CLOCK_CHECK_INTERVAL_SECONDS` | | `60` | 15.9 |
 | `CATALOG_MAX_AGE_HOURS` | | `24` | 12.5 |
 | `DASHBOARD_DEFAULT_SYMBOLS` | | `AAPL,MSFT,AMZN,GOOGL,META,NVDA,TSLA,JPM,V,KO` | 11.4 |
-| `COOKIE_SAMESITE` | | `lax` | `lax` or `strict` only (3.3); applies to the access, refresh and CSRF cookies, so the CSRF cookie always has the access cookie's SameSite value (18.1) |
-| `COOKIE_DOMAIN` | | unset | applies to the three cookies; set in deployment when API and frontend are on different hosts of one parent domain, so frontend JavaScript can read `csrf_token` |
+| `COOKIE_SAMESITE` | | `lax` | `lax` or `strict` only (3.3); applies to the access and refresh cookies |
+| `COOKIE_DOMAIN` | | unset | applies to the access and refresh cookies; leave unset unless the cookies must reach several hosts of one parent domain |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | | unset | email sender; log sender when unset |
 | `TELEGRAM_BOT_TOKEN` | | unset | Telegram sender; log sender when unset |
 | `LOG_LEVEL` | | `INFO` | |
@@ -881,7 +853,7 @@ Migration and test variables (never read by the API; the `INITIAL_ADMIN_*` value
 
 Secret values use `pydantic.SecretStr`, so `repr()` and logs show `**********`. The OpenAPI document is generated from schemas only and contains no settings.
 
-Cookies: `access_token` (`Path=/`, `Max-Age=ACCESS_TOKEN_TTL_SECONDS`) and `refresh_token` (`Path=/api/v1/auth`, `Max-Age=REFRESH_TOKEN_TTL_SECONDS`), both `HttpOnly; Secure; SameSite=<COOKIE_SAMESITE>`; `csrf_token` (`Path=/`, `Max-Age=REFRESH_TOKEN_TTL_SECONDS`, `Secure; SameSite=<COOKIE_SAMESITE>`, no `HttpOnly`). The cookie names and the `X-CSRF-Token` header name are fixed constants, not variables, because the frontend depends on them.
+Cookies: `access_token` (`Path=/`, `Max-Age=ACCESS_TOKEN_TTL_SECONDS`) and `refresh_token` (`Path=/api/v1/auth`, `Max-Age=REFRESH_TOKEN_TTL_SECONDS`), both `HttpOnly; Secure; SameSite=<COOKIE_SAMESITE>`. The cookie names are fixed constants, not variables, because the frontend depends on them.
 
 ### Database connection (`shared/infrastructure/db.py`)
 
@@ -911,7 +883,7 @@ PBT fits this feature because most rules are pure functions with large input spa
 
 Redundancy was removed before writing this list: field-format validation, terms acceptance, broker field validation and password exclusion (1.4, 1.6, 1.7, 2.4, 2.6) form one validator property; optional-field defaults (1.2) are part of the same property's acceptance branch; the in_app invariant (7.2) is part of the merge property; filters and result fields (12.2, 12.4) are part of the search model property; the 429 rule (17.6) is part of the Alpaca classification property; unavailable prices (14.14) and status filtering (14.6) are part of the alert engine property; the first-check baseline (15.12) is part of the clock watcher property; asset detail upserts (16.2) reuse the catalog merge property.
 
-The criteria added in this iteration were consolidated the same way: broker status and the ban on public privileged assignments (2.1, 2.9, 2.15) extend Property 1; the pending-broker rule (2.11) extends Property 7; recovery-code attempts and pending enrollment (19.5, 19.6) extend Property 5; invalid feed and staleness settings (13.17) extend Property 32; the five branches of the CSRF decision (18.3 to 18.7) and the no-echo rule (18.9) form one property; the freshness fields of quotes, depth and candles (13.11 to 13.13, 13.16) form one property; the fallback branches (13.9, 13.14, 13.15) form one property; depth criteria 20.1 to 20.5 form one property. Broker activation (2.12 to 2.14), cookie attributes (18.1, 18.2), middleware ordering (18.8), audit content (19.4), regeneration without enrollment (19.8) and concurrent code use (19.10) are example, integration or smoke tests.
+The criteria added in this iteration were consolidated the same way: broker status and the ban on public privileged assignments (2.1, 2.9, 2.15) extend Property 1; the pending-broker rule (2.11) extends Property 7; recovery-code attempts and pending enrollment (18.5, 18.6) extend Property 5; invalid feed and staleness settings (13.17) extend Property 32; the freshness fields of quotes, depth and candles (13.11 to 13.13, 13.16) form one property; the fallback branches (13.9, 13.14, 13.15) form one property; depth criteria 19.1 to 19.5 form one property. Broker activation (2.12 to 2.14), plaintext code exclusion (18.2), audit content (18.4), regeneration without enrollment (18.8) and concurrent code use (18.10) are example, integration or smoke tests. The requirements have no CSRF or Origin criteria (D4), so no property covers them; CORS stays covered by Property 31.
 
 ### Property 1: Registration validation reports exactly the invalid fields
 
@@ -941,7 +913,7 @@ The criteria added in this iteration were consolidated the same way: broker stat
 
 *For any* MFA_Challenge, any TOTP enrollment state (pending or confirmed) and any sequence of verification attempts (each a TOTP_Code or a Recovery_Code, each valid or invalid, each at a time before or after expiry), a valid attempt SHALL succeed if and only if the challenge is unexpired at that time, has not succeeded before, fewer than 5 invalid attempts of either kind precede it, and, for a Recovery_Code, the enrollment is confirmed; after 5 invalid attempts or one success, every later attempt SHALL fail. A Recovery_Code attempt rejected because the challenge is unusable or the enrollment is pending SHALL leave the Recovery_Code unused.
 
-**Validates: Requirements 3.6, 3.10, 19.5, 19.6**
+**Validates: Requirements 3.6, 3.10, 18.5, 18.6**
 
 ### Property 6: Access token codec
 
@@ -1111,47 +1083,41 @@ The criteria added in this iteration were consolidated the same way: broker stat
 
 **Validates: Requirements 17.10**
 
-### Property 34: CSRF decision matches the reference rule and never echoes values
-
-*For any* HTTP method, any request path (Pre_Session_Endpoints and others), any combination of `access_token`, `refresh_token` and `csrf_token` cookies (present, absent or empty), any `X-CSRF-Token` header value (absent, equal to the cookie, or different), any `Origin` header (absent, `null`, allowed, or differing from an allowed origin in scheme, host, port or case), any `Referer` header, and any Allowed_Origin list, `check_csrf` SHALL allow the request if and only if: the method is `GET`, `HEAD` or `OPTIONS`; or the path is a Pre_Session_Endpoint and the effective origin (Origin, otherwise the origin of Referer) exactly matches an Allowed_Origin; or the path is not a Pre_Session_Endpoint, no auth cookie is present; or the path is not a Pre_Session_Endpoint, an auth cookie is present, the effective origin exactly matches an Allowed_Origin, and the header and the CSRF cookie are both non-empty and equal. Every rejection SHALL produce Error_Body code `CSRF_FAILED` whose text contains none of the submitted cookie, header or origin values.
-
-**Validates: Requirements 18.3, 18.4, 18.5, 18.6, 18.7, 18.9**
-
-### Property 35: Recovery code sets are well formed and salted
+### Property 34: Recovery code sets are well formed and salted
 
 *For any* number of generated Recovery_Code sets, each set SHALL contain exactly 10 distinct codes matching `^[A-Z0-9]{10}$`; each stored hash SHALL start with `$argon2id$`, SHALL not contain its code, SHALL verify against its own code and SHALL not verify against any other code of the set; and hashing the same code twice SHALL produce two different hashes.
 
-**Validates: Requirements 19.1, 19.7**
+**Validates: Requirements 18.1, 18.7**
 
-### Property 36: Recovery code consumption follows the reference model
+### Property 35: Recovery code consumption follows the reference model
 
 *For any* User code state built from a random sequence of operations (issue, regenerate, submit), where submissions include current unused codes in random case with surrounding whitespace, already used codes, codes of a previous set, codes of another User and random well-formed strings, a submission SHALL succeed if and only if its trimmed, uppercased form equals an unused code of that User's current set; a success SHALL mark exactly that code used and report a remaining count equal to the number of unused codes left in the current set; a failure SHALL leave every code unchanged; and after a regeneration every code of the previous set SHALL fail and exactly 10 new codes SHALL be usable, all matching a pure reference model of the same operations.
 
-**Validates: Requirements 19.3, 19.5, 19.7**
+**Validates: Requirements 18.3, 18.5, 18.7**
 
-### Property 37: MFA verification input validation
+### Property 36: MFA verification input validation
 
 *For any* MFA verification body with any combination of `code` and `recovery_code` values (absent, null, empty, random strings, 6-digit strings, 10-character strings with lowercase letters, whitespace or symbols), validation SHALL accept the body if and only if exactly one of the two is present, a present `code` is exactly 6 digits, and a present `recovery_code` matches `^[A-Z0-9]{10}$` after trimming and uppercasing; a rejected body SHALL name the invalid field and SHALL not reach the challenge, so no attempt is counted.
 
-**Validates: Requirements 3.11, 19.9**
+**Validates: Requirements 3.11, 18.9**
 
-### Property 38: Freshness fields follow their formulas
+### Property 37: Freshness fields follow their formulas
 
 *For any* asset class, feed in `iex`, `sip` and `delayed_sip`, `as_of` instant or null, response instant `now` (before or after `as_of`), Staleness_Threshold from 1 to 86,400 and cache flag, the annotation SHALL have `currency = "USD"` exactly when the asset class is `us_equity` (else null), `source = "alpaca"`, the given feed and `as_of`, `data_age_seconds = max(0, floor(now - as_of))` in whole seconds (null when `as_of` is null), `is_delayed` true exactly for `delayed_sip`, `is_stale` true exactly when served from cache, `data_age_seconds` is null, or `data_age_seconds` is greater than the threshold, and `served_from_cache` equal to the cache flag; the candle metadata SHALL equal the `currency`, `source`, `feed` and `is_delayed` subset of the same annotation.
 
 **Validates: Requirements 13.11, 13.12, 13.13, 13.16**
 
-### Property 39: Quote fallback decision
+### Property 38: Quote fallback decision
 
 *For any* live outcome (a snapshot, `AlpacaUnavailable` or `AlpacaRateLimited`) and any stored snapshot (present with arbitrary fields and feed, or absent), the quote use case running with in-memory fakes SHALL return the live data with `served_from_cache = false` and replace the stored snapshot when the live call succeeds; SHALL return the stored fields with `as_of` equal to the stored update timestamp, `is_stale = true` and `served_from_cache = true` when the live call fails and a snapshot is stored; SHALL raise 502 `ALPACA_UNAVAILABLE` or 503 `ALPACA_RATE_LIMITED`, matching the failure, when no snapshot is stored; and on every failure the stored snapshot after the request SHALL equal the stored snapshot before it.
 
 **Validates: Requirements 13.9, 13.14, 13.15**
 
-### Property 40: Depth never fabricates levels
+### Property 39: Depth never fabricates levels
 
 *For any* Alpaca latest-quote document, with the `quote` object absent or present and any subset of `bp`, `bs`, `ap`, `as` and `t` omitted or null, the depth mapping SHALL return an empty levels list when the quote is absent and exactly one level otherwise; every non-null value in a level SHALL equal the corresponding value of the document, every omitted or null key SHALL be null in the level, the number of levels SHALL never exceed the number of price levels in the document, `full_depth_available` SHALL be false, and `as_of` SHALL equal the quote timestamp `t` (null when absent).
 
-**Validates: Requirements 20.1, 20.2, 20.3, 20.4, 20.5**
+**Validates: Requirements 19.1, 19.2, 19.3, 19.4, 19.5**
 
 ## Error Handling
 
@@ -1178,18 +1144,17 @@ Database errors are translated in `shared/infrastructure/db.py`: connection fail
 |------|------|---------|
 | 401 | `NOT_AUTHENTICATED` | missing, invalid, expired access token or revoked session (2.7, 3.9, 4.9, 6.3, 7.9, 8.5, 9.5) |
 | 401 | `INVALID_CREDENTIALS` | unknown email or wrong password, same code for both (3.5) |
-| 401 | `MFA_FAILED` | invalid or replayed TOTP, invalid, used, previous-set or other-user recovery code, recovery code with pending enrollment, expired, used, unknown or invalidated challenge (3.6, 3.10, 19.5, 19.6) |
+| 401 | `MFA_FAILED` | invalid or replayed TOTP, invalid, used, previous-set or other-user recovery code, recovery code with pending enrollment, expired, used, unknown or invalidated challenge (3.6, 3.10, 18.5, 18.6) |
 | 401 | `REFRESH_INVALID` | refresh token missing, malformed, expired, rotated or revoked (4.2, 4.8) |
 | 403 | `FORBIDDEN` | missing permission, including every permission of a pending broker (2.3, 2.11, 5.9) |
-| 403 | `CSRF_FAILED` | missing or mismatched `X-CSRF-Token`/`csrf_token`, or Origin/Referer not an Allowed_Origin (18.4, 18.6); `details.reason` is `origin_not_allowed`, `token_missing` or `token_mismatch` |
 | 403 | `PREMIUM_REQUIRED` | watchlist or alert operation by a non-premium user (14.8) |
 | 404 | `NOT_FOUND` | missing user, role, assignment, permission, market, override, watchlist, alert (5.12, 14.13, 15.11); `details.resource` names the kind |
 | 404 | `SESSION_NOT_FOUND` | session of another user, unknown or revoked (4.7) |
-| 404 | `SYMBOL_NOT_FOUND` | symbol not in the catalog or unknown to Alpaca (13.5, 14.9, 16.3, 20.7) |
+| 404 | `SYMBOL_NOT_FOUND` | symbol not in the catalog or unknown to Alpaca (13.5, 14.9, 16.3, 19.7) |
 | 409 | `EMAIL_ALREADY_REGISTERED` | duplicate email (1.5, 1.8, 2.6) |
 | 409 | `LAST_ADMINISTRATOR` | change would leave no administrator (5.10) |
 | 409 | `BROKER_NOT_PENDING` | broker activation of a User whose Account_Status is not `pending_broker_activation`, including the losers of concurrent activations (2.13, 2.14) |
-| 409 | `MFA_NOT_ENROLLED` | recovery-code regeneration without a confirmed TOTP enrollment (19.8) |
+| 409 | `MFA_NOT_ENROLLED` | recovery-code regeneration without a confirmed TOTP enrollment (18.8) |
 | 409 | `KYC_ACCOUNT_EXISTS` | Alpaca account already stored or reservation in progress (10.6) |
 | 409 | `SYMBOL_ALREADY_IN_WATCHLIST` | duplicate symbol (14.3) |
 | 409 | `OVERRIDE_EXISTS` | second override for the same Market and date |
@@ -1197,8 +1162,8 @@ Database errors are translated in `shared/infrastructure/db.py`: connection fail
 | 422 | `CHANNEL_NOT_AVAILABLE` | sms without phone or telegram without chat identifier (7.5); `details.channel` |
 | 422 | `ALPACA_REJECTED` | Alpaca rejected the KYC submission; `message` is the redacted Alpaca message (10.7) |
 | 500 | `INTERNAL_ERROR` | anything else (16.6, 17.10) |
-| 502 | `ALPACA_UNAVAILABLE` | Alpaca unreachable, 10-second timeout, 5xx (10.9, 12.9, 13.15, 16.5, 17.5, 20.8) |
-| 503 | `ALPACA_RATE_LIMITED` | Alpaca 429, no retry (12.9, 13.15, 16.5, 17.6, 20.8) |
+| 502 | `ALPACA_UNAVAILABLE` | Alpaca unreachable, 10-second timeout, 5xx (10.9, 12.9, 13.15, 16.5, 17.5, 19.8) |
+| 503 | `ALPACA_RATE_LIMITED` | Alpaca 429, no retry (12.9, 13.15, 16.5, 17.6, 19.8) |
 | 503 | `DATABASE_UNAVAILABLE` | database unreachable or 10-second timeout (1.9, 3.12, 9.6, 17.9) |
 
 ### Degraded responses instead of errors
@@ -1218,10 +1183,10 @@ These requirements turn an Alpaca failure into a partial success, not an error:
 ### Logging and secrets
 
 - Standard `logging` with a JSON formatter; each request gets a `request_id` (also returned in the `X-Request-ID` header).
-- Request and response bodies and request headers are never logged. Log calls never receive tokens, CSRF values, passwords, TOTP codes, recovery codes or secrets (18.9, 19.2).
+- Request and response bodies and request headers are never logged. Log calls never receive tokens, passwords, TOTP codes, recovery codes or secrets (18.2).
 - A logging filter in `shared` replaces every configured secret value (Alpaca key and secret, JWT secret, Fernet key, the password inside `DATABASE_URL`) with `***` as a last line of defense (17.3).
 - The `httpx` and `httpcore` loggers are set to `WARNING` so request headers (Basic auth) never reach the log.
-- `auth_events` stores only the method and the outcome, never the password, the TOTP code, the recovery code or the secret (3.7, 19.4).
+- `auth_events` stores only the method and the outcome, never the password, the TOTP code, the recovery code or the secret (3.7, 18.4).
 
 ### Background task failures
 
@@ -1234,12 +1199,12 @@ The Alert_Engine loops catch every exception per iteration, log it, and continue
 ```
 tests/
   conftest.py                 # Hypothesis profile, Settings fixture, fake clock, fakes, ASGI client
-  shared/                     # Properties 30-34: Alpaca classification, CORS, config, errors, CSRF decision
+  shared/                     # Properties 30-33: Alpaca classification, CORS, config, errors
   identity/unit/              # example tests for use cases with in-memory fakes of the ports
-  identity/property/          # Properties 1-15, 35-37
+  identity/property/          # Properties 1-15, 34-36
   identity/api/               # HTTP tests through httpx.AsyncClient + ASGITransport (db marker)
   market_data/unit/
-  market_data/property/       # Properties 16-29, 38-40
+  market_data/property/       # Properties 16-29, 37-39
   market_data/api/            # (db marker)
   migrations/                 # Migration_Set smoke tests (db marker)
   unit/test_health.py         # exists; /health without database
@@ -1248,7 +1213,6 @@ tests/
 - `pytest` + `pytest-asyncio` (`asyncio_mode = "auto"`), `hypothesis` for properties, `httpx.AsyncClient` with `ASGITransport` and `asgi-lifespan` for API tests.
 - Alpaca is never called. `composition.py` accepts overrides, and tests wire `FakeAlpacaAccounts`, `FakeAlpacaBrokerMarket`, `FakeAlpacaData` and `FakeAlpacaStream`. Each fake can be scripted per call to return data, raise `AlpacaUnavailable`, `AlpacaRateLimited`, `AlpacaValidationError`, or sleep past a timeout; each fake records its calls so tests can assert "no Alpaca call" (10.6, 10.8, 10.11, 13.4, 13.5, 16.4) and "no retry" (17.6).
 - Time is injected through `shared.clock.Clock`; tests use a controllable fake clock for token expiry, MFA challenge expiry, TOTP steps, catalog age, Role_Assignment validity and price age (`data_age_seconds`).
-- The API test client sends `Origin` set to an allowed test origin on every request, and a helper copies the `csrf_token` cookie into `X-CSRF-Token` after login, so ordinary tests pass the CSRF middleware; CSRF tests drop or alter these on purpose.
 - Validation commands: `uv run ruff check .`, `uv run mypy src`, `uv run pytest`. These are local developer commands; no CI gate is part of this work.
 
 ### Database-backed tests
@@ -1264,10 +1228,10 @@ Tests marked `@pytest.mark.db` need `TEST_DATABASE_URL`, pointing at a disposabl
 ### Property-based tests
 
 - Library: Hypothesis. Each property in the Correctness Properties section is implemented by exactly one property test.
-- Configuration: a Hypothesis profile in `tests/conftest.py` sets `max_examples=100` minimum for every property test; DB-backed Property 17 and the Argon2id Properties 3, 35 and 36 also set `deadline=None`.
+- Configuration: a Hypothesis profile in `tests/conftest.py` sets `max_examples=100` minimum for every property test; DB-backed Property 17 and the Argon2id Properties 3, 34 and 35 also set `deadline=None`.
 - Each property test carries a tag comment in this format:
   `# Feature: identity-market-backend, Property 4: TOTP window and replay protection`
-- Generators live next to the tests (`strategies.py` per module): valid and corrupted registration payloads, emails with case and whitespace variants, Role_Assignment sets, preference sets and patches, instrument catalogs (symbols from `[A-Z0-9./-]{1,6}`, names with `%`, `_` and Unicode), Alpaca snapshot and bar documents with omitted fields, calendars and overrides, IANA zone names from `zoneinfo.available_timezones()`, price sequences with `None` for unavailable prices, CSRF request tuples (method, path, cookies, headers, origin lists), recovery-code operation sequences, freshness inputs (feeds, `as_of`, `now`, thresholds) and latest-quote documents with omitted keys.
+- Generators live next to the tests (`strategies.py` per module): valid and corrupted registration payloads, emails with case and whitespace variants, Role_Assignment sets, preference sets and patches, instrument catalogs (symbols from `[A-Z0-9./-]{1,6}`, names with `%`, `_` and Unicode), Alpaca snapshot and bar documents with omitted fields, calendars and overrides, IANA zone names from `zoneinfo.available_timezones()`, price sequences with `None` for unavailable prices, CORS origin lists and request origins, recovery-code operation sequences, freshness inputs (feeds, `as_of`, `now`, thresholds) and latest-quote documents with omitted keys.
 - Properties target pure functions in `domain` and `shared`, except Property 17 (search, against the test database) and the read-back half of Property 10 (one DB round trip per example).
 
 ### Example-based unit and API tests
@@ -1275,15 +1239,15 @@ Tests marked `@pytest.mark.db` need `TEST_DATABASE_URL`, pointing at a disposabl
 Example tests cover the criteria classified as examples in the prework, one or a few cases each, focusing on behavior that properties do not exercise:
 
 - **Auth flow** (3.1 to 3.3, 3.5, 3.7, 3.8): login returns a challenge and no cookies; enrollment data only before confirmation; verify sets both token cookies with `HttpOnly`, `Secure`, `SameSite=Lax`; identical code for unknown email and wrong password; `auth_events` row content; `/users/me` returns the 3.8 and 6 fields and no secret.
-- **CSRF** (18.1, 18.2, 18.4, 18.6, 18.8): MFA verify and refresh set `csrf_token` (`Secure`, same SameSite, no `HttpOnly`, refresh Max-Age, 32 random bytes) and refresh rotates it; logout, closing the current session and refresh failure clear it; a logout without `X-CSRF-Token` returns 403 and the session stays active; a login with a foreign `Origin` returns 403 with no `auth_events` row and no challenge; a malformed JSON body without the header returns 403 `CSRF_FAILED`, not 422.
-- **Recovery codes** (19.1, 19.2, 19.4, 19.8): enrollment confirmation returns 10 codes once and later responses (`/users/me`, a second verify) do not; `auth_events` row has `method = 'recovery_code'` and no code; regeneration without enrollment returns 409 `MFA_NOT_ENROLLED` and stores nothing; captured logs contain no issued code.
+- **Cookies** (3.3, 4.2, 4.4, 4.6, 4.8): MFA verify and refresh set exactly the `access_token` and `refresh_token` cookies with `HttpOnly`, `Secure` and the configured SameSite; logout, closing the current session and refresh failure clear both; no response sets any other cookie.
+- **Recovery codes** (18.1, 18.2, 18.4, 18.8): enrollment confirmation returns 10 codes once and later responses (`/users/me`, a second verify) do not; `auth_events` row has `method = 'recovery_code'` and no code; regeneration without enrollment returns 409 `MFA_NOT_ENROLLED` and stores nothing; captured logs contain no issued code.
 - **Broker activation** (2.1, 2.10 to 2.13): broker registration returns `pending_broker_activation` and the user gets 403 on `account:manage` endpoints; activation returns 200 with the broker assignment and the next request succeeds; activating an active user returns 409 `BROKER_NOT_PENDING` with no new assignment.
 - **Sessions** (4.1 to 4.9): rotation replaces the refresh cookie and invalidates the old one; reuse revokes the session; list ordering and `current` flag; close one, close others with count, logout; 404 for another user's session.
 - **RBAC endpoints** (2.2, 2.3, 5.2, 5.4 to 5.6, 5.9, 5.11 to 5.13): change applies to the very next request; 403 leaves data unchanged.
 - **Account and settings** (6.x, 7.3, 7.8, 8.3, 8.4, 9.3, 9.4): defaults returned without inserting rows; per-user isolation.
 - **KYC** (10.1, 10.3, 10.4, 10.6 to 10.11): stored last four only; 409 without an Alpaca call; Alpaca validation and unavailability store nothing; status refresh updates the stored status only when it changed.
 - **Market** (12.3, 12.5, 12.8, 12.9, 13.3, 13.5, 13.6, 13.8, 13.9, 15.2, 15.5, 15.7, 15.11, 16.1, 16.3, 16.5): reload triggers on age and empty cache; one snapshot row per instrument; page tokens pass through; a symbol containing `/` reaches the symbol validator and the catalog check instead of a routing 404.
-- **Depth** (20.6 to 20.8): invalid symbol 422 and unknown symbol 404 without an Alpaca call; Alpaca failure returns the 17.5/17.6 error and writes nothing.
+- **Depth** (19.6 to 19.8): invalid symbol 422 and unknown symbol 404 without an Alpaca call; Alpaca failure returns the 17.5/17.6 error and writes nothing.
 - **Watchlists and alerts** (14.1 to 14.5, 14.8 to 14.10, 14.12, 14.13): limits of 20 watchlists and 50 symbols; ownership 404s.
 - **Platform** (17.1, 17.2, 17.3): `/openapi.json` and `/docs` reachable without a token; every router declares its error responses with the Error_Body schema (a test walks the OpenAPI document and checks each operation lists 401, 422 and its documented errors); the OpenAPI JSON and captured logs contain no configured secret value.
 
@@ -1295,8 +1259,8 @@ Example tests cover the criteria classified as examples in the prework, one or a
 - A failed instrument write during asset detail returns 500 and leaves the cached row unchanged (16.6).
 - Two Alert_Engine evaluations racing on the same alert create exactly one notification (DD6).
 - Concurrent broker activations of one pending User produce one 200 and the rest 409 `BROKER_NOT_PENDING`, with exactly one broker Role_Assignment (2.14).
-- Two logins with different challenges submitting the same unused recovery code concurrently produce one success and one 401, and the losing challenge's `failed_attempts` grows by one (19.10).
-- Two concurrent regenerations leave exactly 10 codes in the current set (19.7).
+- Two logins with different challenges submitting the same unused recovery code concurrently produce one success and one 401, and the losing challenge's `failed_attempts` grows by one (18.10).
+- Two concurrent regenerations leave exactly 10 codes in the current set (18.7).
 
 ### Smoke tests
 

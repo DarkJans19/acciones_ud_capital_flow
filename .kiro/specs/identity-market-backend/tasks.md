@@ -2,9 +2,13 @@
 
 ## Overview
 
-Python 3.12 + FastAPI backend for MOD-01 (`identity`) and MOD-02 (`market_data`), following `design.md` and the hexagonal rules of `AGENTS.md`. The plan has three parts:
+Python 3.12 + FastAPI backend for MOD-01 (`identity`) and MOD-02 (`market_data`), following `design.md` and the hexagonal rules of `AGENTS.md`.
 
-1. **Shared foundation (tasks 1-2):** settings and startup validation, error model, database helpers, Alpaca HTTP plumbing, CSRF/Origin middleware, auth cookie helpers, app wiring and test infrastructure. Both owners depend on it, so it comes first. The CSRF middleware (Requirement 18) is in place before any router that mutates state.
+This spec (`.kiro/specs/identity-market-backend`) is the single documentation base for MOD-01 and MOD-02. `specs/01-identity-security` and `specs/02-market-data` are superseded and are not a source of requirements, paths or tasks. CSRF tokens and Origin or Referer validation are out of scope by decision D4: cookie protection relies on the `SameSite` attribute of the `access_token` and `refresh_token` cookies, and CORS stays restricted to the configured origins (Requirement 17.4).
+
+The plan has three parts:
+
+1. **Shared foundation (tasks 1-2):** settings and startup validation, error model, database helpers, Alpaca HTTP plumbing, auth cookie helpers, app wiring with CORS, and test infrastructure. Both owners depend on it, so it comes first.
 2. **Two parallel tracks:**
    - MOD-01 `identity` (tasks 3-11), owner Daniel Sanabria.
    - MOD-02 `market_data` (tasks 12-19), owner Davidson Sánchez.
@@ -18,7 +22,7 @@ Reconciliations with the existing repository (no redesign):
 - Error types live in the existing `src/acciones_ud/shared/domain/errors.py` (pure, extended with `ErrorCode` and `AppError`, keeping `DomainError` and `NotFoundError`). The FastAPI-specific `ErrorBody` model and the exception handlers go to `shared/infrastructure/http_errors.py`. There is no new `shared/errors.py`.
 - Wiring lives in the existing per-module `identity/composition.py` and `market_data/composition.py`. `main.py` calls one `register(app)` hook and the `startup`/`shutdown` hooks of each module. There is no top-level `composition.py`.
 - Alpaca error classes and the pure `classify` function go to `shared/domain/alpaca_errors.py`, so application use cases can catch them without importing infrastructure. The httpx client factory goes to `shared/infrastructure/alpaca_http.py`. The `Clock` port goes to `shared/domain/clock.py`.
-- The CSRF decision and middleware go to `shared/infrastructure/csrf.py`, and the helpers that set and clear the `access_token`, `refresh_token` and `csrf_token` cookies together go to `shared/infrastructure/cookies.py`, as in the design. There is no identity-local `cookies.py`.
+- The helpers that set and clear the `access_token` and `refresh_token` cookies together go to `shared/infrastructure/cookies.py`, as in the design. There is no identity-local `cookies.py`.
 - `identity.domain.totp_window.match` receives a TOTP code generator through a port. The `pyotp` wrapper is an outbound adapter, so the domain never imports a provider library.
 
 Identity HTTP adapters are split by path group: `routers/auth.py` (`/auth/register`, `/auth/register/broker`, `/auth/login`, `/auth/mfa/verify`), `routers/sessions.py` (`/auth/refresh`, `/auth/logout`, `/users/me/sessions...`), `routers/users.py` (`/users/me`, `/users/me/interests`, `/users/me/mfa/recovery-codes`), `routers/preferences.py` (`/users/preferences/*`, `/users/me/telegram`), `routers/admin.py` (`/admin/users/...`, `/admin/roles...`, `/admin/permissions`) and `routers/kyc.py` (`/kyc/*`).
@@ -54,7 +58,7 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
     - File: `tests/shared/property/test_config_properties.py`
 
   - [ ] 1.5 Implement the error model and HTTP error handlers
-    - Extend `src/acciones_ud/shared/domain/errors.py` with `ErrorCode` (every code of the design "Error codes" table, including `CSRF_FAILED`, `BROKER_NOT_PENDING` and `MFA_NOT_ENROLLED`) and `AppError(DomainError)` carrying `status`, `code`, `message`, `details`; keep `DomainError` and `NotFoundError`; no FastAPI import
+    - Extend `src/acciones_ud/shared/domain/errors.py` with `ErrorCode` (every code of the design "Error codes" table, including `BROKER_NOT_PENDING` and `MFA_NOT_ENROLLED`) and `AppError(DomainError)` carrying `status`, `code`, `message`, `details`; keep `DomainError` and `NotFoundError`; no FastAPI import
     - Create `src/acciones_ud/shared/infrastructure/http_errors.py` with the `ErrorBody` Pydantic model, `register_exception_handlers(app)` for `AppError`, `RequestValidationError` (422 `VALIDATION_ERROR`, message names the first invalid field, `details.errors` lists all, Pydantic `input` dropped), `StarletteHTTPException` and `Exception` (500 `INTERNAL_ERROR`, fixed message "An unexpected error occurred.", details null)
     - Add an `error_responses(*statuses)` helper that routers use to declare their error responses with the `ErrorBody` schema in OpenAPI
     - _Requirements: 17.2, 17.10, 1.7, 10.2_
@@ -71,7 +75,7 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
 
   - [ ] 1.8 Add logging with secret redaction and request ids
     - `src/acciones_ud/shared/infrastructure/logging.py`: JSON formatter, `SecretRedactionFilter` that replaces every configured secret value (Alpaca key and secret, JWT secret, Fernet key, password inside `DATABASE_URL`) with `***`, `httpx`/`httpcore` loggers at `WARNING`, and a middleware that sets `X-Request-ID`; request headers and bodies are never logged
-    - _Requirements: 17.3, 3.7, 18.9, 19.2_
+    - _Requirements: 17.3, 3.7, 18.2_
 
   - [ ] 1.9 Extend the database module
     - In `src/acciones_ud/shared/infrastructure/db.py`, keep `require_database_url`, `engine`, `session_factory`, `get_session`
@@ -92,7 +96,7 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
   - [ ] 1.12 Wire the application shell in `main.py`
     - Keep `create_app()` and the unprefixed `/health` endpoint
     - Add a lifespan that calls `require_api_settings`, configures logging, builds the Alpaca HTTP clients, and calls `identity.composition.startup/shutdown` and `market_data.composition.startup/shutdown`
-    - Add `CORSMiddleware` with the exact configured origins, `allow_credentials=True` and `X-CSRF-Token` in `allow_headers`, the request id middleware, and `register_exception_handlers`
+    - Add `CORSMiddleware` with the exact configured origins, `allow_credentials=True`, the methods `GET`, `POST`, `PUT`, `DELETE`, `OPTIONS` and the request header `Content-Type`; add the request id middleware and `register_exception_handlers`
     - Add `register(app)`, `startup(app)` and `shutdown(app)` hooks to `identity/composition.py` and `market_data/composition.py` (each module includes its REST routers under `/api/v1`); import `shared.infrastructure.db` lazily inside providers so importing `acciones_ud.main` needs no database
     - `tests/unit/test_health.py` must keep passing without environment variables
     - _Requirements: 17.1, 17.4, 17.8_
@@ -105,33 +109,16 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
   - [ ] 1.14 Add database and ASGI test fixtures
     - In `tests/conftest.py`: synchronous session-scoped fixture that points `DATABASE_URL`/`MIGRATION_DATABASE_URL` at `TEST_DATABASE_URL`, sets test `INITIAL_ADMIN_*` values, clears `get_settings` cache, runs `alembic.command.upgrade(..., "head")` and `downgrade(..., "base")` at session end
     - Per-test engine from `build_engine(TEST_DATABASE_URL)` with a rolled-back transaction; async ASGI client fixture using `httpx.ASGITransport` and `asgi-lifespan` with `APP_ENV=test` settings
-    - The ASGI client sends `Origin` set to an allowed test origin on every request, and a helper copies the `csrf_token` cookie into `X-CSRF-Token` after login and after each refresh, so ordinary API tests pass the CSRF middleware
-    - _Requirements: 17.7, 18.3_
+    - _Requirements: 17.7_
 
-  - [ ] 1.15 Implement the CSRF and Origin decision and middleware
-    - `src/acciones_ud/shared/infrastructure/csrf.py`: `PRE_SESSION_ENDPOINTS` (exact paths `POST /api/v1/auth/register`, `/auth/register/broker`, `/auth/login`, `/auth/mfa/verify`), `effective_origin(headers)` (Origin, otherwise scheme/host/port of Referer, `null` never matches), `origin_allowed(origin, allowed)` (exact match, reused by the WebSocket handshake), `new_csrf_token()` (`secrets.token_urlsafe(32)`)
-    - Pure `check_csrf(method, path, cookies, headers, allowed_origins) -> CsrfOk | CsrfRejected(reason)`: `GET`/`HEAD`/`OPTIONS` pass; Pre_Session_Endpoints need an allowed origin only; other mutating requests with an `access_token` or `refresh_token` cookie need an allowed origin plus non-empty equal `csrf_token` cookie and `X-CSRF-Token` header (`hmac.compare_digest`); other mutating requests without auth cookies pass through
-    - `CsrfMiddleware`: pure ASGI class that never reads the body and answers a rejection with 403 Error_Body `CSRF_FAILED`, message "CSRF validation failed.", `details.reason` in `origin_not_allowed`, `token_missing`, `token_mismatch`; no cookie, header or origin value in the body or the log
-    - _Requirements: 18.3, 18.4, 18.5, 18.6, 18.7, 18.8, 18.9_
+  - [ ] 1.15 Implement the auth cookie helpers
+    - `src/acciones_ud/shared/infrastructure/cookies.py`: fixed names `access_token` (HttpOnly, `Path=/`, `Max-Age=ACCESS_TOKEN_TTL_SECONDS`) and `refresh_token` (HttpOnly, `Path=/api/v1/auth`, `Max-Age=REFRESH_TOKEN_TTL_SECONDS`); both with `Secure`, `SameSite=<COOKIE_SAMESITE>` and `Domain=<COOKIE_DOMAIN>` when set
+    - `set_auth_cookies(response, access, refresh)` sets both cookies together; `clear_auth_cookies(response)` clears both together
+    - _Requirements: 3.3, 4.1, 4.2, 4.4, 4.6, 4.8_
 
-  - [ ] 1.16 Write property test for the CSRF decision
-    - **Property 34: CSRF decision matches the reference rule and never echoes values**
-    - **Validates: Requirements 18.3, 18.4, 18.5, 18.6, 18.7, 18.9**
-    - File: `tests/shared/property/test_csrf_properties.py`
-
-  - [ ] 1.17 Wire the CSRF middleware into `main.py`
-    - Register `CsrfMiddleware` inside `CORSMiddleware` (CORS stays outermost, so a 403 still carries CORS headers for an allowed origin) and outside the routers, with `CORS_ALLOWED_ORIGINS` as the Allowed_Origin list
-    - Add an example test in `tests/shared/unit/test_csrf_middleware.py` with a throwaway mutating route: a malformed JSON body without `X-CSRF-Token` returns 403 `CSRF_FAILED`, not 422
-    - _Requirements: 18.3, 18.8_
-
-  - [ ] 1.18 Implement the auth cookie helpers
-    - `src/acciones_ud/shared/infrastructure/cookies.py`: fixed names `access_token` (HttpOnly, `Path=/`, `Max-Age=ACCESS_TOKEN_TTL_SECONDS`), `refresh_token` (HttpOnly, `Path=/api/v1/auth`, `Max-Age=REFRESH_TOKEN_TTL_SECONDS`), `csrf_token` (not HttpOnly, `Path=/`, `Max-Age=REFRESH_TOKEN_TTL_SECONDS`) and the header name `X-CSRF-Token`; all with `Secure`, `SameSite=<COOKIE_SAMESITE>` and `Domain=<COOKIE_DOMAIN>` when set
-    - `set_auth_cookies(response, access, refresh)` sets the three cookies together with a new CSRF value from `new_csrf_token()`; `clear_auth_cookies(response)` clears the three together
-    - _Requirements: 3.3, 4.1, 4.2, 18.1, 18.2_
-
-  - [ ]* 1.19 Write unit tests for the cookie helpers
-    - File: `tests/shared/unit/test_cookies.py`: attributes of each cookie, CSRF value of at least 128 bits that changes on every call, CSRF cookie has the access cookie's SameSite and the refresh cookie's Max-Age, clear removes all three
-    - _Requirements: 18.1, 18.2_
+  - [ ]* 1.16 Write unit tests for the cookie helpers
+    - File: `tests/shared/unit/test_cookies.py`: attributes of each cookie (HttpOnly, Secure, configured SameSite, path, Max-Age, optional Domain), set writes exactly `access_token` and `refresh_token`, clear removes both
+    - _Requirements: 3.3, 4.2_
 
 - [ ] 2. Checkpoint - Shared foundation
   - Ensure all tests pass, ask the user if questions arise.
@@ -144,13 +131,13 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
     - Create `roles`, `permissions`, `role_permissions`, `users`, `role_assignments`, `mfa_challenges`, `mfa_recovery_codes`, `sessions`, `refresh_tokens`, `auth_events`, `notification_preferences`, `portfolio_view_settings`, `order_controls`, `kyc_accounts` with every column, check constraint and index of the design "Tables", including `users.account_status` (`active`/`pending_broker_activation`, default `active`), `users.firm_name`, `users.license_number`, the partial index on unused `mfa_recovery_codes`, `auth_events.method` (`totp`/`recovery_code`) and the `invalid_recovery_code` result
     - Enable RLS on each table and on `alembic_version`; seed the three roles, the permission codes and the role-permission pairs of "RBAC seed"
     - `downgrade()` drops the tables in reverse foreign-key order
-    - _Requirements: 2.1, 2.11, 5.1, 7.1, 7.2, 17.7, 19.1_
+    - _Requirements: 2.1, 2.11, 5.1, 7.1, 7.2, 17.7, 18.1_
 
   - [ ] 3.2 Define identity domain entities and ports
     - `identity/domain/entities.py`: `User` (with `account_status`), `Session`, `RoleAssignment`, `MfaChallenge`, `RecoveryCode`, `CurrentUser` (`user_id`, `session_id`, `email`, names, `account_status`, `is_premium`, `effective_roles`, `permissions`) as dataclasses
     - `identity/domain/ports.py`: repository Protocols (including `RecoveryCodeRepository`), `PasswordHasher`, `AccessTokenCodec`, `RefreshTokenGenerator`, `TotpGenerator`, `SecretCipher`, `AlpacaAccountsPort`, `InterestCatalogPort`
     - No FastAPI, SQLAlchemy or provider imports
-    - _Requirements: 2.11, 3.8, 5.8, 10.1, 19.1_
+    - _Requirements: 2.11, 3.8, 5.8, 10.1, 18.1_
 
   - [ ] 3.3 Implement RBAC rules
     - `identity/domain/rbac.py`: `is_effective(assignment, account_status, t)` (false unless `account_status == "active"`), `effective_roles`, `has_permission`, `would_remove_last_admin(assignments, change, t)`
@@ -168,7 +155,7 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
 
   - [ ] 3.6 Implement security adapters
     - `identity/adapters/outbound/security/`: Argon2id `PasswordHasher` (with a dummy hash for unknown emails; also used for recovery code hashes), HS256 `AccessTokenCodec` (`sub`, `sid`, `iat`, `exp`) using the injected `Clock`, refresh token generator (32 random bytes, URL-safe base64, SHA-256 hash), Fernet `SecretCipher`
-    - _Requirements: 1.3, 3.3, 3.9, 4.1, 19.1_
+    - _Requirements: 1.3, 3.3, 3.9, 4.1, 18.1_
 
   - [ ]* 3.7 Write property test for password hashing
     - **Property 3: Password hashing round trip**
@@ -223,12 +210,12 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
   - [ ] 4.6 Add registration endpoints
     - `identity/adapters/inbound/http/routers/auth.py`: `POST /auth/register` (201 `{user_id, account_status: "active"}`), `POST /auth/register/broker` (201 `{user_id, account_status: "pending_broker_activation"}`)
     - `identity/adapters/inbound/http/routers/admin.py`: `POST /admin/users/administrators` (`admin:users`, 201 `{user_id, account_status: "active"}`)
-    - Declare error responses with `error_responses` (including 403 `CSRF_FAILED`); responses never include the password or its hash; include routers in `identity/composition.py`
+    - Declare error responses with `error_responses`; responses never include the password or its hash; include routers in `identity/composition.py`
     - _Requirements: 1.1, 1.7, 2.1, 2.2, 2.3, 2.7, 2.9_
 
   - [ ]* 4.7 Write API tests for registration
-    - 201 paths with `account_status`; a `role` value in the body is ignored and a broker gets no Role_Assignment; 409 for case/whitespace duplicates; 422 naming each field; no password in any body; administrator creation 401/403; foreign `Origin` returns 403 `CSRF_FAILED` and creates no User; `db`: concurrent duplicates give one 201 (1.8)
-    - _Requirements: 1.1, 1.4, 1.5, 1.6, 1.7, 1.8, 2.1, 2.2, 2.3, 2.4, 2.7, 2.15, 18.6_
+    - 201 paths with `account_status`; a `role` value in the body is ignored and a broker gets no Role_Assignment; 409 for case/whitespace duplicates; 422 naming each field; no password in any body; administrator creation 401/403; `db`: concurrent duplicates give one 201 (1.8)
+    - _Requirements: 1.1, 1.4, 1.5, 1.6, 1.7, 1.8, 2.1, 2.2, 2.3, 2.4, 2.7, 2.15_
 
   - [ ] 4.8 Write migration `0002_initial_admin` and the hash tool
     - `migrations/versions/0002_initial_admin.py` (revises `0001_identity_schema`): read `InitialAdminSettings`, fail naming each missing or invalid variable without values, validate with `identity.domain.validation`, require `$argon2id$` prefix, skip when `email_normalized` exists, otherwise insert user with `account_status = 'active'`, administrator Role_Assignment and 28 preferences with bound parameters; `downgrade()` is a no-op
@@ -239,7 +226,7 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
   - [ ] 5.1 Implement TOTP window and MFA challenge rules
     - `identity/domain/totp_window.py`: `match(generator, code, t, last_step)` checks steps t-1, t, t+1, rejects steps `<= last_step` and non-6-digit codes, returns the matched step
     - `identity/domain/mfa.py`: challenge state transitions (expiry at 300 s, single use, invalidation after 5 failed attempts of either kind, TOTP or recovery code), the rule that a recovery code is refused while the TOTP enrollment is pending without counting as code use, and the `auth_events` result enum (including `invalid_recovery_code`)
-    - _Requirements: 3.4, 3.6, 3.7, 3.10, 3.11, 19.5, 19.6_
+    - _Requirements: 3.4, 3.6, 3.7, 3.10, 3.11, 18.5, 18.6_
 
   - [ ] 5.2 Write property test for TOTP window and replay protection
     - **Property 4: TOTP window and replay protection**
@@ -248,53 +235,53 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
 
   - [ ] 5.3 Write property test for the MFA challenge
     - **Property 5: MFA challenge attempt limit and single use**
-    - **Validates: Requirements 3.6, 3.10, 19.5, 19.6**
+    - **Validates: Requirements 3.6, 3.10, 18.5, 18.6**
     - File: `tests/identity/property/test_mfa_challenge_properties.py`
 
   - [ ] 5.4 Implement recovery code rules
     - `identity/domain/recovery_codes.py`: `generate_set()` (10 distinct codes of 10 characters from `A-Z0-9` via `secrets.choice`, redraw on collision), `normalize(raw)` (trim, uppercase), `is_well_formed(code)` (`^[A-Z0-9]{10}$`), and helpers that hash a set and match a submitted code against unused hashes through the `PasswordHasher` port
-    - _Requirements: 19.1, 19.3, 19.7, 19.9_
+    - _Requirements: 18.1, 18.3, 18.7, 18.9_
 
   - [ ] 5.5 Write property test for recovery code sets
-    - **Property 35: Recovery code sets are well formed and salted**
-    - **Validates: Requirements 19.1, 19.7**
+    - **Property 34: Recovery code sets are well formed and salted**
+    - **Validates: Requirements 18.1, 18.7**
     - File: `tests/identity/property/test_recovery_code_properties.py` (`deadline=None`)
 
   - [ ] 5.6 Implement the TOTP adapter and auth repositories
     - `identity/adapters/outbound/security/totp.py`: `pyotp` secret generation, otpauth URI (6 digits, 30 s), `TotpGenerator` implementation
     - Persistence: `mfa_repository.py` (insert, lock `FOR UPDATE`, attempts, invalidate, mark used), `auth_events_repository.py` (user agent truncated to 512, `method` column), `session_repository.py` (create session plus first refresh token), `recovery_code_repository.py` (insert a set under a new `set_id`, list unused codes of the current set, consume with `UPDATE ... WHERE id = $1 AND used_at IS NULL AND invalidated_at IS NULL RETURNING id`, count remaining, invalidate the current set, lock the user row `FOR UPDATE`)
-    - _Requirements: 3.2, 3.3, 3.6, 3.7, 3.10, 19.1, 19.3, 19.7, 19.10_
+    - _Requirements: 3.2, 3.3, 3.6, 3.7, 3.10, 18.1, 18.3, 18.7, 18.10_
 
   - [ ] 5.7 Implement login and MFA verification use cases
     - `identity/application/login.py`: case-insensitive lookup, dummy-hash verify for unknown email, same `INVALID_CREDENTIALS` for both failures, pending encrypted TOTP secret when not enrolled, challenge issue, auth event
     - `identity/application/verify_mfa.py`: in one transaction lock the challenge; TOTP path: match the code, set `totp_last_step`, confirm a pending enrollment and insert 10 recovery code hashes, returning the plaintext codes once; recovery-code path: reject when the enrollment is pending, verify against unused codes of the current set, consume with the conditional update (a lost race counts as a failed attempt), return the remaining count; both paths count failures, invalidate at 5, create session and refresh token, mark the challenge used, record `auth_events` with `method`; DB failures give 503 with no tokens
-    - _Requirements: 3.1, 3.2, 3.3, 3.5, 3.6, 3.7, 3.10, 3.12, 19.1, 19.3, 19.4, 19.5, 19.6, 19.10_
+    - _Requirements: 3.1, 3.2, 3.3, 3.5, 3.6, 3.7, 3.10, 3.12, 18.1, 18.3, 18.4, 18.5, 18.6, 18.10_
 
   - [ ] 5.8 Implement recovery code regeneration
     - `identity/application/recovery_codes.py`: `regenerate_recovery_codes(current_user)`; 409 `MFA_NOT_ENROLLED` without a confirmed enrollment; otherwise in one transaction lock the user row, invalidate the current set, insert 10 new hashes and return the 10 plaintext codes
-    - _Requirements: 19.7, 19.8_
+    - _Requirements: 18.7, 18.8_
 
   - [ ] 5.9 Write property test for recovery code consumption
-    - **Property 36: Recovery code consumption follows the reference model**
-    - **Validates: Requirements 19.3, 19.5, 19.7**
+    - **Property 35: Recovery code consumption follows the reference model**
+    - **Validates: Requirements 18.3, 18.5, 18.7**
     - File: `tests/identity/property/test_recovery_code_consumption_properties.py`, running the use cases of 5.7 and 5.8 against an in-memory `RecoveryCodeRepository` in `tests/support/identity_fakes.py` and a pure reference model (`deadline=None`)
 
   - [ ] 5.10 Add login, MFA, current-user and recovery code endpoints
     - `schemas/auth.py`: `LoginIn`, `LoginOut`, `MfaVerifyIn {mfa_token, code?, recovery_code?}` with a model validator accepting exactly one of `code` (`^\d{6}$`) and `recovery_code` (trimmed, uppercased, `^[A-Z0-9]{10}$`), `MfaVerifyOut {user, recovery_codes, recovery_codes_remaining}`
-    - `routers/auth.py`: `POST /auth/login`, `POST /auth/mfa/verify` (sets the three cookies with `set_auth_cookies`)
+    - `routers/auth.py`: `POST /auth/login`, `POST /auth/mfa/verify` (sets the `access_token` and `refresh_token` cookies with `set_auth_cookies`)
     - `schemas/users.py` and `routers/users.py`: `GET /users/me` with the 3.8 fields plus `account_status` and `mfa_enrolled` (valid access token, no permission), `POST /users/me/mfa/recovery-codes` (200 `{recovery_codes}`, 409 `MFA_NOT_ENROLLED`)
     - Wire in `identity/composition.py`
-    - _Requirements: 3.1, 3.2, 3.3, 3.8, 3.11, 18.1, 19.1, 19.3, 19.7, 19.8, 19.9_
+    - _Requirements: 3.1, 3.2, 3.3, 3.8, 3.11, 18.1, 18.3, 18.7, 18.8, 18.9_
 
   - [ ] 5.11 Write property test for MFA verification input
-    - **Property 37: MFA verification input validation**
-    - **Validates: Requirements 3.11, 19.9**
+    - **Property 36: MFA verification input validation**
+    - **Validates: Requirements 3.11, 18.9**
     - File: `tests/identity/property/test_mfa_input_properties.py` (targets `MfaVerifyIn`; a rejected body never reaches the challenge)
 
   - [ ]* 5.12 Write API tests for login, MFA and recovery codes
-    - No cookies on login; enrollment data only before confirmation; cookie attributes including `csrf_token`; replayed code rejected; fifth failure invalidates the challenge; 422 does not consume an attempt; `auth_events` holds no password, code, recovery code or secret
-    - Recovery codes: confirmation returns 10 codes once and `/users/me` and a later verify do not; recovery login returns `recovery_codes_remaining`; a used or previous-set code returns 401 `MFA_FAILED`; regeneration without enrollment returns 409 and stores nothing; captured logs contain no issued code; `db`: two challenges racing on one code give one success and one 401 with `failed_attempts` + 1 (19.10); two concurrent regenerations leave exactly 10 current codes
-    - _Requirements: 3.1, 3.2, 3.3, 3.5, 3.6, 3.7, 3.8, 3.10, 3.11, 18.1, 19.1, 19.2, 19.3, 19.4, 19.5, 19.7, 19.8, 19.10_
+    - No cookies on login; enrollment data only before confirmation; attributes of the `access_token` and `refresh_token` cookies; replayed code rejected; fifth failure invalidates the challenge; 422 does not consume an attempt; `auth_events` holds no password, code, recovery code or secret
+    - Recovery codes: confirmation returns 10 codes once and `/users/me` and a later verify do not; recovery login returns `recovery_codes_remaining`; a used or previous-set code returns 401 `MFA_FAILED`; regeneration without enrollment returns 409 and stores nothing; captured logs contain no issued code; `db`: two challenges racing on one code give one success and one 401 with `failed_attempts` + 1 (18.10); two concurrent regenerations leave exactly 10 current codes
+    - _Requirements: 3.1, 3.2, 3.3, 3.5, 3.6, 3.7, 3.8, 3.10, 3.11, 18.1, 18.2, 18.3, 18.4, 18.5, 18.7, 18.8, 18.10_
 
 - [ ] 6. Sessions, refresh and logout (RFP-03)
   - [ ] 6.1 Implement the Session_Service use cases
@@ -302,13 +289,13 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.10_
 
   - [ ] 6.2 Add session endpoints
-    - `routers/sessions.py`: `POST /auth/refresh` (200 `{access_expires_at, refresh_expires_at}`, `set_auth_cookies` with a new CSRF value), `POST /auth/logout` (204), `GET /users/me/sessions`, `DELETE /users/me/sessions/{session_id}` (204), `POST /users/me/sessions/revoke-others` (200 `{revoked_count}`)
+    - `routers/sessions.py`: `POST /auth/refresh` (200 `{access_expires_at, refresh_expires_at}`, new cookies through `set_auth_cookies`), `POST /auth/logout` (204), `GET /users/me/sessions`, `DELETE /users/me/sessions/{session_id}` (204), `POST /users/me/sessions/revoke-others` (200 `{revoked_count}`)
     - Use `clear_auth_cookies` on refresh failure, logout and closing the current session; wire in `identity/composition.py`
-    - _Requirements: 4.1, 4.2, 4.4, 4.6, 4.8, 4.9, 18.1, 18.2_
+    - _Requirements: 4.1, 4.2, 4.4, 4.6, 4.8, 4.9_
 
   - [ ]* 6.3 Write API tests for sessions
-    - Rotation invalidates the old token and rotates `csrf_token`; reuse revokes the session; ownership 404; revoke-others count; logout, current-session close and refresh failure clear the three cookies; logout without `X-CSRF-Token` returns 403 `CSRF_FAILED` and the session stays active; `db`: concurrent refreshes give at most one success (4.10)
-    - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10, 18.1, 18.2, 18.4_
+    - Rotation invalidates the old token; reuse revokes the session; ownership 404; revoke-others count; logout, current-session close and refresh failure clear both cookies; `db`: concurrent refreshes give at most one success (4.10)
+    - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10_
 
 - [ ] 7. Checkpoint - Identity authentication core
   - Ensure all tests pass, ask the user if questions arise.
@@ -426,11 +413,11 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
   - [ ] 12.2 Define market_data domain entities and ports
     - `market_data/domain/entities.py`: `Instrument`, `Market`, `ScheduleOverride`, `Snapshot` (with feed), `StoredSnapshot`, `Freshness`, `LatestQuoteDoc` (optional keys kept as `None`), `DepthLevel`, `DepthResult`, `Bar`, `BarsPage`, `CalendarDay`, `Clock` value, `Watchlist`, `PriceAlert`, `Notification`, `Recipient`
     - `market_data/domain/ports.py`: `AlpacaBrokerMarketPort`, `AlpacaDataPort` (including `get_latest_quote`), `StreamUpstreamPort`, repository Protocols, `RecipientDirectory`, `UserProfileReader`, `ChannelSender`
-    - _Requirements: 12.2, 13.1, 13.11, 14.4, 15.1, 20.1_
+    - _Requirements: 12.2, 13.1, 13.11, 14.4, 15.1, 19.1_
 
   - [ ] 12.3 Implement symbol validation
     - `market_data/domain/symbols.py`: `validate_symbol(raw)` (trim, 1-20 chars, `^[A-Za-z0-9./-]+$`, uppercase)
-    - _Requirements: 16.1, 16.4, 20.6_
+    - _Requirements: 16.1, 16.4, 19.6_
 
   - [ ]* 12.4 Write property test for symbol validation
     - **Property 22: Symbol path validation**
@@ -480,7 +467,7 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
     - _Requirements: 13.11, 13.12, 13.13, 13.16_
 
   - [ ]* 14.2 Write property test for freshness fields
-    - **Property 38: Freshness fields follow their formulas**
+    - **Property 37: Freshness fields follow their formulas**
     - **Validates: Requirements 13.11, 13.12, 13.13, 13.16**
     - File: `tests/market_data/property/test_freshness_properties.py`
 
@@ -512,7 +499,7 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
     - _Requirements: 13.1, 13.2, 13.3, 13.5, 13.6, 13.8, 13.9, 13.11, 13.14, 13.15, 13.16_
 
   - [ ]* 14.8 Write property test for the quote fallback decision
-    - **Property 39: Quote fallback decision**
+    - **Property 38: Quote fallback decision**
     - **Validates: Requirements 13.9, 13.14, 13.15**
     - File: `tests/market_data/property/test_quote_fallback_properties.py` (quote use case with in-memory fakes)
 
@@ -531,7 +518,7 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
 
   - [ ] 14.12 Implement StreamHub and the WebSocket endpoint
     - `alpaca/stream_client.py` (auth and trades subscribe, backoff 1-30 s) and `alpaca/fake_stream.py`; `market_data/application/stream_hub.py` using the registry
-    - `routers/stream.py`: `WS /ws/v1/market-feed` (registered without the `/api/v1` prefix) with cookie auth through `authenticate_access_token`, Origin check with `shared.infrastructure.csrf.origin_allowed` against `CORS_ALLOWED_ORIGINS`, `market:read`, error message and close 1008 when disabled or unauthorized, close on token expiry; start the hub in the `market_data/composition.py` startup hook when `PRICE_STREAMING_ENABLED=true`
+    - `routers/stream.py`: `WS /ws/v1/market-feed` (registered without the `/api/v1` prefix) with cookie auth through `authenticate_access_token`, `market:read`, error message and close 1008 when disabled or unauthorized, close on token expiry; the handshake `Origin` is not checked (D4); start the hub in the `market_data/composition.py` startup hook when `PRICE_STREAMING_ENABLED=true`
     - _Requirements: 13.7, 13.10_
 
   - [ ]* 14.13 Write tests for quotes, candles and streaming
@@ -540,21 +527,21 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
 
   - [ ] 14.14 Implement the depth mapping
     - `market_data/domain/depth.py`: `from_latest_quote(doc) -> DepthResult`: empty `levels` without a `quote` object, otherwise exactly one `DepthLevel` from `bp`, `bs`, `ap`, `as` with missing or null keys as null, never computed or padded values, `full_depth_available = false`, `as_of` from `t`
-    - _Requirements: 20.2, 20.3, 20.4, 20.5_
+    - _Requirements: 19.2, 19.3, 19.4, 19.5_
 
   - [ ]* 14.15 Write property test for depth mapping
-    - **Property 40: Depth never fabricates levels**
-    - **Validates: Requirements 20.1, 20.2, 20.3, 20.4, 20.5**
+    - **Property 39: Depth never fabricates levels**
+    - **Validates: Requirements 19.1, 19.2, 19.3, 19.4, 19.5**
     - File: `tests/market_data/property/test_depth_properties.py`
 
   - [ ] 14.16 Implement the depth use case and endpoint
     - `market_data/application/depth.py`: validate symbol (422) and catalog (404 `SYMBOL_NOT_FOUND`) before any Alpaca call, call `get_latest_quote` (10 s), map with `from_latest_quote`, annotate freshness with `served_from_cache = false`; Alpaca failures map to 502/503 with no cache fallback and no write
     - `GET /instruments/{symbol:path}/depth` (`DepthOut`, `market:read`) in `routers/instruments.py` and `schemas/instruments.py`, registered before `GET /instruments/{symbol:path}`; wire in `market_data/composition.py`
-    - _Requirements: 20.1, 20.5, 20.6, 20.7, 20.8_
+    - _Requirements: 19.1, 19.5, 19.6, 19.7, 19.8_
 
   - [ ]* 14.17 Write API tests for depth
     - Invalid symbol 422 and unknown symbol 404 without an Alpaca call; one-sided quote gives null side values; no quote gives an empty list; Alpaca 502/503 writes nothing
-    - _Requirements: 20.1, 20.4, 20.5, 20.6, 20.7, 20.8_
+    - _Requirements: 19.1, 19.4, 19.5, 19.6, 19.7, 19.8_
 
 - [ ] 15. Calendar, clock and schedules (RF-27)
   - [ ] 15.1 Implement schedule, calendar and time zone rules
@@ -659,7 +646,7 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
 
 - [ ] 20. OpenAPI contract and cross-module integration
   - [ ] 20.1 Complete OpenAPI error declarations
-    - Check every router of both modules: each operation declares 401 and 403 where protected, 403 `CSRF_FAILED` on every `POST`, `PUT`, `PATCH` and `DELETE`, 422 where it has input, and its documented errors from the design endpoint tables through `error_responses`; add any that are missing
+    - Check every router of both modules: each operation declares 401 and 403 where protected, 422 where it has input, and its documented errors from the design endpoint tables through `error_responses`; add any that are missing
     - _Requirements: 17.1, 17.2_
 
   - [ ]* 20.2 Write OpenAPI contract tests
@@ -667,8 +654,8 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
     - _Requirements: 17.1, 17.2, 17.3_
 
   - [ ]* 20.3 Write the cross-module API flow test
-    - `db`: register, login, MFA verify, then search instruments, read a quote and create a watchlist as a premium user with `X-CSRF-Token`, with Alpaca fakes wired through both module compositions
-    - _Requirements: 1.1, 3.3, 5.11, 12.1, 13.1, 14.1, 18.3_
+    - `db`: register, login, MFA verify, then search instruments, read a quote and create a watchlist as a premium user, with Alpaca fakes wired through both module compositions
+    - _Requirements: 1.1, 3.3, 5.11, 12.1, 13.1, 14.1_
 
   - [ ]* 20.4 Write Migration_Set smoke tests
     - `tests/migrations/`: upgrade head on an empty database (tables including `mfa_recovery_codes`, seeds, initial Administrator with `account_status = 'active'`, 28 preferences, `alembic current` is `0003_market_data_schema`); downgrade base and upgrade again; existing administrator email with different case and spaces; empty `INITIAL_ADMIN_PHONE` stops at `0001_identity_schema`; extra failing revision in a `tmp_path` script location leaves `0003_market_data_schema`; app refuses to start with a missing variable or an invalid `ALPACA_DATA_FEED`
@@ -678,20 +665,17 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
     - Engine pointed at a closed port: registration, login, order controls and KYC submission return 503 `DATABASE_UNAVAILABLE`, store nothing and make no Alpaca account call
     - _Requirements: 1.9, 3.12, 9.6, 17.9_
 
-  - [ ]* 20.6 Write CSRF integration tests across both modules
-    - With real routers: a login with a foreign `Origin` returns 403 with no `auth_events` row and no challenge; a mutating `market_data` endpoint (watchlist create) without `X-CSRF-Token` or with a mismatched value returns 403 `CSRF_FAILED` and stores nothing; a `Referer` from an allowed origin passes when `Origin` is absent; `GET` endpoints need no token; the 403 body and captured logs contain no cookie or header value
-    - _Requirements: 18.3, 18.4, 18.5, 18.6, 18.7, 18.8, 18.9_
-
 - [ ] 21. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes
 
-- Tasks marked with `*` are optional and can be skipped for a faster MVP. Property tests for security-critical rules (Properties 4, 5, 6, 7, 9, 13, 31, 33, 34, 35, 36, 37) are not marked optional. Property 5 became required because it now covers recovery-code attempts.
+- Tasks marked with `*` are optional and can be skipped for a faster MVP. Property tests for security-critical rules (Properties 4, 5, 6, 7, 9, 13, 31, 33, 34, 35, 36) are not marked optional. Property 5 is required because it also covers recovery-code attempts.
 - Each property test carries the tag comment `# Feature: identity-market-backend, Property N: <title>` and uses the Hypothesis profile from `tests/conftest.py` (at least 100 examples).
 - `db`-marked tests need `TEST_DATABASE_URL` pointing at a disposable Postgres, never the shared development database, because fixtures run `downgrade base`. Without it they are skipped with a visible reason.
 - Alpaca is never called in tests; fakes are wired through the module `composition.py` files.
-- The two tracks share no source files after task 1. Their only shared surfaces are the identity auth dependency (task 3.10), the shared CSRF and cookie modules (tasks 1.15, 1.18) and database tables: `market_data` reads `users` and `notification_preferences` (tasks 17.7, 18.3), and `identity` reads `markets` and `instruments.sector` for interests (task 10.7). Revision `0003_market_data_schema` revises `0002_initial_admin`, so the chain stays linear.
+- The two tracks share no source files after task 1. Their only shared surfaces are the identity auth dependency (task 3.10), the shared cookie module (task 1.15) and database tables: `market_data` reads `users` and `notification_preferences` (tasks 17.7, 18.3), and `identity` reads `markets` and `instruments.sector` for interests (task 10.7). Revision `0003_market_data_schema` revises `0002_initial_admin`, so the chain stays linear.
+- There are no CSRF or Origin tasks (decision D4). CORS restricted to the configured origins is covered by tasks 1.12 and 1.13.
 - Instrument routes declare `{symbol:path}`; the suffix routes (`/quote`, `/candles`, `/depth`) and `/instruments/search` are registered before `GET /instruments/{symbol:path}`.
 - Assumption A9 (stock depth is top of book only, and how Alpaca reports a missing side) must be checked manually against the contracted Alpaca plan; it is not a coding task.
 - Applying migrations (`uv run alembic upgrade head` with `MIGRATION_DATABASE_URL`) is a manual developer step.
@@ -703,9 +687,9 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
 {
   "waves": [
     { "id": 0, "tasks": ["1.1", "1.2", "1.3", "1.5", "1.7"] },
-    { "id": 1, "tasks": ["1.4", "1.6", "1.8", "1.9", "1.10", "1.15"] },
-    { "id": 2, "tasks": ["1.11", "1.12", "1.16", "1.18"] },
-    { "id": 3, "tasks": ["1.13", "1.17", "1.19"] },
+    { "id": 1, "tasks": ["1.4", "1.6", "1.8", "1.9", "1.10"] },
+    { "id": 2, "tasks": ["1.11", "1.12", "1.15"] },
+    { "id": 3, "tasks": ["1.13", "1.16"] },
     { "id": 4, "tasks": ["1.14"] },
     { "id": 5, "tasks": ["3.1", "3.2", "12.1", "12.2"] },
     { "id": 6, "tasks": ["3.3", "3.6", "3.9", "4.1", "5.1", "5.4", "10.1", "10.4", "12.3", "13.1", "13.3", "14.1", "14.3", "14.10", "14.14", "15.1", "17.1", "18.1"] },
@@ -721,7 +705,7 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
     { "id": 16, "tasks": ["10.7", "17.9", "18.3"] },
     { "id": 17, "tasks": ["10.8", "10.9", "18.4"] },
     { "id": 18, "tasks": ["20.1"] },
-    { "id": 19, "tasks": ["20.2", "20.3", "20.4", "20.5", "20.6"] }
+    { "id": 19, "tasks": ["20.2", "20.3", "20.4", "20.5"] }
   ]
 }
 ```

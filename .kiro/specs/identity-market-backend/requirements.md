@@ -10,10 +10,11 @@ RFP-01 (KYC, Requirement 10) and RFP-08 (interests and dashboard, Requirement 11
 
 ### Alignment with the team's specs/ folder
 
-- specs/01-identity-security and specs/02-market-data remain in the repository, unchanged, while the team decides which documentation base is the single source. This spec does not modify them.
-- This spec incorporates these rules from them: CSRF and Origin protection (Requirement 18), MFA recovery codes (Requirement 19), no self-assignment of privileged roles (Requirement 2), price freshness and delayed-data indicators (Requirement 13), and market depth limited to what the provider supplies (Requirement 20).
-- The error format stays Error_Body. specs/ proposes application/problem+json; that choice is pending a team decision.
-- HTTP paths will follow the Plan Maestro paths used in specs/ and are defined in the design document.
+- This spec (.kiro/specs/identity-market-backend) is the single documentation base chosen by the team for MOD-01 and MOD-02. specs/01-identity-security and specs/02-market-data are superseded by this spec and are not a source of requirements for this work.
+- This spec keeps these rules taken from the superseded specs: MFA recovery codes (Requirement 18), no self-assignment of privileged roles (Requirement 2), price freshness and delayed-data indicators (Requirement 13), and market depth limited to what the provider supplies (Requirement 19).
+- CSRF and Origin validation from the superseded specs is deliberately left out by team decision (D4). Cookies rely on the SameSite attribute only. CORS (Requirement 17 criterion 4) is kept.
+- The error format is Error_Body. The application/problem+json format proposed in the superseded specs is not adopted.
+- HTTP paths follow the Plan Maestro paths and are defined in the design document.
 
 ### Delivery constraints
 
@@ -25,6 +26,7 @@ RFP-01 (KYC, Requirement 10) and RFP-08 (interests and dashboard, Requirement 11
 - **D1 (RF-02):** The second factor is TOTP (RFC 6238, authenticator app). Rationale: free, no external SMS or email provider, matches the project plan ("MFA/TOTP").
 - **D2 (RF-01, RF-02):** Authentication is implemented inside the Backend_API (Argon2id password hashing, JWT in HTTP-only cookies), and Supabase is used only as the Postgres database. Rationale: Supabase Auth uses bcrypt, while the project plan specifies Argon2id and HTTP-only JWT cookies. The user confirmed this decision: Supabase Auth is not adopted.
 - **D3 (RF-03):** Access control is a simplified RBAC: three roles (investor, broker, administrator), permission codes attached to roles, and role assignments to users with validity periods.
+- **D4 (RF-02, RFP-03):** The Backend_API implements no CSRF token and no Origin or Referer validation; cookie protection relies on the SameSite attribute of the Access_Token and Refresh_Token cookies (Requirement 3 criterion 3). Rationale: university project, decided by the team; CSRF and Origin validation can be added later if the frontend team asks for it. CORS restricted to configured origins (Requirement 17 criterion 4) is kept, because the frontend calls the API from another origin.
 
 ### Assumptions
 
@@ -36,7 +38,7 @@ RFP-01 (KYC, Requirement 10) and RFP-08 (interests and dashboard, Requirement 11
 - **A6:** Order controls (RF-09) and portfolio view settings (RF-08) are stored by this backend and enforced or applied by MOD-03 and MOD-05.
 - **A7:** Default token lifetimes are 15 minutes for the Access_Token and 7 days for the Refresh_Token, both configurable.
 - **A8:** Broker accounts created through RFP-02 start with the Account_Status pending_broker_activation and hold no broker permissions until an Administrator activates them through the Backend_API (Requirement 2). Broker activation is an in-product administrator action of the running system; it is not an approval gate on development work.
-- **A9:** For US equities, the Alpaca_Market_Data_API provides only top of book (best bid and best ask with their sizes) on the iex, sip and delayed_sip feeds, and no full order book depth. This assumption must be verified against the contracted Alpaca plan; if the plan provides more price levels, Requirement 20 criterion 2 must be revised.
+- **A9:** For US equities, the Alpaca_Market_Data_API provides only top of book (best bid and best ask with their sizes) on the iex, sip and delayed_sip feeds, and no full order book depth. This assumption must be verified against the contracted Alpaca plan; if the plan provides more price levels, Requirement 19 criterion 2 must be revised.
 
 ### Out of scope
 
@@ -79,9 +81,6 @@ Orders (MOD-03), wallet, funding and Stripe premium payments (MOD-04), portfolio
 - **Notification**: Stored message with recipient, type, payload, channel, and creation timestamp.
 - **Error_Body**: JSON response body with the fields code (string), message (string) and details (object or null).
 - **Account_Status**: Status of a User account, exactly one of active or pending_broker_activation.
-- **Allowed_Origin**: An origin (scheme, host and port) listed in the allowed CORS origins configured through Requirement 17 criterion 3, compared by exact match.
-- **CSRF_Cookie**: Cookie without the HttpOnly attribute that holds a random CSRF token, which the frontend copies into the X-CSRF-Token header of state-changing requests (double-submit pattern).
-- **Pre_Session_Endpoint**: One of the endpoints that run before a Session exists: investor registration (Requirement 1), broker registration (Requirement 2 criterion 1), login (Requirement 3 criterion 1) and MFA verification (Requirement 3 criterion 3 and Requirement 19 criterion 3).
 - **Recovery_Code**: Single-use code of exactly 10 characters drawn from uppercase letters A to Z and digits 0 to 9, issued in sets of 10 per User, that can replace one TOTP_Code in MFA verification.
 - **Staleness_Threshold**: Configurable number of seconds, an integer from 1 to 86,400 with a default of 900, above which a price is reported as stale.
 - **Depth_Level**: One price level of the order book with bid price, bid size, ask price and ask size.
@@ -374,36 +373,18 @@ Orders (MOD-03), wallet, funding and Stripe premium payments (MOD-04), portfolio
 
 #### Acceptance Criteria
 
-1. THE Backend_API SHALL publish the OpenAPI document at /openapi.json and the interactive documentation at /docs, both reachable without an access token, where the OpenAPI document lists for every endpoint of Requirements 1 to 16 and 18 to 20 its request schema, its success response schema, whether it requires an access token, and every error HTTP status it can return together with the Error_Body schema.
-2. IF a request fails validation of its path parameters, query parameters or body, THEN THE Backend_API SHALL return HTTP 422 with an Error_Body code VALIDATION_ERROR whose message identifies the first invalid field, and SHALL return every other error response of Requirements 1 to 20 with an Error_Body and with no other response body format.
+1. THE Backend_API SHALL publish the OpenAPI document at /openapi.json and the interactive documentation at /docs, both reachable without an access token, where the OpenAPI document lists for every endpoint of Requirements 1 to 16, 18 and 19 its request schema, its success response schema, whether it requires an access token, and every error HTTP status it can return together with the Error_Body schema.
+2. IF a request fails validation of its path parameters, query parameters or body, THEN THE Backend_API SHALL return HTTP 422 with an Error_Body code VALIDATION_ERROR whose message identifies the first invalid field, and SHALL return every other error response of Requirements 1 to 19 with an Error_Body and with no other response body format.
 3. THE Backend_API SHALL read the Alpaca credentials, Alpaca base URLs, market data feed, Supabase connection data (DATABASE_URL for the application and MIGRATION_DATABASE_URL for the Migration_Set, both using the asyncpg URL parameter ssl=require), JWT signing secret, token lifetimes and allowed CORS origins from environment variables, and SHALL NOT include any of the Alpaca credentials, Supabase connection data or JWT signing secret in the OpenAPI document, in any Error_Body or in any log output.
 4. WHEN a request carries an Origin header that exactly matches one of the configured allowed origins, THE Backend_API SHALL allow the credentialed CORS request for that origin, and IF the Origin header matches none of the configured allowed origins, THEN THE Backend_API SHALL omit the CORS allow-origin header from the response and SHALL never answer with a wildcard origin.
 5. IF the Alpaca_Broker_API or the Alpaca_Market_Data_API is unreachable, gives no response within 10 seconds of the Backend_API sending the call, or returns an HTTP 5xx status, THEN THE Backend_API SHALL return HTTP 502 with an Error_Body code ALPACA_UNAVAILABLE, SHALL NOT write any record to the Supabase_DB that depends on the failed call, and SHALL NOT copy the raw Alpaca response body into the Error_Body. Requirement 13 criterion 14 is the only exception: a failed quote request with a stored snapshot returns that snapshot marked stale.
 6. IF the Alpaca_Broker_API or the Alpaca_Market_Data_API returns HTTP 429, THEN THE Backend_API SHALL return HTTP 503 with an Error_Body code ALPACA_RATE_LIMITED, SHALL NOT retry the call within the same request, and SHALL NOT write any record to the Supabase_DB that depends on the rate-limited call. Requirement 13 criterion 14 is the only exception: a rate-limited quote request with a stored snapshot returns that snapshot marked stale.
-7. WHEN `alembic upgrade head` runs on an empty Supabase_DB, THE Migration_Set SHALL finish with zero errors and create every table, constraint and seed row required by Requirements 1 to 16 and 18 to 20, and `alembic downgrade base` SHALL remove them. IF a revision fails, THEN THE Migration_Set SHALL leave the Supabase_DB at the previous revision.
+7. WHEN `alembic upgrade head` runs on an empty Supabase_DB, THE Migration_Set SHALL finish with zero errors and create every table, constraint and seed row required by Requirements 1 to 16, 18 and 19, and `alembic downgrade base` SHALL remove them. IF a revision fails, THEN THE Migration_Set SHALL leave the Supabase_DB at the previous revision.
 8. IF any environment variable listed in criterion 3 is missing or empty when the Backend_API starts, THEN THE Backend_API SHALL refuse to start and SHALL report the name of each missing variable without reporting the value of any variable.
 9. IF the Supabase_DB is unreachable or does not answer a query within 10 seconds while the Backend_API serves a request, THEN THE Backend_API SHALL return HTTP 503 with an Error_Body code DATABASE_UNAVAILABLE and SHALL NOT send any order or account request to the Alpaca_Broker_API for that request.
-10. IF processing a request raises an error that no other criterion of Requirements 1 to 20 covers, THEN THE Backend_API SHALL return HTTP 500 with an Error_Body code INTERNAL_ERROR whose message contains no stack trace, file path, SQL text or credential value.
+10. IF processing a request raises an error that no other criterion of Requirements 1 to 19 covers, THEN THE Backend_API SHALL return HTTP 500 with an Error_Body code INTERNAL_ERROR whose message contains no stack trace, file path, SQL text or credential value.
 
-### Requirement 18: CSRF and Origin protection (RF-02, RFP-03)
-
-**User Story:** As a User, I want the Backend_API to reject forged cross-site requests, so that another website cannot change my account or my sessions by using my cookies.
-
-Source: specs/01-identity-security (CSRF protection and Origin validation for cookie-authenticated mutations).
-
-#### Acceptance Criteria
-
-1. WHEN the Auth_Service sets the Access_Token and Refresh_Token cookies after a successful MFA verification (Requirement 3 criterion 3 or Requirement 19 criterion 3), or the Session_Service sets them after a successful refresh (Requirement 4 criterion 1), THE Backend_API SHALL set in the same response a CSRF_Cookie holding a newly generated random value of at least 128 bits, with the Secure attribute, the same SameSite attribute as the Access_Token cookie, no HttpOnly attribute, and the same expiry as the Refresh_Token.
-2. WHEN the Backend_API clears the Access_Token and Refresh_Token cookies (Requirement 4 criteria 2, 4, 6 and 8), THE Backend_API SHALL clear the CSRF_Cookie in the same response.
-3. WHEN a request with method POST, PUT, PATCH or DELETE carries an Access_Token cookie or a Refresh_Token cookie and targets an endpoint that is not a Pre_Session_Endpoint, THE Backend_API SHALL execute the requested operation only if the request carries an X-CSRF-Token header whose value is identical to the CSRF_Cookie value of the same request, and the Origin header matches an Allowed_Origin or, when the Origin header is absent, the origin (scheme, host and port) of the Referer header matches an Allowed_Origin.
-4. IF a request covered by criterion 3 lacks the X-CSRF-Token header, lacks the CSRF_Cookie, carries an X-CSRF-Token value that differs from the CSRF_Cookie value, carries an Origin header that matches no Allowed_Origin, or carries no Origin header and no Referer header whose origin matches an Allowed_Origin, THEN THE Backend_API SHALL return HTTP 403 with an Error_Body code CSRF_FAILED, issue, rotate or revoke no token and no Session, and leave all stored data unchanged.
-5. WHEN a request with method POST, PUT, PATCH or DELETE targets a Pre_Session_Endpoint, THE Backend_API SHALL execute the requested operation without requiring the X-CSRF-Token header, only if the Origin header matches an Allowed_Origin or, when the Origin header is absent, the origin of the Referer header matches an Allowed_Origin.
-6. IF a request to a Pre_Session_Endpoint carries an Origin header that matches no Allowed_Origin, or carries no Origin header and no Referer header whose origin matches an Allowed_Origin, THEN THE Backend_API SHALL return HTTP 403 with an Error_Body code CSRF_FAILED, check no credentials, and create no User, MFA_Challenge, token or Session.
-7. WHEN a request uses method GET, HEAD or OPTIONS, THE Backend_API SHALL process the request without requiring the X-CSRF-Token header.
-8. THE Backend_API SHALL perform the checks of criteria 3 to 6 before validating the request body and before verifying credentials, so that a request failing those checks returns HTTP 403 with Error_Body code CSRF_FAILED even when its body is invalid.
-9. THE Backend_API SHALL exclude the CSRF_Cookie value and the X-CSRF-Token header value from every Error_Body and every log entry.
-
-### Requirement 19: MFA recovery codes (RF-02)
+### Requirement 18: MFA recovery codes (RF-02)
 
 **User Story:** As a User, I want single-use recovery codes, so that I can complete login when my authenticator app is unavailable.
 
@@ -422,7 +403,7 @@ Source: specs/01-identity-security (domain rule 4: recovery codes are stored as 
 9. IF an MFA verification request contains both a TOTP_Code and a Recovery_Code, contains neither, or contains a Recovery_Code that is not exactly 10 characters from uppercase letters A to Z and digits 0 to 9 after trimming and uppercase conversion, THEN THE Auth_Service SHALL return HTTP 422 with an Error_Body identifying the invalid field, without checking any code and without using up a failed attempt on the MFA_Challenge.
 10. IF two or more MFA verification requests submit the same unused Recovery_Code at the same time, THEN THE Auth_Service SHALL let exactly one of them succeed as described in criterion 3 and SHALL handle every other request as described in criterion 5.
 
-### Requirement 20: Market depth (RF-25)
+### Requirement 19: Market depth (RF-25)
 
 **User Story:** As a User, I want to see the order book depth that the market data plan provides, so that I know the best available bid and ask without being shown invented price levels.
 
