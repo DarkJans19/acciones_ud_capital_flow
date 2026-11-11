@@ -46,8 +46,10 @@ class Settings(BaseSettings):
     telegram_bot_token: SecretStr | None = None
     log_level: str = "INFO"
 
-    # Environment only: never implicitly read a developer's secret file.
-    model_config = SettingsConfigDict(extra="ignore", hide_input_in_errors=True)
+    # Reads process environment first; falls back to a local .env for development.
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore", hide_input_in_errors=True
+    )
 
     @model_validator(mode="after")
     def legacy_connection_names(self) -> "Settings":
