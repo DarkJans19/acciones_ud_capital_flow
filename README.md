@@ -28,7 +28,10 @@ uv run pytest
 ```
 
 Consulta [`AGENTS.md`](./AGENTS.md), [`constitution.md`](./constitution.md) y
-[`specs/`](./specs/) para las convenciones de arquitectura y SDD.
+[`.kiro/specs/`](./.kiro/specs/) para las convenciones de arquitectura y SDD.
+El spec activo de MOD-01 y MOD-02 es
+[`.kiro/specs/identity-market-backend/`](./.kiro/specs/identity-market-backend/);
+`specs/` quedó reemplazada y se conserva solo como referencia histórica.
 
 Las migraciones de Supabase PostgreSQL se gestionan con Alembic en
 [`migrations/`](./migrations/).

@@ -1,5 +1,7 @@
 # Trazabilidad del alcance activo
 
+> **Reemplazado.** El equipo adoptó `.kiro/specs/identity-market-backend/` como única base de documentación para MOD-01 y MOD-02. Este archivo se conserva solo como referencia histórica; no lo actualices.
+
 ## Fuentes conciliadas
 
 Para los dos módulos activos se aplicó esta jerarquía:

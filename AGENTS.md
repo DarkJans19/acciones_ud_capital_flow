@@ -29,10 +29,13 @@ adentro mediante interfaces/Protocol. Los adaptadores se conectan en
 En la fase actual solo se desarrollan estos módulos:
 
 - `identity`: identidad, perfiles, autenticación, MFA, roles, sesiones y
-  preferencias de usuario. Cubre RF-01 a RF-03 y RF-06 a RF-09, además de los
-  RFP aprobados expresamente para registro por rol y gestión de sesiones.
+  preferencias de usuario. Cubre RF-01 a RF-03 y RF-06 a RF-09, además de RFP-01,
+  RFP-02, RFP-03 y RFP-08, incluidos por decisión del equipo.
 - `market_data`: mercados, calendarios, instrumentos, búsqueda, cotizaciones e
   históricos, listas observadas y alertas. Cubre RF-24 a RF-28.
+
+El spec de ambos módulos (requisitos, diseño y tareas) está en
+`.kiro/specs/identity-market-backend/`.
 
 No se deben crear paquetes vacíos para capacidades futuras. Órdenes,
 portafolios, fondos, comisionistas, suscripciones, notificaciones y analítica se
@@ -49,7 +52,8 @@ incorporarán únicamente cuando exista un spec aprobado para su módulo.
   las entidades del dominio.
 - Los errores deben ser explícitos y traducirse en la frontera HTTP.
 - Las credenciales y secretos solo se obtienen desde variables de entorno.
-- Cada funcionalidad nueva debe iniciar o actualizar un spec en `specs/` y
+- Cada funcionalidad nueva debe iniciar o actualizar un spec en `.kiro/specs/`,
+  la única base de documentación del equipo (`specs/` quedó reemplazada), y
   mantener trazabilidad al SAD mediante IDs `RF`, `RNF`, `CU` o `EC`.
 
 ## Validación

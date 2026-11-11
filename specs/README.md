@@ -1,5 +1,7 @@
 # Especificaciones SDD
 
+> **Reemplazado.** El equipo adoptó `.kiro/specs/identity-market-backend/` como única base de documentación para MOD-01 y MOD-02. Este archivo se conserva solo como referencia histórica; no lo actualices.
+
 Cada cambio funcional comienza con un spec. Debe describir problema, alcance,
 actores, reglas, contratos, datos, seguridad, escenarios, pruebas, criterios de
 aceptación, decisiones pendientes y trazabilidad al SAD.

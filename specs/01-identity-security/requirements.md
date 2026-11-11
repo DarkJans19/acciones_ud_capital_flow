@@ -1,8 +1,10 @@
 # SPEC-0100: Identidad, seguridad y control de acceso
 
+> **Reemplazado.** El equipo adoptó `.kiro/specs/identity-market-backend/` como única base de documentación para MOD-01 y MOD-02. Este archivo se conserva solo como referencia histórica; no lo actualices.
+
 ## Estado
 
-Propuesto
+Reemplazado por `.kiro/specs/identity-market-backend/`.
 
 ## Trazabilidad
 
