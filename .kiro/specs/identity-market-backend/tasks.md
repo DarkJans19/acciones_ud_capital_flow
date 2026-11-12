@@ -406,32 +406,32 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
 
 Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5), 4.6 and 4.11-4.14 (D10), 6 and 23 (D8), 20 and 21 (D7), 22 (D6), 24 (D9) and 25 (D11), with Assumptions A10-A14. They extend the finished identity code of tasks 3-10 and share no source file with the MOD-02 track. Every test uses in-memory fakes, `httpx.ASGITransport` and dependency overrides; none uses a `db` marker or connects to a database.
 
-- [ ] 22. Schema, settings and error codes for the readme_agregar.md gaps
-  - [ ] 22.1 Write migration `0005_identity_admin_gaps`
+- [x] 22. Schema, settings and error codes for the readme_agregar.md gaps
+  - [x] 22.1 Write migration `0005_identity_admin_gaps`
     - `migrations/versions/0005_identity_admin_gaps.py`, `revision = "0005_identity_admin_gaps"`, `down_revision = "0004_assignment_cancellation"` (never `0003_market_data_schema`, which would create a second head)
     - `upgrade()`: add `kyc_accounts.status_checked_at timestamptz null`; create `admin_audit_log` with the columns and checks of the design "Tables" row (the 11 action codes of 25.1, `target_type` in `user`/`role`, `target_id` 1-100 characters, `payload jsonb` object check, `actor_user_id` FK `users` without cascade) and the indexes (`occurred_at desc`, `id desc`), (`actor_user_id`), (`target_type`, `target_id`), (`action`); enable RLS on it with no policies; create the function `admin_audit_log_immutable()` and a `BEFORE UPDATE OR DELETE` row trigger that raises; create index `ix_users_created_at_id` on (`created_at desc`, `id`)
     - `downgrade()`: drop the trigger, the function, `admin_audit_log`, the index and the column
     - Applying it with `uv run alembic upgrade head` and checking it against Supabase (single head, `alembic current` is `0005_identity_admin_gaps`, the trigger rejects `UPDATE` and `DELETE`) is a manual developer step, not an automated test
     - _Requirements: 17.7, 20.1, 23.5, 25.2, 25.3, 25.14_
 
-  - [ ] 22.2 Add the new column and table to the identity table objects
+  - [x] 22.2 Add the new column and table to the identity table objects
     - `identity/adapters/outbound/persistence/tables.py`: `status_checked_at` on `kyc_accounts` and an `admin_audit_log` Core `Table` (`id`, `actor_user_id`, `action`, `target_type`, `target_id`, `payload` JSONB, `occurred_at`); no `create_all`
     - _Requirements: 23.5, 25.2_
 
-  - [ ] 22.3 Add the KYC status settings
+  - [x] 22.3 Add the KYC status settings
     - `src/acciones_ud/config/settings.py`: `kyc_status_refresh_enabled: str = "false"`, `kyc_status_refresh_interval_seconds: str = "900"`, `kyc_status_cache_ttl_seconds: str = "60"`, plain strings like `price_staleness_threshold_seconds`
     - `require_api_settings` rejects by name only: an enabled flag whose lowercased value is not `true` or `false` (empty string included), an interval that is not a base-10 integer from 60 to 86,400, a TTL that is not a base-10 integer from 0 to 3,600; only an absent variable takes the default
     - Add `kyc_refresh_config(settings)` returning the parsed enabled flag, interval and TTL for `identity/composition.py`
     - Add the three variables with their defaults to `.env.example`
     - _Requirements: 17.8, 23.1, 23.12_
 
-  - [ ]* 22.4 Extend the property test for missing and invalid configuration
+  - [x]* 22.4 Extend the property test for missing and invalid configuration
     - **Property 32: Missing configuration is reported by name only**
     - **Validates: Requirements 13.17, 17.3, 17.8, 23.12**
     - File: `tests/shared/property/test_config_properties.py`: generators add the three `KYC_STATUS_*` variables (absent takes the default, empty string invalid, other letter case of `true`/`false` accepted, non-integers and out-of-range integers rejected); the error names each invalid variable and contains no value
     - Example smoke test: the app refuses to start with an invalid `KYC_STATUS_*` value and `FakeAlpacaAccounts` records no call
 
-  - [ ] 22.5 Add the new error codes
+  - [x] 22.5 Add the new error codes
     - `src/acciones_ud/shared/domain/errors.py`: add `KYC_RECONCILE_NOT_FOUND` (404), `KYC_RECONCILE_AMBIGUOUS` (409), `ALPACA_ACCOUNT_IN_USE` (409) and `KYC_SUBMISSION_IN_PROGRESS` (409) to `ErrorCode`
     - _Requirements: 24.3, 24.4, 24.7, 24.8_
 
@@ -953,6 +953,8 @@ Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5),
 - Assumption A9 (stock depth is top of book only, and how Alpaca reports a missing side) must be checked manually against the contracted Alpaca plan; it is not a coding task.
 - Applying migrations (`uv run alembic upgrade head` with `MIGRATION_DATABASE_URL`) is a manual developer step.
 - Validate each task with `uv run ruff check .`, `uv run mypy src` and `uv run pytest`.
+- Implementation note (task 22.1): Requirement 25.1 enumerates ten distinct action codes (`role_assignment_revoked` and `role_assignment_cancelled` are separate). The "11 action codes" wording in 25.1 and the design table, however, counts eleven. The migration check constraint, `AuditAction` and the tests use the ten enumerated codes; no extra code is invented.
+- Pending manual edit (task 22.3): the three `KYC_STATUS_*` variables could not be appended to `.env.example` because the tool permission was denied at implementation time. The defaults live in `config/settings.py`; add the three lines to `.env.example` manually.
 
 ## Task Dependency Graph
 

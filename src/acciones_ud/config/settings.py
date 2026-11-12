@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from functools import lru_cache
 from urllib.parse import parse_qs, urlsplit
 
@@ -35,6 +36,9 @@ class Settings(BaseSettings):
     alert_evaluation_interval_seconds: str = "60"
     market_clock_check_interval_seconds: str = "60"
     catalog_max_age_hours: str = "24"
+    kyc_status_refresh_enabled: str = "false"
+    kyc_status_refresh_interval_seconds: str = "900"
+    kyc_status_cache_ttl_seconds: str = "60"
     dashboard_default_symbols: str = "AAPL,MSFT,AMZN,GOOGL,META,NVDA,TSLA,JPM,V,KO"
     cookie_samesite: str = "lax"
     cookie_domain: str | None = None
@@ -147,6 +151,8 @@ def require_api_settings(settings: Settings) -> None:
         "alert_evaluation_interval_seconds": (10, 3600),
         "market_clock_check_interval_seconds": (1, 86400),
         "catalog_max_age_hours": (1, 8760),
+        "kyc_status_refresh_interval_seconds": (60, 86400),
+        "kyc_status_cache_ttl_seconds": (0, 3600),
         "smtp_port": (1, 65535),
     }
     for name, (low, high) in bounds.items():
@@ -158,7 +164,7 @@ def require_api_settings(settings: Settings) -> None:
                 invalid.add(name.upper())
         except (ValueError, TypeError):
             invalid.add(name.upper())
-    for name in ("price_streaming_enabled", "alert_engine_enabled"):
+    for name in ("price_streaming_enabled", "alert_engine_enabled", "kyc_status_refresh_enabled"):
         if getattr(settings, name).lower() not in {"true", "false"}:
             invalid.add(name.upper())
     if settings.totp_encryption_key:
@@ -177,6 +183,23 @@ def require_api_settings(settings: Settings) -> None:
             invalid.add("ALPACA_AUTH_URL")
     if invalid:
         raise RuntimeError("Missing or invalid configuration: " + ", ".join(sorted(invalid)))
+
+
+@dataclass(frozen=True)
+class KycRefreshConfig:
+    """Parsed KYC_STATUS_* settings; ``require_api_settings`` validated them at startup."""
+
+    enabled: bool
+    interval_seconds: int
+    cache_ttl_seconds: int
+
+
+def kyc_refresh_config(settings: Settings) -> KycRefreshConfig:
+    return KycRefreshConfig(
+        enabled=settings.kyc_status_refresh_enabled.lower() == "true",
+        interval_seconds=int(settings.kyc_status_refresh_interval_seconds),
+        cache_ttl_seconds=int(settings.kyc_status_cache_ttl_seconds),
+    )
 
 
 @lru_cache

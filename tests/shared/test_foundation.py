@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from hypothesis import given
 from hypothesis import strategies as st
 
-from acciones_ud.config.settings import Settings, require_api_settings
+from acciones_ud.config.settings import Settings, kyc_refresh_config, require_api_settings
 from acciones_ud.main import create_app
 from acciones_ud.shared.domain.alpaca_errors import (
     AlpacaAuthError,
@@ -26,6 +26,54 @@ def test_settings_accept_valid(api_settings: Settings) -> None:
     require_api_settings(api_settings)
 
 
+def test_kyc_refresh_config_defaults(api_settings: Settings) -> None:
+    config = kyc_refresh_config(api_settings)
+    assert config.enabled is False
+    assert config.interval_seconds == 900
+    assert config.cache_ttl_seconds == 60
+
+
+@pytest.mark.parametrize(
+    ("field", "raw", "attribute", "expected"),
+    [
+        ("kyc_status_refresh_enabled", "TRUE", "enabled", True),
+        ("kyc_status_refresh_enabled", "False", "enabled", False),
+        ("kyc_status_refresh_interval_seconds", "60", "interval_seconds", 60),
+        ("kyc_status_refresh_interval_seconds", "86400", "interval_seconds", 86400),
+        ("kyc_status_cache_ttl_seconds", "0", "cache_ttl_seconds", 0),
+        ("kyc_status_cache_ttl_seconds", "3600", "cache_ttl_seconds", 3600),
+    ],
+)
+def test_kyc_refresh_config_accepts_values(
+    api_settings: Settings, field: str, raw: str, attribute: str, expected: object
+) -> None:
+    settings = api_settings.model_copy(update={field: raw})
+    require_api_settings(settings)
+    assert getattr(kyc_refresh_config(settings), attribute) == expected
+
+
+@pytest.mark.parametrize(
+    ("field", "raw"),
+    [
+        ("kyc_status_refresh_enabled", ""),
+        ("kyc_status_refresh_enabled", "yes"),
+        ("kyc_status_refresh_interval_seconds", ""),
+        ("kyc_status_refresh_interval_seconds", "59"),
+        ("kyc_status_refresh_interval_seconds", "86401"),
+        ("kyc_status_refresh_interval_seconds", "900.0"),
+        ("kyc_status_cache_ttl_seconds", ""),
+        ("kyc_status_cache_ttl_seconds", "-1"),
+        ("kyc_status_cache_ttl_seconds", "3601"),
+    ],
+)
+def test_kyc_refresh_config_rejects_invalid(
+    api_settings: Settings, field: str, raw: str
+) -> None:
+    settings = api_settings.model_copy(update={field: raw})
+    with pytest.raises(RuntimeError, match=field.upper()):
+        require_api_settings(settings)
+
+
 # Feature: identity-market-backend, Property 32: Missing configuration is reported by name only
 @given(
     st.text(min_size=1),
@@ -37,6 +85,9 @@ def test_settings_accept_valid(api_settings: Settings) -> None:
             "access_token_ttl_seconds",
             "alpaca_data_feed",
             "price_staleness_threshold_seconds",
+            "kyc_status_refresh_enabled",
+            "kyc_status_refresh_interval_seconds",
+            "kyc_status_cache_ttl_seconds",
         ]
     ),
 )
@@ -145,4 +196,11 @@ async def test_lifespan_and_health(api_client: httpx.AsyncClient) -> None:
 def test_invalid_lifespan_refuses_startup() -> None:
     with pytest.raises(RuntimeError, match="JWT_SECRET"):
         with TestClient(create_app(Settings(_env_file=None))):
+            pass
+
+
+def test_invalid_kyc_status_config_refuses_startup(api_settings: Settings) -> None:
+    settings = api_settings.model_copy(update={"kyc_status_refresh_enabled": "maybe"})
+    with pytest.raises(RuntimeError, match="KYC_STATUS_REFRESH_ENABLED"):
+        with TestClient(create_app(settings)):
             pass

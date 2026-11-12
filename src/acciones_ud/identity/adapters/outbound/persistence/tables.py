@@ -1,7 +1,7 @@
 """Core query declarations only. Alembic exclusively owns the database schema."""
 
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 
 metadata = sa.MetaData()
 
@@ -145,6 +145,17 @@ kyc_accounts = sa.Table(
     *[sa.Column(n, sa.Text()) for n in ("alpaca_account_id", "status", "tax_id_last4")],
     *[
         sa.Column(n, sa.DateTime(timezone=True))
-        for n in ("status_updated_at", "reserved_at", "created_at")
+        for n in ("status_updated_at", "status_checked_at", "reserved_at", "created_at")
     ],
+)
+admin_audit_log = sa.Table(
+    "admin_audit_log",
+    metadata,
+    sa.Column("id", sa.Uuid()),
+    sa.Column("actor_user_id", sa.Uuid()),
+    sa.Column("action", sa.Text()),
+    sa.Column("target_type", sa.Text()),
+    sa.Column("target_id", sa.Text()),
+    sa.Column("payload", JSONB()),
+    sa.Column("occurred_at", sa.DateTime(timezone=True)),
 )
