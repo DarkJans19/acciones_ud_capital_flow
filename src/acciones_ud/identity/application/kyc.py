@@ -4,6 +4,7 @@ from uuid import UUID
 
 from acciones_ud.identity.domain.auth_ports import Record
 from acciones_ud.identity.domain.kyc import can_trade
+from acciones_ud.identity.domain.kyc_cache import KycStatusState, apply_status_check
 from acciones_ud.identity.domain.kyc_ports import AlpacaAccountsPort, KycWorkFactory
 from acciones_ud.identity.domain.kyc_submission import AccountOpeningRequest
 from acciones_ud.identity.domain.redaction import last4, redact
@@ -68,12 +69,19 @@ class KycService:
         stale = False
         try:
             live = await self.accounts.get_account(stored["alpaca_account_id"])
-            if live.status != status:
-                async with self.uow() as work:
-                    await work.kyc.update_status(user_id, live)
-                status, updated = live.status, live.updated_at or self.clock.now()
         except AlpacaError:
             stale = True
+        else:
+            retrieved_at = self.clock.now()
+            state = apply_status_check(
+                KycStatusState(status, updated, stored.get("status_checked_at")),
+                live,
+                retrieved_at,
+            )
+            if state is not None:
+                async with self.uow() as work:
+                    await work.kyc.record_status_check(live, retrieved_at)
+                status, updated = state.status, state.status_updated_at
         return {
             "has_account": True,
             "status": status,

@@ -27,16 +27,39 @@ class KycRepository:
         )
         return dict(row) if row else None
 
-    async def update_status(self, user_id: UUID, account: AlpacaAccount) -> None:
+    async def record_status_check(self, account: AlpacaAccount, retrieved_at: datetime) -> None:
+        # One conditional UPDATE: the guard never moves the check backwards, and the
+        # CASE changes status and status_updated_at only when the status differs (23.5).
         await self.session.execute(
             kyc_accounts.update()
             .where(
-                kyc_accounts.c.user_id == user_id,
                 kyc_accounts.c.alpaca_account_id == account.id,
-                kyc_accounts.c.status.is_distinct_from(account.status),
+                sa.or_(
+                    kyc_accounts.c.status_checked_at.is_(None),
+                    kyc_accounts.c.status_checked_at <= retrieved_at,
+                ),
             )
-            .values(status=account.status, status_updated_at=account.updated_at or self.clock.now())
+            .values(
+                status_checked_at=retrieved_at,
+                status_updated_at=sa.case(
+                    (
+                        kyc_accounts.c.status.is_distinct_from(account.status),
+                        account.updated_at or retrieved_at,
+                    ),
+                    else_=kyc_accounts.c.status_updated_at,
+                ),
+                status=account.status,
+            )
         )
+
+    async def linked_account_ids(self) -> list[str]:
+        result = await self.session.execute(
+            sa.select(kyc_accounts.c.alpaca_account_id).where(
+                kyc_accounts.c.alpaca_account_id.is_not(None)
+            )
+        )
+        values: list[str] = list(result.scalars())
+        return values
 
     async def reserve(self, user_id: UUID, now: datetime) -> bool:
         result = await self.session.execute(

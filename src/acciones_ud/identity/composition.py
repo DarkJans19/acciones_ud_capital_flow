@@ -8,6 +8,8 @@ from uuid import UUID
 
 from fastapi import FastAPI, Request
 
+from acciones_ud.config.settings import kyc_refresh_config
+from acciones_ud.identity.adapters.inbound.jobs.kyc_refresh_job import KycRefreshJob
 from acciones_ud.identity.adapters.outbound.alpaca.accounts_client import AlpacaAccountsClient
 from acciones_ud.identity.adapters.outbound.persistence.account_repository import AccountRepository
 from acciones_ud.identity.adapters.outbound.persistence.auth_context_repository import (
@@ -145,10 +147,24 @@ def session_service(request: Request) -> SessionService:
 
 
 async def startup(app: FastAPI) -> None:
-    pass
+    config = kyc_refresh_config(app.state.settings)
+    if not config.enabled:
+        return
+    job = KycRefreshJob(
+        AlpacaAccountsClient(app.state.alpaca_broker),
+        kyc_uow,
+        SystemClock(),
+        config.interval_seconds,
+    )
+    job.start()
+    app.state.kyc_refresh_job = job
 
 
 async def shutdown(app: FastAPI) -> None:
+    job = getattr(app.state, "kyc_refresh_job", None)
+    if job is not None:
+        await job.stop()
+        app.state.kyc_refresh_job = None
     database = sys.modules.get("acciones_ud.shared.infrastructure.db")
     if database is not None:
         await database.engine.dispose()
@@ -241,6 +257,11 @@ def account_info_service(request: Request) -> AccountInfoService:
     override = getattr(request.app.state, "account_info_service", None)
     if isinstance(override, AccountInfoService):
         return override
+    config = kyc_refresh_config(request.app.state.settings)
     return AccountInfoService(
-        account_uow, kyc_uow, AlpacaAccountsClient(request.app.state.alpaca_broker)
+        account_uow,
+        kyc_uow,
+        AlpacaAccountsClient(request.app.state.alpaca_broker),
+        config.cache_ttl_seconds,
+        SystemClock(),
     )

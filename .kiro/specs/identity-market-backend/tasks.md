@@ -526,44 +526,46 @@ Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5),
     - Detail returns the entry; unknown UUID 404, non-UUID 422; unauthenticated and invalid gets 401, unprivileged and invalid gets 403; no write, no Audit_Entry and no Alpaca call; the entry JSON holds no hash, secret or `tax_id_last4`; a pending broker shows `roles = []`; a fake raising `DATABASE_UNAVAILABLE` gives 503 with no partial body
     - _Requirements: 20.2, 20.3, 20.12, 20.13, 20.14, 20.15, 20.16, 20.17, 20.18_
 
-- [ ] 26. KYC status cache and KYC_Refresh_Job (gap B3)
-  - [ ] 26.1 Implement the KYC cache rules
+  - Evidence: commit `b186c83` (pure directory rules, shared effective-assignment predicate, CTE repository, endpoints, Properties 41/42 and API tests).
+
+- [x] 26. KYC status cache and KYC_Refresh_Job (gap B3)
+  - [x] 26.1 Implement the KYC cache rules
     - `identity/domain/kyc_cache.py`: `KycStatusState`, `serve_cached(checked_at, now, ttl_seconds)` (true only when TTL > 0, `checked_at` not null and `now - checked_at <= ttl`; a future `checked_at` counts as fresh), `apply_status_check(stored, retrieved, retrieved_at)` (None when the stored check is later; otherwise sets `checked_at` and changes `status` and `status_updated_at` only on a different status), and `cycle_action(outcome)` (store, skip, end cycle)
     - _Requirements: 23.4, 23.5, 23.6, 23.7, 23.8, 23.9_
 
-  - [ ]* 26.2 Write property test for status checks
+  - [x]* 26.2 Write property test for status checks
     - **Property 46: Status checks never move backwards and failures change nothing**
     - **Validates: Requirements 6.5, 23.5, 23.10**
     - File: `tests/identity/property/test_kyc_status_check_properties.py`
 
-  - [ ] 26.3 Replace `update_status` with `record_status_check`
+  - [x] 26.3 Replace `update_status` with `record_status_check`
     - `identity/domain/kyc_ports.py` and `persistence/kyc_repository.py`: `record_status_check(account, retrieved_at)` keyed on `alpaca_account_id` only, one `UPDATE` with the `status_checked_at IS NULL OR status_checked_at <= $retrieved_at` guard and the `CASE` on `status_updated_at`; it never inserts a row or changes `alpaca_account_id`; add `linked_account_ids()`
     - `identity/application/kyc.py`: `KycService.status` keeps asking Alpaca and stores `status_checked_at` through `record_status_check`
     - In-memory versions in `tests/support/identity_fakes.py` that apply `apply_status_check`
     - _Requirements: 10.4, 23.5, 23.10_
 
-  - [ ] 26.4 Add the KYC status cache to account information
+  - [x] 26.4 Add the KYC status cache to account information
     - `identity/application/account_info.py`: `AccountInfoService` gains `cache_ttl_seconds`; one unit of work reads the user and KYC rows (503 before any Alpaca call); none or unlinked gives `kyc_status = null` with no call; linked and `serve_cached` returns the stored status with no call; otherwise `get_account` (10 s), where `AlpacaError` gives `kyc_status_unavailable = true` with no write, and success calls `record_status_check` in a new unit of work whose `DATABASE_UNAVAILABLE` is logged without values and swallowed
     - `identity/composition.py`: `account_info_service(request)` passes the TTL parsed by `kyc_refresh_config`
     - _Requirements: 6.1, 6.4, 6.5, 6.6, 23.4, 23.6, 23.11_
 
-  - [ ]* 26.5 Write property test for the cache decision
+  - [x]* 26.5 Write property test for the cache decision
     - **Property 45: KYC status cache freshness decision**
     - **Validates: Requirements 6.4, 23.4, 23.6**
     - File: `tests/identity/property/test_kyc_cache_properties.py` (pure `serve_cached` and the account information use case over fakes, asserting when `FakeAlpacaAccounts` is called)
 
-  - [ ] 26.6 Implement the KYC_Refresh_Job and its lifecycle
+  - [x] 26.6 Implement the KYC_Refresh_Job and its lifecycle
     - `identity/adapters/inbound/jobs/__init__.py` and `kyc_refresh_job.py`: `KycRefreshJob(accounts, uow, clock, interval_seconds)` with `start`, `stop`, `run`, `run_cycle` following `market_data/adapters/inbound/jobs/clock_watcher.py`; first cycle one interval after start; next sleep starts after the cycle ends; snapshot of `linked_account_ids()` at cycle start; 429 ends the cycle, other `AlpacaError` skips the account, one transaction per stored account; no new request once stopping; per-cycle exceptions logged without ids or values; `stop()` sets the event and waits at most 10 s, then cancels
     - `identity/composition.py`: `startup(app)` builds and starts the job with `AlpacaAccountsClient(app.state.alpaca_broker)` when enabled and stores it in `app.state.kyc_refresh_job`; `shutdown(app)` awaits `job.stop()` before disposing the engine
     - `main.py`: enter the Alpaca broker client into the `AsyncExitStack` before pushing `identity.shutdown`, so the job stops before the client closes
     - _Requirements: 23.2, 23.3, 23.7, 23.8, 23.9, 23.10, 23.13, 23.14_
 
-  - [ ]* 26.7 Write property test for a refresh cycle
+  - [x]* 26.7 Write property test for a refresh cycle
     - **Property 47: A KYC_Refresh_Job cycle follows its outcome script**
     - **Validates: Requirements 23.2, 23.7, 23.8, 23.9, 23.10**
     - File: `tests/identity/property/test_kyc_refresh_job_properties.py`, with `FakeAlpacaAccounts` and an in-memory KYC store
 
-  - [ ]* 26.8 Write tests for the cache and the job
+  - [x]* 26.8 Write tests for the cache and the job
     - No Alpaca call for none or unlinked; database failure before the Alpaca call gives 503 with no call; a failing store after retrieval still returns the retrieved status with `kyc_status_unavailable = false`; with a fake sleep, the first cycle starts one interval after startup and the next one interval after the previous ends; a disabled flag starts no job; `stop()` during an in-flight fake request waits up to 10 s, then cancels without a write
     - _Requirements: 6.4, 6.5, 6.6, 23.2, 23.3, 23.11, 23.13, 23.14_
 
@@ -962,6 +964,7 @@ Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5),
 - Implementation note (task 22.1): Requirement 25.1 enumerates ten distinct action codes (`role_assignment_revoked` and `role_assignment_cancelled` are separate). The "11 action codes" wording in 25.1 and the design table, however, counts eleven. The migration check constraint, `AuditAction` and the tests use the ten enumerated codes; no extra code is invented.
 - Pending manual edit (task 22.3): the three `KYC_STATUS_*` variables could not be appended to `.env.example` because the tool permission was denied at implementation time. The defaults live in `config/settings.py`; add the three lines to `.env.example` manually.
 - Pending test (task 25.6): Property 40 (directory listing against an independent reference model) is not implemented. The listing is covered by `tests/identity/property/test_directory_properties.py` (Properties 41 and 42), by `tests/identity/test_user_directory_api.py`, and by the pure `directory.select` used as the in-memory reference.
+- Partial test (task 26.8): the fake-sleep timing of the first refresh cycle is not asserted. `run`, `_stopped_within` and `stop` are covered by inspection and by the enabled/disabled lifecycle tests.
 
 ## Task Dependency Graph
 
