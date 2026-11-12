@@ -30,6 +30,7 @@ from acciones_ud.identity.application.account import AccountService
 from acciones_ud.identity.application.account_info import AccountInfoService
 from acciones_ud.identity.application.broker_activation import BrokerActivationService
 from acciones_ud.identity.application.kyc import KycService
+from acciones_ud.identity.application.kyc_reconcile import KycReconcileService
 from acciones_ud.identity.application.login import AuthService
 from acciones_ud.identity.application.rbac_admin import RbacService
 from acciones_ud.identity.application.register import RegistrationService
@@ -251,6 +252,15 @@ def kyc_service(request: Request) -> KycService:
     if isinstance(override, KycService):
         return override
     return KycService(kyc_uow, AlpacaAccountsClient(request.app.state.alpaca_broker), SystemClock())
+
+
+def kyc_reconcile_service(request: Request) -> KycReconcileService:
+    override = getattr(request.app.state, "kyc_reconcile_service", None)
+    if isinstance(override, KycReconcileService):
+        return override
+    return KycReconcileService(
+        kyc_uow, AlpacaAccountsClient(request.app.state.alpaca_broker), SystemClock()
+    )
 
 
 def account_info_service(request: Request) -> AccountInfoService:

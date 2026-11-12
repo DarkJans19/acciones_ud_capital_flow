@@ -3,12 +3,14 @@ from uuid import UUID
 
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from acciones_ud.identity.adapters.outbound.persistence.tables import kyc_accounts
+from acciones_ud.identity.adapters.outbound.persistence.tables import kyc_accounts, users
 from acciones_ud.identity.domain.auth_ports import Record
 from acciones_ud.identity.domain.kyc import AlpacaAccount
 from acciones_ud.shared.domain.clock import Clock
+from acciones_ud.shared.domain.errors import AppError, ErrorCode
 
 
 class KycRepository:
@@ -60,6 +62,79 @@ class KycRepository:
         )
         values: list[str] = list(result.scalars())
         return values
+
+    async def user_email(self, user_id: UUID) -> str:
+        email = (
+            await self.session.execute(
+                sa.select(users.c.email).where(users.c.id == user_id)
+            )
+        ).scalar_one_or_none()
+        if email is None:
+            raise AppError(404, ErrorCode.NOT_FOUND, "User not found.", {"resource": "user"})
+        return str(email)
+
+    async def get_by_alpaca_id(self, account_id: str) -> Record | None:
+        row = (
+            (
+                await self.session.execute(
+                    sa.select(kyc_accounts).where(
+                        kyc_accounts.c.alpaca_account_id == account_id
+                    )
+                )
+            )
+            .mappings()
+            .first()
+        )
+        return dict(row) if row else None
+
+    async def link_new(
+        self, user_id: UUID, account_id: str, status: str, retrieved_at: datetime
+    ) -> bool:
+        result = await self.session.execute(
+            insert(kyc_accounts)
+            .values(
+                user_id=user_id,
+                alpaca_account_id=account_id,
+                status=status,
+                status_updated_at=retrieved_at,
+                status_checked_at=retrieved_at,
+                reserved_at=retrieved_at,
+                tax_id_last4=None,
+            )
+            .on_conflict_do_nothing()
+            .returning(kyc_accounts.c.user_id)
+        )
+        return result.first() is not None
+
+    async def link_reserved(
+        self,
+        user_id: UUID,
+        account_id: str,
+        status: str,
+        retrieved_at: datetime,
+        observed_reserved_at: datetime,
+    ) -> bool:
+        try:
+            async with self.session.begin_nested():
+                result = await self.session.execute(
+                    kyc_accounts.update()
+                    .where(
+                        kyc_accounts.c.user_id == user_id,
+                        kyc_accounts.c.alpaca_account_id.is_(None),
+                        kyc_accounts.c.reserved_at == observed_reserved_at,
+                    )
+                    .values(
+                        alpaca_account_id=account_id,
+                        status=status,
+                        status_updated_at=retrieved_at,
+                        status_checked_at=retrieved_at,
+                    )
+                    .returning(kyc_accounts.c.user_id)
+                )
+        except IntegrityError:
+            # A unique violation on alpaca_account_id becomes 409 in the use case.
+            return False
+        return result.first() is not None
 
     async def reserve(self, user_id: UUID, now: datetime) -> bool:
         result = await self.session.execute(

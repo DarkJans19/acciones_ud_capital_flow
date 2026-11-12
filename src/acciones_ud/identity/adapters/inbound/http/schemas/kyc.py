@@ -1,6 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Literal
+from uuid import UUID
 
 import pycountry
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, field_validator, model_validator
@@ -177,3 +178,14 @@ class KycStatusOut(KycModel):
     status_updated_at: datetime | None
     can_trade: bool
     stale: bool
+
+
+class KycReconcileIn(KycModel):
+    alpaca_account_id: UUID | None = None
+
+
+class KycReconcileOut(KycModel):
+    user_id: UUID
+    alpaca_account_id: str
+    status: str | None
+    outcome: Literal["linked", "already_linked"]

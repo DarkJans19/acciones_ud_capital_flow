@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Body, Depends, Query, Request
 
 from acciones_ud.identity.adapters.inbound.http.deps import require_permission
 from acciones_ud.identity.adapters.inbound.http.schemas.admin import (
@@ -19,6 +19,7 @@ from acciones_ud.identity.adapters.inbound.http.schemas.admin import (
     UserDirectoryQueryIn,
 )
 from acciones_ud.identity.adapters.inbound.http.schemas.auth import RegisterBaseIn, RegistrationOut
+from acciones_ud.identity.adapters.inbound.http.schemas.kyc import KycReconcileIn, KycReconcileOut
 from acciones_ud.identity.domain.auth_ports import Record
 from acciones_ud.identity.domain.directory import DirectoryEntry
 from acciones_ud.identity.domain.models import CurrentUser
@@ -91,6 +92,25 @@ async def get_user(user_id: UUID, request: Request, user: AdminUser) -> Director
     from acciones_ud.identity.composition import user_directory_service
 
     return await user_directory_service(request).detail(user_id)
+
+
+@router.post(
+    "/kyc/{user_id}/reconcile",
+    response_model=KycReconcileOut,
+    responses=error_responses(401, 403, 404, 409, 422, 500, 502, 503),
+)
+async def reconcile_kyc(
+    user_id: UUID,
+    request: Request,
+    user: AdminUser,
+    body: Annotated[KycReconcileIn | None, Body()] = None,
+) -> Record:
+    from acciones_ud.identity.composition import kyc_reconcile_service
+
+    alpaca_account_id = body.alpaca_account_id if body is not None else None
+    return await kyc_reconcile_service(request).reconcile(
+        user.user_id, user_id, alpaca_account_id
+    )
 
 
 @router.put(

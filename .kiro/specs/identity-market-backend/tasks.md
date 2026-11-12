@@ -569,37 +569,39 @@ Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5),
     - No Alpaca call for none or unlinked; database failure before the Alpaca call gives 503 with no call; a failing store after retrieval still returns the retrieved status with `kyc_status_unavailable = false`; with a fake sleep, the first cycle starts one interval after startup and the next one interval after the previous ends; a disabled flag starts no job; `stop()` during an in-flight fake request waits up to 10 s, then cancels without a write
     - _Requirements: 6.4, 6.5, 6.6, 23.2, 23.3, 23.11, 23.13, 23.14_
 
-- [ ] 27. KYC reconciliation (gap B4)
-  - [ ] 27.1 Add the account list to the Alpaca accounts port, client and fake
+  - Evidence: commit `4feacea` (cache rules, monotonic status check, account-info cache, refresh job and lifecycle, Properties 45/46/47 and job tests).
+
+- [x] 27. KYC reconciliation (gap B4)
+  - [x] 27.1 Add the account list to the Alpaca accounts port, client and fake
     - `identity/domain/kyc.py`: `AlpacaAccountSummary {id, status, updated_at, contact_email}`; `identity/domain/kyc_ports.py`: `AlpacaAccountsPort.list_accounts(query, timeout=10)`, and `get_account` documents 404 as `AlpacaNotFound`
     - `alpaca/accounts_client.py`: `list_accounts` calls `GET /v1/accounts?query=<email>&entities=contact` and maps `contact.email_address`, errors through `classify` and `raise_for_alpaca`; `get_account` raises `AlpacaNotFound` on 404
     - `alpaca/fake_accounts.py`: scripted `list_accounts` with call recording
     - _Requirements: 24.1, 24.2, 24.3, 17.5, 17.6_
 
-  - [ ] 27.2 Implement the reconciliation decision rules and error mapping
+  - [x] 27.2 Implement the reconciliation decision rules and error mapping
     - `identity/domain/kyc_reconcile.py`: `precheck(state, supplied, now)` following the design decision table (`AlreadyLinked`, `KYC_ACCOUNT_EXISTS`, `KYC_SUBMISSION_IN_PROGRESS` under 120 s, `LookupById`, `SearchByEmail`, identifiers compared as `UUID`), `pick_candidate(accounts, registered_email)` (trimmed, lowercased contact email: `Found`, `NotFound`, `Ambiguous(count)`), and `reconcile_alpaca_error(exc) -> AppError` (`AlpacaNotFound` 404 `KYC_RECONCILE_NOT_FOUND`, `AlpacaUnavailable` 502, `AlpacaRateLimited` 503, `AlpacaAuthError` and `AlpacaValidationError` 500 `INTERNAL_ERROR`; never `to_app_error`, never `SYMBOL_NOT_FOUND`)
     - _Requirements: 24.2, 24.3, 24.4, 24.5, 24.6, 24.8, 24.9_
 
-  - [ ] 27.3 Add the reconciliation repository methods
+  - [x] 27.3 Add the reconciliation repository methods
     - `identity/domain/kyc_ports.py` and `persistence/kyc_repository.py`: `get_by_alpaca_id(account_id)`, `link_new(...)` (`INSERT ... ON CONFLICT DO NOTHING RETURNING user_id`, `tax_id_last4` null), `link_reserved(...)` (`UPDATE ... WHERE alpaca_account_id IS NULL AND reserved_at = $observed RETURNING user_id` inside `session.begin_nested()`, a unique violation becomes 409 `ALPACA_ACCOUNT_IN_USE`, `tax_id_last4` not in the `SET` list); identifiers stored as canonical lowercase UUID text
     - In-memory versions in `tests/support/identity_fakes.py`
     - _Requirements: 24.1, 24.7, 24.10, 24.12_
 
-  - [ ] 27.4 Implement KycReconcileService
+  - [x] 27.4 Implement KycReconcileService
     - `identity/application/kyc_reconcile.py`: `KycReconcileService.reconcile(actor_id, user_id, alpaca_account_id)`; unit of work 1 reads the user (404 `NOT_FOUND`) and the KYC row and runs `precheck`; the Alpaca call runs outside any transaction; unit of work 2 checks the in-use identifier, writes with `retrieved_at = clock.now()` and, when the write matches no row, re-reads and re-applies `precheck`; database failures give 503 with no change; tax identifiers never reach the response, an Error_Body or a log; the `kyc_reconciled` Audit_Entry is added in task 28.4
     - _Requirements: 24.1, 24.2, 24.5, 24.7, 24.9, 24.10, 24.11, 24.12, 24.13_
 
-  - [ ] 27.5 Add the reconciliation endpoint
+  - [x] 27.5 Add the reconciliation endpoint
     - `schemas/kyc.py`: `KycReconcileIn {alpaca_account_id: UUID | None = None}` and `KycReconcileOut {user_id, alpaca_account_id, status, outcome}`
     - `routers/admin.py`: `POST /admin/kyc/{user_id}/reconcile` with `require_permission("admin:users")`, `user_id: UUID` and `Body(default=None)` so an absent body, `{}` and a null value all search by email; a non-UUID is 422 before any Alpaca call; wire in `identity/composition.py`
     - _Requirements: 24.1, 24.2, 24.13, 24.14_
 
-  - [ ] 27.6 Write property test for reconciliation
+  - [x] 27.6 Write property test for reconciliation
     - **Property 48: Reconciliation follows the decision table**
     - **Validates: Requirements 24.1, 24.2, 24.3, 24.4, 24.5, 24.6, 24.7, 24.8, 24.9, 24.10, 24.11**
     - File: `tests/identity/property/test_kyc_reconcile_properties.py`, running the use case over `FakeAlpacaAccounts` and the in-memory KYC store against a reference table written in the test module
 
-  - [ ]* 27.7 Write API tests for reconciliation
+  - [x]* 27.7 Write API tests for reconciliation
     - Unknown user 404 `NOT_FOUND` and invalid UUIDs (path or body) 422, both with no Alpaca call; 401 and 403 store nothing and send no Alpaca request; the response, Error_Body and captured logs hold no tax identifier
     - _Requirements: 24.10, 24.13, 24.14_
 

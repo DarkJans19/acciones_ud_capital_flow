@@ -13,6 +13,14 @@ class AlpacaAccount:
     updated_at: datetime | None = None
 
 
+@dataclass(frozen=True)
+class AlpacaAccountSummary:
+    id: str
+    status: str
+    updated_at: datetime | None = None
+    contact_email: str | None = None
+
+
 def can_trade(status: str | None) -> bool:
     return status == "ACTIVE"
 
