@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
+from acciones_ud.identity.domain.audit import AuditEntry, AuditPage, AuditQuery
 from acciones_ud.identity.domain.auth_ports import Record
 from acciones_ud.identity.domain.directory import DirectoryEntry, DirectoryPage, DirectoryQuery
 
@@ -29,9 +30,17 @@ class AdminRepository(Protocol):
     async def set_premium(self, user_id: UUID, value: bool) -> Record: ...
 
 
+class AuditLogRepository(Protocol):
+    async def append(self, entry: AuditEntry) -> None: ...
+    async def search(self, query: AuditQuery) -> AuditPage: ...
+
+
 class AdminWork(Protocol):
     @property
     def admin(self) -> AdminRepository: ...
+
+    @property
+    def audit(self) -> AuditLogRepository: ...
 
 
 class AdminWorkFactory(Protocol):

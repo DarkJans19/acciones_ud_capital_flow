@@ -227,6 +227,16 @@ def test_invalid_parameters_are_rejected(
     assert response.json()["code"] == "VALIDATION_ERROR"
 
 
+def test_invalid_parameters_are_named_together(api_settings: Settings) -> None:
+    client = make_app(api_settings, population())
+
+    response = client.get("/api/v1/admin/users", params={"limit": 0, "q": "   "})
+
+    assert response.status_code == 422
+    fields = {error["field"] for error in response.json()["details"]["errors"]}
+    assert {"query.limit", "query.q"} <= fields
+
+
 def test_database_failure_returns_503_without_partial_body(api_settings: Settings) -> None:
     client = make_app(
         api_settings,

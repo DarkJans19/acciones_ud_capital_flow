@@ -2,6 +2,7 @@ from contextlib import AbstractAsyncContextManager
 from typing import Protocol
 from uuid import UUID
 
+from acciones_ud.identity.domain.audit import AuditEntry
 from acciones_ud.identity.domain.models import AccessClaims, CurrentUser
 
 
@@ -33,9 +34,16 @@ class UserRepository(Protocol):
     async def insert(self, user: dict[str, object], role: str | None) -> UUID: ...
 
 
+class AuditRepository(Protocol):
+    async def append(self, entry: AuditEntry) -> None: ...
+
+
 class IdentityUnitOfWork(Protocol):
     @property
     def users(self) -> UserRepository: ...
+
+    @property
+    def audit(self) -> AuditRepository: ...
 
 
 class UnitOfWorkFactory(Protocol):

@@ -1,10 +1,12 @@
 """Administrative KYC reconciliation use case (Requirement 24, D9)."""
 
+from datetime import datetime
 from uuid import UUID
 
+from acciones_ud.identity.domain.audit import AuditAction, build_entry
 from acciones_ud.identity.domain.auth_ports import Record
 from acciones_ud.identity.domain.kyc import AlpacaAccountSummary
-from acciones_ud.identity.domain.kyc_ports import AlpacaAccountsPort, KycWorkFactory
+from acciones_ud.identity.domain.kyc_ports import AlpacaAccountsPort, KycWork, KycWorkFactory
 from acciones_ud.identity.domain.kyc_reconcile import (
     Ambiguous,
     KycState,
@@ -38,11 +40,15 @@ class KycReconcileService:
         # Unit of work 1: short read; no transaction is held during the Alpaca call.
         async with self.uow() as work:
             email = await work.kyc.user_email(user_id)
-            row = await work.kyc.get(user_id)
-        state = _state(row)
-        decision = precheck(state, alpaca_account_id, now)
-        if decision is ReconcileDecision.ALREADY_LINKED:
-            return self._out(state.alpaca_account_id, state.status, user_id, "already_linked")
+            state = _state(await work.kyc.get(user_id))
+            decision = precheck(state, alpaca_account_id, now)
+            if decision is ReconcileDecision.ALREADY_LINKED:
+                await self._audit(
+                    work, actor_id, user_id, state.alpaca_account_id, "already_linked", now
+                )
+                return self._out(
+                    state.alpaca_account_id, state.status, user_id, "already_linked"
+                )
 
         candidate = (
             await self._by_id(str(alpaca_account_id))
@@ -71,6 +77,14 @@ class KycReconcileService:
                 fresh = _state(await work.kyc.get(user_id))
                 again = precheck(fresh, UUID(candidate.id), now)
                 if again is ReconcileDecision.ALREADY_LINKED:
+                    await self._audit(
+                        work,
+                        actor_id,
+                        user_id,
+                        fresh.alpaca_account_id,
+                        "already_linked",
+                        now,
+                    )
                     return self._out(
                         fresh.alpaca_account_id, fresh.status, user_id, "already_linked"
                     )
@@ -79,6 +93,7 @@ class KycReconcileService:
                     ErrorCode.KYC_SUBMISSION_IN_PROGRESS,
                     "A KYC submission is in progress.",
                 )
+            await self._audit(work, actor_id, user_id, candidate.id, "linked", now)
         return self._out(candidate.id, candidate.status, user_id, "linked")
 
     async def _by_id(self, account_id: str) -> AlpacaAccountSummary:
@@ -108,6 +123,28 @@ class KycReconcileService:
                 {"count": picked.count},
             )
         return picked.account
+
+    @staticmethod
+    async def _audit(
+        work: KycWork,
+        actor_id: UUID | None,
+        user_id: UUID,
+        alpaca_account_id: str | None,
+        outcome: str,
+        now: datetime,
+    ) -> None:
+        if actor_id is None:
+            return
+        await work.audit.append(
+            build_entry(
+                AuditAction.KYC_RECONCILED,
+                actor_id,
+                "user",
+                str(user_id),
+                {"alpaca_account_id": alpaca_account_id, "outcome": outcome},
+                now,
+            )
+        )
 
     @staticmethod
     def _in_use() -> AppError:

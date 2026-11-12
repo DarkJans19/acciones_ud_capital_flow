@@ -25,9 +25,18 @@ from acciones_ud.shared.domain.errors import AppError, ErrorCode
 from tests.support.clock import FakeClock
 
 
+class FakeAuditLog:
+    def __init__(self) -> None:
+        self.entries: list[object] = []
+
+    async def append(self, entry: object) -> None:
+        self.entries.append(entry)
+
+
 class FakeActivationRepository:
     def __init__(self, clock: FakeClock) -> None:
         self.clock = clock
+        self.audit = FakeAuditLog()
         self.admin_id, self.broker_id, self.investor_id = uuid4(), uuid4(), uuid4()
         self.people: dict[UUID, Record] = {
             self.admin_id: {"account_status": "active", "broker_requested": False},
@@ -89,6 +98,7 @@ class FakeActivationRepository:
 
         class Work:
             admin = repo
+            audit = repo.audit
 
         before = (deepcopy(self.people), deepcopy(self.rows))
         try:

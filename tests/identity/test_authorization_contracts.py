@@ -164,3 +164,24 @@ def test_openapi_errors_and_public_docs(api_settings: Settings) -> None:
             if method in {"put", "post"} and operation.get("requestBody"):
                 assert "422" in responses
     assert api_settings.jwt_secret.get_secret_value() not in str(document)
+
+
+def test_openapi_gap_endpoints_and_optional_logout(api_settings: Settings) -> None:
+    document = TestClient(create_app(api_settings)).get("/openapi.json").json()
+    paths = document["paths"]
+    for path in (
+        "/api/v1/admin/users",
+        "/api/v1/admin/users/{user_id}",
+        "/api/v1/admin/kyc/{user_id}/reconcile",
+        "/api/v1/admin/audit-log",
+    ):
+        assert path in paths
+
+    logout = paths["/api/v1/auth/logout"]["post"]
+    assert set(logout["responses"]) == {"204", "503"}
+    assert logout["security"] == [
+        {"AccessTokenCookie": []},
+        {"RefreshTokenCookie": []},
+        {},
+    ]
+    assert paths["/api/v1/admin/audit-log"]["get"]["security"] == [{"AccessTokenCookie": []}]

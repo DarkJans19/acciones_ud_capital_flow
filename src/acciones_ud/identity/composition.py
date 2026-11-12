@@ -12,6 +12,9 @@ from acciones_ud.config.settings import kyc_refresh_config
 from acciones_ud.identity.adapters.inbound.jobs.kyc_refresh_job import KycRefreshJob
 from acciones_ud.identity.adapters.outbound.alpaca.accounts_client import AlpacaAccountsClient
 from acciones_ud.identity.adapters.outbound.persistence.account_repository import AccountRepository
+from acciones_ud.identity.adapters.outbound.persistence.audit_log_repository import (
+    AuditLogRepository,
+)
 from acciones_ud.identity.adapters.outbound.persistence.auth_context_repository import (
     AuthContextRepository,
 )
@@ -28,6 +31,7 @@ from acciones_ud.identity.adapters.outbound.security.tokens import AccessTokenCo
 from acciones_ud.identity.adapters.outbound.security.totp import TotpProvider
 from acciones_ud.identity.application.account import AccountService
 from acciones_ud.identity.application.account_info import AccountInfoService
+from acciones_ud.identity.application.audit_log import AuditLogService
 from acciones_ud.identity.application.broker_activation import BrokerActivationService
 from acciones_ud.identity.application.kyc import KycService
 from acciones_ud.identity.application.kyc_reconcile import KycReconcileService
@@ -76,6 +80,7 @@ async def identity_uow() -> AsyncIterator[IdentityUnitOfWork]:
 
         class Work:
             users = UserRepository(session)
+            audit = AuditLogRepository(session)
 
         yield Work()
 
@@ -179,6 +184,7 @@ async def admin_uow() -> AsyncIterator[AdminWork]:
 
         class Work:
             admin = RbacRepository(session)
+            audit = AuditLogRepository(session)
 
         yield Work()
 
@@ -216,6 +222,13 @@ def user_directory_service(request: Request) -> UserDirectoryService:
     return UserDirectoryService(directory_uow, SystemClock())
 
 
+def audit_log_service(request: Request) -> AuditLogService:
+    override = getattr(request.app.state, "audit_log_service", None)
+    if isinstance(override, AuditLogService):
+        return override
+    return AuditLogService(admin_uow)
+
+
 @asynccontextmanager
 async def account_uow() -> AsyncIterator[AccountWork]:
     from acciones_ud.shared.infrastructure.db import unit_of_work
@@ -243,6 +256,7 @@ async def kyc_uow() -> AsyncIterator[KycWork]:
 
         class Work:
             kyc = KycRepository(session, SystemClock())
+            audit = AuditLogRepository(session)
 
         yield Work()
 

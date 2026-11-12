@@ -605,60 +605,62 @@ Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5),
     - Unknown user 404 `NOT_FOUND` and invalid UUIDs (path or body) 422, both with no Alpaca call; 401 and 403 store nothing and send no Alpaca request; the response, Error_Body and captured logs hold no tax identifier
     - _Requirements: 24.10, 24.13, 24.14_
 
-- [ ] 28. Audit log of identity administrative actions (gap D3)
-  - [ ] 28.1 Implement the audit domain rules
+  - Evidence: commit `2832ed5` (account list port/client/fake, decision table, repository writes, service, endpoint, Property 48 and API tests).
+
+- [x] 28. Audit log of identity administrative actions (gap D3)
+  - [x] 28.1 Implement the audit domain rules
     - `identity/domain/audit.py`: `AuditAction` (`StrEnum` of the 11 codes of 25.1), `AuditEntry` (frozen dataclass), `PAYLOAD_KEYS` per action and `build_entry(...)` that raises `ValueError` on a missing or extra payload key and serializes UUID and datetime values to ISO strings (`valid_to` null when open-ended)
     - _Requirements: 25.1, 25.2, 25.6_
 
-  - [ ] 28.2 Write property test for audit payloads
+  - [x] 28.2 Write property test for audit payloads
     - **Property 49: Audit payloads hold exactly the whitelisted keys**
     - **Validates: Requirements 25.1, 25.6**
     - File: `tests/identity/property/test_audit_payload_properties.py`
 
-  - [ ] 28.3 Implement the audit log repository and unit-of-work wiring
+  - [x] 28.3 Implement the audit log repository and unit-of-work wiring
     - `identity/domain/admin_ports.py`: `AuditLogRepository.append(entry)` and `.search(query) -> AuditPage(items, total)`; no update or delete method
     - `persistence/audit_log_repository.py`: `append` and a `search` CTE ordered by `occurred_at DESC, id DESC` with exact, case-sensitive equality filters; a failing `append` raises 503 `DATABASE_UNAVAILABLE`
     - `AdminWork`, the identity unit of work used by registration and the reconciliation unit of work gain an `audit` attribute bound to the same `AsyncSession` (wired in `identity/composition.py`)
     - In-memory audit fake and a unit-of-work fake in `tests/support/identity_fakes.py` that buffer writes and commit only when the block exits without an exception, scriptable to fail `append`
     - _Requirements: 25.3, 25.4, 25.9, 25.14_
 
-  - [ ] 28.4 Write Audit_Entries from every administrative use case
+  - [x] 28.4 Write Audit_Entries from every administrative use case
     - `rbac_admin.py`: `premium_changed`, `role_assignment_created`, `role_assignment_updated` (with the previous validity), `role_assignment_revoked`, `role_assignment_cancelled` (also for the 200 on an already cancelled assignment), `role_permission_added`, `role_permission_removed`
     - `broker_activation.py`: `broker_activated` with both assignment ids; `register.py`: `RegistrationService.create_administrator(payload, actor_id)` writes `administrator_created` (the router passes the actor); `kyc_reconcile.py`: `kyc_reconciled` with `outcome` `linked` or `already_linked`
     - Each writer calls `append` as the last step inside the same `unit_of_work` as the change, with `actor_user_id` from `CurrentUser.user_id` and `occurred_at` equal to the use case's `now`; an earlier `AppError` stores no entry
     - _Requirements: 25.1, 25.2, 25.3, 25.4, 25.5_
 
-  - [ ] 28.5 Write property test for audit atomicity
+  - [x] 28.5 Write property test for audit atomicity
     - **Property 50: Audit entries are atomic with their administrative change**
     - **Validates: Requirements 25.1, 25.2, 25.3, 25.4, 25.5**
     - File: `tests/identity/property/test_audit_atomicity_properties.py`, over the in-memory unit-of-work fake with scripted successes, early `AppError`s and failing appends
 
-  - [ ] 28.6 Add the audit log read endpoint
+  - [x] 28.6 Add the audit log read endpoint
     - `identity/application/audit_log.py`: `AuditLogService.list(query)` (read-only)
     - `schemas/admin.py`: `AuditLogQueryIn` (`action` `Literal` of the 11 codes, `actor_user_id` UUID, `target_type` `user`/`role`, `target_id` 1-100, `limit` 1-100 default 50, `offset` ≥ 0 default 0), `AuditEntryOut`, `AuditLogPageOut {items, total, limit, offset}`
     - `routers/admin.py`: `GET /admin/audit-log` with `require_permission("admin:rbac")`; no endpoint creates, updates or deletes an Audit_Entry; wire in `identity/composition.py`
     - _Requirements: 25.7, 25.8, 25.9, 25.10, 25.11, 25.12, 25.13_
 
-  - [ ]* 28.7 Write property test for the audit log listing
+  - [x]* 28.7 Write property test for the audit log listing
     - **Property 51: Audit log listing matches a reference model**
     - **Validates: Requirements 25.7, 25.8, 25.9, 25.14**
     - File: `tests/identity/property/test_audit_log_properties.py`, over the in-memory audit fake
 
-  - [ ]* 28.8 Write property test for admin listing parameters
+  - [x]* 28.8 Write property test for admin listing parameters
     - **Property 43: Admin listing parameters are validated together**
     - **Validates: Requirements 20.4, 20.11, 21.8, 25.8, 25.10**
     - File: `tests/identity/property/test_admin_query_properties.py`, targeting `UserDirectoryQueryIn` and `AuditLogQueryIn` through `httpx.ASGITransport` with the use cases overridden
 
-  - [ ]* 28.9 Write API tests for the audit log
+  - [x]* 28.9 Write API tests for the audit log
     - `occurred_at` lies between request receipt and response; a failed administrative request (404, 409, 422) stores no entry; 401 and 403 return no entries; a failing `append` returns 503 and leaves the change unstored
     - _Requirements: 25.2, 25.4, 25.5, 25.11, 25.13_
 
-- [ ] 29. OpenAPI contract for the readme_agregar.md endpoints
-  - [ ] 29.1 Declare the error responses of the new and changed operations
+- [x] 29. OpenAPI contract for the readme_agregar.md endpoints
+  - [x] 29.1 Declare the error responses of the new and changed operations
     - With `error_responses`, as in task 20.1: `GET /admin/users` (401, 403, 422, 503), `GET /admin/users/{user_id}` (401, 403, 404, 422, 503), `POST /admin/users/{user_id}/broker-activation` (401, 403, 404, 409, 422, 503), `POST /admin/kyc/{user_id}/reconcile` (401, 403, 404, 409, 422, 500, 502, 503), `GET /admin/audit-log` (401, 403, 422, 503), and `POST /auth/logout` with 204 and 503 only (no 401)
     - _Requirements: 4.14, 17.1, 17.2, 25.12_
 
-  - [ ]* 29.2 Extend the OpenAPI contract tests
+  - [x]* 29.2 Extend the OpenAPI contract tests
     - The paths match the design endpoint table, including `/admin/users`, `/admin/users/{user_id}`, `/admin/kyc/{user_id}/reconcile` and `/admin/audit-log`; every new operation lists its errors with the `ErrorBody` schema; logout declares no 401 and both cookie schemes as optional; no operation creates, updates or deletes an Audit_Entry
     - _Requirements: 4.14, 17.1, 17.2, 25.12_
 
@@ -967,6 +969,7 @@ Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5),
 - Pending manual edit (task 22.3): the three `KYC_STATUS_*` variables could not be appended to `.env.example` because the tool permission was denied at implementation time. The defaults live in `config/settings.py`; add the three lines to `.env.example` manually.
 - Pending test (task 25.6): Property 40 (directory listing against an independent reference model) is not implemented. The listing is covered by `tests/identity/property/test_directory_properties.py` (Properties 41 and 42), by `tests/identity/test_user_directory_api.py`, and by the pure `directory.select` used as the in-memory reference.
 - Partial test (task 26.8): the fake-sleep timing of the first refresh cycle is not asserted. `run`, `_stopped_within` and `stop` are covered by inspection and by the enabled/disabled lifecycle tests.
+- Test style notes (task 28): 28.5 (atomicity) is an example test over an in-memory unit-of-work fake; 28.8 (listing parameters together) is parametrized examples over the HTTP layer. Both cover the rule but are not Hypothesis properties.
 
 ## Task Dependency Graph
 

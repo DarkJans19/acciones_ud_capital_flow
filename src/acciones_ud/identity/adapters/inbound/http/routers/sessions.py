@@ -44,7 +44,11 @@ async def refresh(
     return result
 
 
-@router.post("/auth/logout", status_code=204, responses=error_responses(503))
+@router.post(
+    "/auth/logout",
+    status_code=204,
+    responses=error_responses(503),
+)
 async def logout(
     request: Request,
     access_token: Annotated[str | None, Depends(access_cookie)],

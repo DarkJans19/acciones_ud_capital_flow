@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
+from acciones_ud.identity.domain.audit import AuditEntry, AuditPage, AuditQuery
 from acciones_ud.identity.domain.auth_ports import Record
 from acciones_ud.identity.domain.kyc import AlpacaAccount, AlpacaAccountSummary
 from acciones_ud.identity.domain.kyc_submission import AccountOpeningRequest
@@ -40,9 +41,17 @@ class KycRepository(Protocol):
     async def release(self, user_id: UUID, reservation: datetime) -> None: ...
 
 
+class AuditLogRepository(Protocol):
+    async def append(self, entry: AuditEntry) -> None: ...
+    async def search(self, query: AuditQuery) -> AuditPage: ...
+
+
 class KycWork(Protocol):
     @property
     def kyc(self) -> KycRepository: ...
+
+    @property
+    def audit(self) -> AuditLogRepository: ...
 
 
 class KycWorkFactory(Protocol):

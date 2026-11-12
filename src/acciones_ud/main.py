@@ -1,5 +1,6 @@
 from collections.abc import AsyncIterator
 from contextlib import AsyncExitStack, asynccontextmanager
+from typing import Any
 
 import httpx
 from fastapi import FastAPI
@@ -63,6 +64,26 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_exception_handlers(app)
     identity.register(app)
     market_data.register(app)
+
+    default_openapi = app.openapi
+
+    def openapi_with_optional_logout() -> dict[str, Any]:
+        # Logout accepts either cookie or neither (4.6, 4.11, 4.12); FastAPI has no
+        # first-class way to add the "no credentials" alternative to `security`.
+        if app.openapi_schema is not None:
+            return app.openapi_schema
+        schema = default_openapi()
+        operation = schema.get("paths", {}).get("/api/v1/auth/logout", {}).get("post")
+        if operation is not None:
+            operation["security"] = [
+                {"AccessTokenCookie": []},
+                {"RefreshTokenCookie": []},
+                {},
+            ]
+        app.openapi_schema = schema
+        return schema
+
+    app.openapi = openapi_with_optional_logout  # type: ignore[method-assign]
 
     @app.get("/health", tags=["health"])
     async def health() -> dict[str, str]:

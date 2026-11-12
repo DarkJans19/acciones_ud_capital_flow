@@ -12,6 +12,7 @@ from pydantic import (
     model_validator,
 )
 
+from acciones_ud.identity.domain.audit import AuditAction, AuditQuery
 from acciones_ud.identity.domain.directory import DirectoryQuery
 from acciones_ud.identity.domain.models import AssignmentStatus
 from acciones_ud.identity.domain.rbac import validate_validity
@@ -155,6 +156,58 @@ class UserDirectoryEntryOut(BaseModel):
 
 class UserDirectoryPageOut(BaseModel):
     items: list[UserDirectoryEntryOut]
+    total: int
+    limit: int
+    offset: int
+
+
+AuditActionCode = Literal[
+    "administrator_created",
+    "broker_activated",
+    "premium_changed",
+    "role_assignment_created",
+    "role_assignment_updated",
+    "role_assignment_revoked",
+    "role_assignment_cancelled",
+    "role_permission_added",
+    "role_permission_removed",
+    "kyc_reconciled",
+]
+
+
+class AuditLogQueryIn(BaseModel):
+    action: AuditActionCode | None = None
+    actor_user_id: UUID | None = None
+    target_type: Literal["user", "role"] | None = None
+    target_id: str | None = Field(default=None, min_length=1, max_length=100)
+    limit: int = Field(default=50, ge=1, le=100)
+    offset: int = Field(default=0, ge=0)
+
+    def to_domain(self) -> AuditQuery:
+        return AuditQuery(
+            action=AuditAction(self.action) if self.action is not None else None,
+            actor_user_id=self.actor_user_id,
+            target_type=self.target_type,
+            target_id=self.target_id,
+            limit=self.limit,
+            offset=self.offset,
+        )
+
+
+class AuditEntryOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    actor_user_id: UUID
+    action: str
+    target_type: str
+    target_id: str
+    payload: dict[str, object]
+    occurred_at: datetime
+
+
+class AuditLogPageOut(BaseModel):
+    items: list[AuditEntryOut]
     total: int
     limit: int
     offset: int

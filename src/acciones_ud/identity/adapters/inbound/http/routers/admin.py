@@ -6,6 +6,8 @@ from fastapi import APIRouter, Body, Depends, Query, Request
 from acciones_ud.identity.adapters.inbound.http.deps import require_permission
 from acciones_ud.identity.adapters.inbound.http.schemas.admin import (
     AssignmentIn,
+    AuditLogPageOut,
+    AuditLogQueryIn,
     BrokerActivationOut,
     CreateAssignmentIn,
     PermissionIn,
@@ -46,7 +48,9 @@ async def create_administrator(
 
     if "administrator" not in user.roles:
         raise AppError(403, ErrorCode.FORBIDDEN, "Administrator role required.")
-    return await registration_service(request).create_administrator(body.model_dump())
+    return await registration_service(request).create_administrator(
+        body.model_dump(), user.user_id
+    )
 
 
 @router.post(
@@ -121,7 +125,7 @@ async def reconcile_kyc(
 async def premium(user_id: UUID, body: PremiumIn, request: Request, user: AdminUser) -> Record:
     from acciones_ud.identity.composition import rbac_service
 
-    return await rbac_service(request).premium(user_id, body.is_premium)
+    return await rbac_service(request).premium(user_id, body.is_premium, user.user_id)
 
 
 @router.get(
@@ -149,7 +153,7 @@ async def create_assignment(
     if body.role in {"broker", "administrator"} and "administrator" not in user.roles:
         raise AppError(403, ErrorCode.FORBIDDEN, "Administrator role required.")
     return await rbac_service(request).save(
-        user_id, body.role, body.valid_from, body.valid_to, None
+        user_id, body.role, body.valid_from, body.valid_to, None, actor_id=user.user_id
     )
 
 
@@ -164,7 +168,7 @@ async def update_assignment(
     from acciones_ud.identity.composition import rbac_service
 
     return await rbac_service(request).save(
-        user_id, None, body.valid_from, body.valid_to, assignment_id
+        user_id, None, body.valid_from, body.valid_to, assignment_id, actor_id=user.user_id
     )
 
 
@@ -207,7 +211,9 @@ async def permissions(request: Request, user: RbacUser) -> list[Record]:
 async def add_permission(role: str, body: PermissionIn, request: Request, user: RbacUser) -> Record:
     from acciones_ud.identity.composition import rbac_service
 
-    return await rbac_service(request).change_permission(role, body.permission_code, False)
+    return await rbac_service(request).change_permission(
+        role, body.permission_code, False, user.user_id
+    )
 
 
 @router.delete(
@@ -220,4 +226,27 @@ async def remove_permission(
 ) -> Record:
     from acciones_ud.identity.composition import rbac_service
 
-    return await rbac_service(request).change_permission(role, permission_code, True)
+    return await rbac_service(request).change_permission(
+        role, permission_code, True, user.user_id
+    )
+
+
+@router.get(
+    "/audit-log",
+    response_model=AuditLogPageOut,
+    responses=error_responses(401, 403, 422, 503),
+)
+async def audit_log(
+    request: Request,
+    user: RbacUser,
+    query: Annotated[AuditLogQueryIn, Query()],
+) -> Record:
+    from acciones_ud.identity.composition import audit_log_service
+
+    page = await audit_log_service(request).list(query.to_domain())
+    return {
+        "items": page.items,
+        "total": page.total,
+        "limit": query.limit,
+        "offset": query.offset,
+    }

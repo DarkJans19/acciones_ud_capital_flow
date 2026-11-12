@@ -4,6 +4,7 @@ from uuid import UUID
 
 from acciones_ud.identity.application.rbac_admin import assignment_out
 from acciones_ud.identity.domain.admin_ports import AdminWorkFactory
+from acciones_ud.identity.domain.audit import AuditAction, build_entry
 from acciones_ud.identity.domain.auth_ports import Record
 from acciones_ud.shared.domain.clock import Clock
 
@@ -26,6 +27,20 @@ class BrokerActivationService:
             await repo.mark_broker_active(user_id, now)
             broker = await repo.save_assignment(user_id, "broker", now, None, None)
             investor = await repo.save_assignment(user_id, "investor", now, None, None)
+            if actor_id is not None:
+                await work.audit.append(
+                    build_entry(
+                        AuditAction.BROKER_ACTIVATED,
+                        actor_id,
+                        "user",
+                        str(user_id),
+                        {
+                            "broker_assignment_id": broker["id"],
+                            "investor_assignment_id": investor["id"],
+                        },
+                        now,
+                    )
+                )
         return {
             "user_id": user_id,
             "account_status": "active",

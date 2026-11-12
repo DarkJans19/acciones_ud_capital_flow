@@ -23,6 +23,14 @@ NOW = datetime(2026, 1, 1, tzinfo=UTC)
 ADMIN = uuid4()
 
 
+class FakeAuditLog:
+    def __init__(self) -> None:
+        self.entries: list[object] = []
+
+    async def append(self, entry: object) -> None:
+        self.entries.append(entry)
+
+
 class FakeReconcileStore:
     def __init__(
         self,
@@ -35,6 +43,7 @@ class FakeReconcileStore:
         self.email = email
         self.other = other
         self.links = 0
+        self.audit = FakeAuditLog()
 
     async def user_email(self, user_id: UUID) -> str:
         if self.email is None:
@@ -92,6 +101,7 @@ class FakeReconcileStore:
 
         class Work:
             kyc = repo
+            audit = repo.audit
 
         yield Work()
 
