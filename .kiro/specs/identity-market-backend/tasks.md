@@ -974,6 +974,7 @@ Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5),
 - Resolved (task 22.3): the three `KYC_STATUS_*` variables are now in `.env.example`; the defaults live in `config/settings.py`.
 - Property 40 (task 25.6): implemented in `tests/identity/property/test_directory_properties.py` against an independent reference model.
 - Extra tests: Property 17 (search) lives in `tests/market_data/property/test_search_properties.py`; the WebSocket rejection that keeps the previous subscription is in `tests/market_data/test_stream_api.py`.
+- Evidence: commit `2d21bee` adds Properties 17 and 40, the WebSocket rejection test, the `.env.example` defaults and the closed checkboxes.
 - Partial test (task 26.8): the fake-sleep timing of the first refresh cycle is not asserted. `run`, `_stopped_within` and `stop` are covered by inspection and by the enabled/disabled lifecycle tests.
 - Test style notes (task 28): 28.5 (atomicity) is an example test over an in-memory unit-of-work fake; 28.8 (listing parameters together) is parametrized examples over the HTTP layer. Both cover the rule but are not Hypothesis properties.
 
