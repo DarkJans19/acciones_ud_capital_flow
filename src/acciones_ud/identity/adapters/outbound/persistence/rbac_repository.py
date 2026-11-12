@@ -146,7 +146,7 @@ class RbacRepository:
             )
         return next(r for r in await self.roles() if r["role"] == role)
 
-    async def activate_broker(self, user_id: UUID, now: datetime) -> Record:
+    async def mark_broker_active(self, user_id: UUID, now: datetime) -> None:
         row = (
             await self.session.execute(
                 t.users.update()
@@ -160,8 +160,6 @@ class RbacRepository:
         if not row:
             await self.user(user_id)
             raise AppError(409, ErrorCode.BROKER_NOT_PENDING, "Broker is not pending activation.")
-        assignment = await self.save_assignment(user_id, "broker", now, None, None)
-        return {"user_id": user_id, "account_status": "active", "role_assignment": assignment}
 
     async def set_premium(self, user_id: UUID, value: bool) -> Record:
         await self.user(user_id)

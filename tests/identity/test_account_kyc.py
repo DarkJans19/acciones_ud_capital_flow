@@ -46,6 +46,7 @@ class AccountFake:
             "country": "CO",
             "account_status": "active",
             "is_premium": False,
+            "broker_requested": False,
             "telegram_chat_id": None,
             "interests": [],
             "investor_level": None,
@@ -246,6 +247,7 @@ async def test_status_fallback_and_read_only_me() -> None:
     )
     result = await info.me(current)
     assert result["kyc_status"] is None and result["kyc_status_unavailable"]
+    assert result["broker_requested"] is False
     assert "DO-NOT-LEAK" not in str(result) and "PRIVATE" not in str(result)
     assert user_repo.writes == 0 and repo.writes == 1
     empty = KycFake()

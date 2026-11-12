@@ -50,11 +50,11 @@ async def create_administrator(
     responses=error_responses(401, 403, 404, 409, 422, 503),
 )
 async def activate_broker(user_id: UUID, request: Request, user: AdminUser) -> Record:
-    from acciones_ud.identity.composition import rbac_service
+    from acciones_ud.identity.composition import broker_activation_service
 
     if "administrator" not in user.roles:
         raise AppError(403, ErrorCode.FORBIDDEN, "Administrator role required.")
-    return await rbac_service(request).activate(user_id)
+    return await broker_activation_service(request).activate(user.user_id, user_id)
 
 
 @router.put(

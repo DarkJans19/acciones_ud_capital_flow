@@ -23,6 +23,7 @@ from acciones_ud.identity.adapters.outbound.security.tokens import AccessTokenCo
 from acciones_ud.identity.adapters.outbound.security.totp import TotpProvider
 from acciones_ud.identity.application.account import AccountService
 from acciones_ud.identity.application.account_info import AccountInfoService
+from acciones_ud.identity.application.broker_activation import BrokerActivationService
 from acciones_ud.identity.application.kyc import KycService
 from acciones_ud.identity.application.login import AuthService
 from acciones_ud.identity.application.rbac_admin import RbacService
@@ -166,6 +167,13 @@ def rbac_service(request: Request) -> RbacService:
     if isinstance(override, RbacService):
         return override
     return RbacService(admin_uow, SystemClock())
+
+
+def broker_activation_service(request: Request) -> BrokerActivationService:
+    override = getattr(request.app.state, "broker_activation_service", None)
+    if isinstance(override, BrokerActivationService):
+        return override
+    return BrokerActivationService(admin_uow, SystemClock())
 
 
 @asynccontextmanager

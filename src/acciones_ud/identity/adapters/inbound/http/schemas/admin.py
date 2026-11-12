@@ -52,6 +52,7 @@ class BrokerActivationOut(BaseModel):
     user_id: UUID
     account_status: Literal["active"]
     role_assignment: RoleAssignmentOut
+    investor_assignment: RoleAssignmentOut
 
 
 class PremiumOut(BaseModel):

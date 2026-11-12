@@ -10,25 +10,29 @@ from acciones_ud.shared.domain.clock import Clock
 from acciones_ud.shared.domain.errors import AppError, ErrorCode
 
 
+def assignment_out(row: Record, now: datetime) -> Record:
+    """Shared RoleAssignment view; ``effective`` mirrors the RBAC check (5.7)."""
+    return {
+        "id": row["id"],
+        "role": row["role_code"],
+        "valid_from": row["valid_from"],
+        "valid_to": row["valid_to"],
+        "status": row.get("status", "ACTIVE"),
+        "cancelled_at": row.get("cancelled_at"),
+        "cancelled_by": row.get("cancelled_by"),
+        "effective": row.get("account_status", "active") == "active"
+        and row.get("status", "ACTIVE") == "ACTIVE"
+        and row["valid_from"] <= now
+        and (row["valid_to"] is None or now < row["valid_to"]),
+    }
+
+
 class RbacService:
     def __init__(self, uow: AdminWorkFactory, clock: Clock) -> None:
         self.uow, self.clock = uow, clock
 
     def assignment_out(self, row: Record) -> Record:
-        now = self.clock.now()
-        return {
-            "id": row["id"],
-            "role": row["role_code"],
-            "valid_from": row["valid_from"],
-            "valid_to": row["valid_to"],
-            "status": row.get("status", "ACTIVE"),
-            "cancelled_at": row.get("cancelled_at"),
-            "cancelled_by": row.get("cancelled_by"),
-            "effective": row.get("account_status", "active") == "active"
-            and row.get("status", "ACTIVE") == "ACTIVE"
-            and row["valid_from"] <= now
-            and (row["valid_to"] is None or now < row["valid_to"]),
-        }
+        return assignment_out(row, self.clock.now())
 
     async def assignments(self, user_id: UUID) -> list[Record]:
         async with self.uow() as work:
@@ -129,12 +133,6 @@ class RbacService:
     async def change_permission(self, role: str, permission: str, remove: bool) -> Record:
         async with self.uow() as work:
             return await work.admin.change_permission(role, permission, remove)
-
-    async def activate(self, user_id: UUID) -> Record:
-        async with self.uow() as work:
-            result = await work.admin.activate_broker(user_id, self.clock.now())
-            result["role_assignment"] = self.assignment_out(result["role_assignment"])
-            return result
 
     async def premium(self, user_id: UUID, value: bool) -> Record:
         async with self.uow() as work:

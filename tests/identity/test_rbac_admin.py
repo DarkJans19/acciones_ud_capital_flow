@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 
 from acciones_ud.config.settings import Settings
 from acciones_ud.identity.adapters.inbound.http.deps import get_current_user
+from acciones_ud.identity.application.broker_activation import BrokerActivationService
 from acciones_ud.identity.application.rbac_admin import RbacService
 from acciones_ud.identity.domain.admin_ports import AdminWork
 from acciones_ud.identity.domain.auth_ports import Record
@@ -92,13 +93,11 @@ class FakeAdminRepository:
             self.mapping[role].append(permission)
         return {"role": role, "permissions": self.mapping[role]}
 
-    async def activate_broker(self, user_id: UUID, now: datetime) -> Record:
+    async def mark_broker_active(self, user_id: UUID, now: datetime) -> None:
         user = await self.user(user_id)
         if user["account_status"] != "pending_broker_activation":
             raise AppError(409, ErrorCode.BROKER_NOT_PENDING, "Broker is not pending activation.")
         user["account_status"] = "active"
-        row = await self.save_assignment(user_id, "broker", now, None, None)
-        return {"user_id": user_id, "account_status": "active", "role_assignment": row}
 
     async def set_premium(self, user_id: UUID, value: bool) -> Record:
         (await self.user(user_id))["is_premium"] = value
@@ -124,6 +123,7 @@ def test_admin_api_guards_activation_and_last_admin(api_settings: Settings) -> N
     repo = FakeAdminRepository(clock)
     app = create_app(api_settings)
     app.state.rbac_service = RbacService(repo.work, clock)
+    app.state.broker_activation_service = BrokerActivationService(repo.work, clock)
     current = CurrentUser(
         repo.admin_id,
         uuid4(),
@@ -136,10 +136,13 @@ def test_admin_api_guards_activation_and_last_admin(api_settings: Settings) -> N
     app.dependency_overrides[get_current_user] = lambda: current
     client = TestClient(app)
     activated = client.post(f"/api/v1/admin/users/{repo.broker_id}/broker-activation")
-    assert activated.status_code == 200 and activated.json()["role_assignment"]["effective"]
+    body = activated.json()
+    assert activated.status_code == 200 and body["role_assignment"]["effective"]
+    assert body["role_assignment"]["role"] == "broker"
+    assert body["investor_assignment"]["role"] == "investor"
     again = client.post(f"/api/v1/admin/users/{repo.broker_id}/broker-activation")
     assert again.status_code == 409 and again.json()["code"] == "BROKER_NOT_PENDING"
-    assert len(repo.rows) == 2
+    assert len(repo.rows) == 3
     assignment_id = repo.rows[0]["id"]
     before = deepcopy(repo.rows)
     rejected = client.post(f"/api/v1/admin/users/{repo.admin_id}/roles/{assignment_id}/revoke")
@@ -162,8 +165,9 @@ async def test_assignment_and_permission_changes() -> None:
     service = RbacService(repo.work, clock)
     added = await service.save(repo.broker_id, "investor", clock.now(), None, None)
     assert not added["effective"]  # pending accounts stay without effective roles
-    await service.activate(repo.broker_id)
+    await BrokerActivationService(repo.work, clock).activate(repo.admin_id, repo.broker_id)
     listed = await service.assignments(repo.broker_id)
+    assert {r["role"] for r in listed} >= {"broker", "investor"}
     assert all(r["effective"] for r in listed)
     result = await service.change_permission("broker", "account:manage", False)
     assert result["permissions"] == ["account:manage"]

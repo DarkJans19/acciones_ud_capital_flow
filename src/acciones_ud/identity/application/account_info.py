@@ -33,6 +33,7 @@ class AccountInfoService:
                 "country",
                 "account_status",
                 "is_premium",
+                "broker_requested",
                 "interests",
                 "investor_level",
             )

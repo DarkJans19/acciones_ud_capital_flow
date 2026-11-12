@@ -462,23 +462,25 @@ Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5),
     - Expired access token with a valid refresh cookie revokes that Session and returns 204 (the gap C1 case); a valid access token with another Session's refresh cookie revokes only the access token's Session; no cookies returns 204 with both cookies cleared; an unknown refresh hash changes nothing; 503 still clears both cookies and changes no Session; a refresh after logout returns 401 `REFRESH_INVALID`
     - _Requirements: 4.2, 4.6, 4.11, 4.12, 4.13, 4.14_
 
-- [ ] 24. Broker activation with the investor role and the broker request flag (gaps A3, D1)
-  - [ ] 24.1 Implement BrokerActivationService
+  - Evidence: commit `4a10d30` (domain rule, repository methods, use case, router, shared error body, Property 44 and API tests).
+
+- [x] 24. Broker activation with the investor role and the broker request flag (gaps A3, D1)
+  - [x] 24.1 Implement BrokerActivationService
     - `identity/application/broker_activation.py`: `BrokerActivationService.activate(actor_id, user_id)` replaces `RbacService.activate` in `rbac_admin.py`; one unit of work with the conditional `UPDATE users SET account_status = 'active' ... WHERE id = $1 AND account_status = 'pending_broker_activation' RETURNING id`, then a broker and an investor Role_Assignment through `RbacRepository.save_assignment` with the same `$now` from the `Clock` port and `valid_to` null; no row and the user exists gives 409 `BROKER_NOT_PENDING`, otherwise 404 `NOT_FOUND`; the RBAC seed is unchanged
     - `schemas/admin.py`: `BrokerActivationOut {user_id, account_status, role_assignment, investor_assignment}` (`role_assignment` stays the broker assignment)
     - `routers/admin.py`: `POST /admin/users/{user_id}/broker-activation` calls the new service (the administrator-role check stays); wire it in `identity/composition.py`; the Audit_Entry is added in task 28.4
     - _Requirements: 2.12, 2.13, 2.14, 2.16, 2.17, 22.7_
 
-  - [ ]* 24.2 Write tests for broker activation
+  - [x]* 24.2 Write tests for broker activation
     - Activation returns 200 with `role_assignment` (broker) and `investor_assignment`, and the next request holds `kyc:submit`; an active User with the Broker_Request_Flag true or false gets 409 `BROKER_NOT_PENDING` and no new assignment; a fake that fails the second insert leaves the User pending with no assignment and returns 503; unknown user 404; a requester with `admin:users` but no administrator role gets 403
     - _Requirements: 2.3, 2.12, 2.13, 2.16, 2.17, 22.7_
 
-  - [ ] 24.3 Return the broker request flag in account information
+  - [x] 24.3 Return the broker request flag in account information
     - `identity/application/account_info.py` reads `users.broker_requested`; `schemas/users.py` adds `broker_requested: bool` (never null) to `UserMeOut`
     - Check that no request schema other than investor registration declares `broker_requested` and that all keep `extra="ignore"`, so no later request changes the flag
     - _Requirements: 22.1, 22.2, 22.8_
 
-  - [ ]* 24.4 Write API tests for the broker request flag
+  - [x]* 24.4 Write API tests for the broker request flag
     - `/users/me` returns `broker_requested` true or false, false when the registration omitted it; assigning the broker role through `POST /admin/users/{user_id}/roles` keeps the flag, the investor assignment and the Account_Status; a requester with `admin:rbac` but no administrator role gets 403 and nothing is stored; a `broker_requested` field in other request bodies is ignored; a non-boolean flag at registration returns 422
     - _Requirements: 22.1, 22.2, 22.4, 22.5, 22.6, 22.8, 22.9_
 

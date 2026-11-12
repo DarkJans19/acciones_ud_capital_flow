@@ -295,7 +295,10 @@ async def test_future_cancellation_preserves_dates_and_is_never_effective(
                 json={"valid_from": datetime.now(UTC).isoformat(), "valid_to": None},
             )
         ).status_code == 409
-        assert (await broker.get("/api/v1/users/me")).json()["roles"] == ["broker"]
+        assert (await broker.get("/api/v1/users/me")).json()["roles"] == [
+            "broker",
+            "investor",
+        ]
         from acciones_ud.identity.adapters.outbound.persistence.auth_context_repository import (
             AuthContextRepository,
         )
