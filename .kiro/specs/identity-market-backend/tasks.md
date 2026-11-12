@@ -655,6 +655,8 @@ Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5),
     - `occurred_at` lies between request receipt and response; a failed administrative request (404, 409, 422) stores no entry; 401 and 403 return no entries; a failing `append` returns 503 and leaves the change unstored
     - _Requirements: 25.2, 25.4, 25.5, 25.11, 25.13_
 
+  - Evidence: commit `91b6e5b` (audit domain, repository, entries from every writer, read endpoint, Properties 49/50/51, API tests).
+
 - [x] 29. OpenAPI contract for the readme_agregar.md endpoints
   - [x] 29.1 Declare the error responses of the new and changed operations
     - With `error_responses`, as in task 20.1: `GET /admin/users` (401, 403, 422, 503), `GET /admin/users/{user_id}` (401, 403, 404, 422, 503), `POST /admin/users/{user_id}/broker-activation` (401, 403, 404, 409, 422, 503), `POST /admin/kyc/{user_id}/reconcile` (401, 403, 404, 409, 422, 500, 502, 503), `GET /admin/audit-log` (401, 403, 422, 503), and `POST /auth/logout` with 204 and 503 only (no 401)
@@ -664,8 +666,11 @@ Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5),
     - The paths match the design endpoint table, including `/admin/users`, `/admin/users/{user_id}`, `/admin/kyc/{user_id}/reconcile` and `/admin/audit-log`; every new operation lists its errors with the `ErrorBody` schema; logout declares no 401 and both cookie schemes as optional; no operation creates, updates or deletes an Audit_Entry
     - _Requirements: 4.14, 17.1, 17.2, 25.12_
 
-- [ ] 30. Checkpoint - readme_agregar.md gaps complete
+  - Evidence: commit `91b6e5b` (logout security includes the no-credentials alternative; contract tests cover the new paths).
+
+- [x] 30. Checkpoint - readme_agregar.md gaps complete
   - Ensure all tests pass, ask the user if questions arise.
+  - Evidence: `ruff`, `mypy` and `pytest` green (280 passed, 18 DB-marked tests skipped without `TEST_DATABASE_URL`).
 
 ### MOD-02 market_data track (owner: Davidson Sánchez)
 
