@@ -114,6 +114,19 @@ class FakeAuthRepository:
         session["revoked_at"] = now
         return True
 
+    async def revoke_if_active(self, user_id: UUID, session_id: UUID, now: datetime) -> bool:
+        return await self.revoke(user_id, session_id, now)
+
+    async def revoke_by_refresh_digest(self, digest: bytes, now: datetime) -> bool:
+        row = self.refreshes.get(digest)
+        if row is None:
+            return False
+        session = self.sessions[row["sid"]]
+        if session["revoked_at"] is not None:
+            return False
+        session["revoked_at"] = now
+        return True
+
     async def revoke_others(self, user_id: UUID, session_id: UUID, now: datetime) -> int:
         count = 0
         for row in self.sessions.values():
@@ -124,11 +137,16 @@ class FakeAuthRepository:
 
 
 class FakeAuthWorkFactory:
-    def __init__(self, repository: FakeAuthRepository) -> None:
+    def __init__(
+        self, repository: FakeAuthRepository, failure: Exception | None = None
+    ) -> None:
         self.repository = repository
+        self.failure = failure
 
     @asynccontextmanager
     async def __call__(self) -> AsyncIterator[AuthWork]:
+        if self.failure is not None:
+            raise self.failure
         snapshot = deepcopy(self.repository.__dict__)
         repo = self.repository
 

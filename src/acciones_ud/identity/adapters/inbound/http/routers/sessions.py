@@ -12,15 +12,20 @@ from acciones_ud.identity.adapters.inbound.http.schemas.sessions import (
 )
 from acciones_ud.identity.domain.auth_ports import Record
 from acciones_ud.identity.domain.models import CurrentUser
+from acciones_ud.shared.domain.errors import AppError, ErrorCode
 from acciones_ud.shared.infrastructure.cookies import (
+    ACCESS_COOKIE,
     REFRESH_COOKIE,
     clear_auth_cookies,
     set_auth_cookies,
 )
-from acciones_ud.shared.infrastructure.http_errors import error_responses
+from acciones_ud.shared.infrastructure.http_errors import error_body_response, error_responses
 
 router = APIRouter(tags=["sessions"])
 User = Annotated[CurrentUser, Depends(get_current_user)]
+access_cookie = APIKeyCookie(
+    name=ACCESS_COOKIE, scheme_name="AccessTokenCookie", auto_error=False
+)
 refresh_cookie = APIKeyCookie(
     name=REFRESH_COOKIE, scheme_name="RefreshTokenCookie", auto_error=False
 )
@@ -39,11 +44,22 @@ async def refresh(
     return result
 
 
-@router.post("/auth/logout", status_code=204, responses=error_responses(401, 503))
-async def logout(request: Request, user: User) -> Response:
+@router.post("/auth/logout", status_code=204, responses=error_responses(503))
+async def logout(
+    request: Request,
+    access_token: Annotated[str | None, Depends(access_cookie)],
+    refresh_token: Annotated[str | None, Depends(refresh_cookie)],
+) -> Response:
     from acciones_ud.identity.composition import session_service
 
-    await session_service(request).close(user, user.session_id)
+    try:
+        await session_service(request).logout(access_token, refresh_token)
+    except AppError as exc:
+        if exc.code is not ErrorCode.DATABASE_UNAVAILABLE:
+            raise
+        response: Response = error_body_response(exc)
+        clear_auth_cookies(response, request.app.state.settings)
+        return response
     response = Response(status_code=204)
     clear_auth_cookies(response, request.app.state.settings)
     return response

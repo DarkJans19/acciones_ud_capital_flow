@@ -435,28 +435,30 @@ Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5),
     - `src/acciones_ud/shared/domain/errors.py`: add `KYC_RECONCILE_NOT_FOUND` (404), `KYC_RECONCILE_AMBIGUOUS` (409), `ALPACA_ACCOUNT_IN_USE` (409) and `KYC_SUBMISSION_IN_PROGRESS` (409) to `ErrorCode`
     - _Requirements: 24.3, 24.4, 24.7, 24.8_
 
-- [ ] 23. Logout with optional credentials (gap C1, P0)
-  - [ ] 23.1 Implement the logout target rule
+  - Evidence: commit `b4f2446` (migration, table objects, settings, property test extension, offline render test).
+
+- [x] 23. Logout with optional credentials (gap C1, P0)
+  - [x] 23.1 Implement the logout target rule
     - `identity/domain/logout.py`: pure `target(access: AccessClaims | None, access_session_active: bool, refresh_digest: bytes | None)` deciding which Session to revoke (the access token's Session when valid and unrevoked, otherwise the Session of the matching refresh token, otherwise none) and the refresh-cookie shape check (43 URL-safe characters)
     - _Requirements: 4.6, 4.11, 4.12_
 
-  - [ ] 23.2 Add the logout repository methods
+  - [x] 23.2 Add the logout repository methods
     - `identity/domain/auth_ports.py` and `persistence/auth_repository.py`: `revoke_if_active(user_id, session_id, now) -> bool` (`UPDATE sessions ... WHERE id = sid AND user_id = sub AND revoked_at IS NULL RETURNING id`) and `revoke_by_refresh_digest(digest, now) -> bool` (join on `refresh_tokens.token_hash`, no `rotated_at` or `expires_at` condition); the existing `revoke` stays unchanged
     - In-memory versions in `tests/support/identity_fakes.py`, scriptable to raise `AppError(503, DATABASE_UNAVAILABLE)`
     - _Requirements: 4.6, 4.11, 4.12, 4.14_
 
-  - [ ] 23.3 Rework the logout use case and endpoint
+  - [x] 23.3 Rework the logout use case and endpoint
     - `identity/application/sessions.py`: `SessionService.logout(access_token, refresh_token)` in one unit of work; the access step runs first and the refresh step only when the access step revoked nothing, so a refresh cookie never revokes a second Session
     - `routers/sessions.py`: `POST /auth/logout` no longer declares `get_current_user`; it reads both cookies through `APIKeyCookie(auto_error=False)`, returns 204 with `clear_auth_cookies` for every credential state and never 401; on `AppError` `DATABASE_UNAVAILABLE` it builds the Error_Body response with the shared builder of `shared/infrastructure/http_errors.py` (expose it if needed), clears both cookies on it and returns 503
     - OpenAPI documents 204 and 503 only, with both cookie schemes optional
     - _Requirements: 4.6, 4.11, 4.12, 4.13, 4.14_
 
-  - [ ] 23.4 Write property test for logout
+  - [x] 23.4 Write property test for logout
     - **Property 44: Logout always clears both cookies and revokes exactly the reference Session**
     - **Validates: Requirements 4.6, 4.11, 4.12, 4.13, 4.14**
     - File: `tests/identity/property/test_logout_properties.py`, through `httpx.ASGITransport` with the in-memory session store override (`deadline=None`)
 
-  - [ ]* 23.5 Write API tests for logout
+  - [x]* 23.5 Write API tests for logout
     - Expired access token with a valid refresh cookie revokes that Session and returns 204 (the gap C1 case); a valid access token with another Session's refresh cookie revokes only the access token's Session; no cookies returns 204 with both cookies cleared; an unknown refresh hash changes nothing; 503 still clears both cookies and changes no Session; a refresh after logout returns 401 `REFRESH_INVALID`
     - _Requirements: 4.2, 4.6, 4.11, 4.12, 4.13, 4.14_
 

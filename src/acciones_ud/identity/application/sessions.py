@@ -3,7 +3,8 @@ from datetime import timedelta
 from uuid import UUID
 
 from acciones_ud.identity.domain.auth_ports import AuthWorkFactory, Record, TokenGenerator
-from acciones_ud.identity.domain.models import CurrentUser
+from acciones_ud.identity.domain.logout import LogoutChoice, is_refresh_cookie, target
+from acciones_ud.identity.domain.models import AccessClaims, CurrentUser
 from acciones_ud.identity.domain.ports import AccessTokenCodec
 from acciones_ud.shared.domain.clock import Clock
 from acciones_ud.shared.domain.errors import AppError, ErrorCode
@@ -66,3 +67,28 @@ class SessionService:
     async def close_others(self, user: CurrentUser) -> int:
         async with self.uow() as work:
             return await work.auth.revoke_others(user.user_id, user.session_id, self.clock.now())
+
+    async def logout(self, access_token: str | None, refresh_token: str | None) -> None:
+        """Requirement 4 criteria 6, 11 and 12: never fails on credentials alone."""
+        now = self.clock.now()
+        claims = self._access_claims(access_token)
+        digest: bytes | None = None
+        if refresh_token is not None and is_refresh_cookie(refresh_token):
+            digest = self.tokens.digest(refresh_token)
+        async with self.uow() as work:
+            revoked = False
+            if claims is not None:
+                revoked = await work.auth.revoke_if_active(
+                    claims.user_id, claims.session_id, now
+                )
+            decision = target(claims, revoked, digest)
+            if decision.choice is LogoutChoice.REFRESH and digest is not None:
+                await work.auth.revoke_by_refresh_digest(digest, now)
+
+    def _access_claims(self, token: str | None) -> AccessClaims | None:
+        if token is None:
+            return None
+        try:
+            return self.codec.decode(token)
+        except AppError:
+            return None
