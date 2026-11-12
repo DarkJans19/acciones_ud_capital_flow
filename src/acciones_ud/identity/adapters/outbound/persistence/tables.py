@@ -1,9 +1,23 @@
 """Core query declarations only. Alembic exclusively owns the database schema."""
 
+from datetime import datetime
+
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 
 metadata = sa.MetaData()
+
+
+def effective_assignment(
+    ra: sa.Table, users: sa.Table, now: datetime
+) -> sa.ColumnElement[bool]:
+    """Shared predicate: an assignment counts only for an active account (DD17)."""
+    return sa.and_(
+        users.c.account_status == "active",
+        ra.c.status == "ACTIVE",
+        ra.c.valid_from <= now,
+        sa.or_(ra.c.valid_to.is_(None), now < ra.c.valid_to),
+    )
 
 
 users = sa.Table(

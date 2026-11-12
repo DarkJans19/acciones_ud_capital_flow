@@ -4,6 +4,7 @@ from typing import Protocol
 from uuid import UUID
 
 from acciones_ud.identity.domain.auth_ports import Record
+from acciones_ud.identity.domain.directory import DirectoryEntry, DirectoryPage, DirectoryQuery
 
 
 class AdminRepository(Protocol):
@@ -35,3 +36,17 @@ class AdminWork(Protocol):
 
 class AdminWorkFactory(Protocol):
     def __call__(self) -> AbstractAsyncContextManager[AdminWork]: ...
+
+
+class DirectoryRepository(Protocol):
+    async def search(self, query: DirectoryQuery, now: datetime) -> DirectoryPage: ...
+    async def get(self, user_id: UUID, now: datetime) -> DirectoryEntry | None: ...
+
+
+class DirectoryWork(Protocol):
+    @property
+    def directory(self) -> DirectoryRepository: ...
+
+
+class DirectoryWorkFactory(Protocol):
+    def __call__(self) -> AbstractAsyncContextManager[DirectoryWork]: ...

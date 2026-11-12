@@ -5,6 +5,12 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 from acciones_ud.identity.domain.auth_ports import AuthWork, Record
+from acciones_ud.identity.domain.directory import (
+    DirectoryEntry,
+    DirectoryPage,
+    DirectoryQuery,
+    select,
+)
 from acciones_ud.identity.domain.mfa import Challenge
 
 
@@ -134,6 +140,40 @@ class FakeAuthRepository:
                 row["revoked_at"] = now
                 count += 1
         return count
+
+
+class FakeDirectoryRepository:
+    """Applies the pure ``directory.select`` reference model (no database)."""
+
+    def __init__(self, users: list[Record], failure: Exception | None = None) -> None:
+        self.users = users
+        self.failure = failure
+
+    async def search(self, query: DirectoryQuery, now: datetime) -> DirectoryPage:
+        if self.failure is not None:
+            raise self.failure
+        return select(self.users, query, now)
+
+    async def get(self, user_id: UUID, now: datetime) -> DirectoryEntry | None:
+        if self.failure is not None:
+            raise self.failure
+        matches = [user for user in self.users if user["id"] == user_id]
+        page = select(matches, DirectoryQuery(limit=1), now)
+        return page.items[0] if page.items else None
+
+
+class FakeDirectoryWorkFactory:
+    def __init__(self, repository: FakeDirectoryRepository) -> None:
+        self.repository = repository
+
+    @asynccontextmanager
+    async def __call__(self) -> AsyncIterator[object]:
+        repo = self.repository
+
+        class Work:
+            directory = repo
+
+        yield Work()
 
 
 class FakeAuthWorkFactory:

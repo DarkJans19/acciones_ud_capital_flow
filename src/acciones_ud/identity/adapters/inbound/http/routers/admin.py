@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 
 from acciones_ud.identity.adapters.inbound.http.deps import require_permission
 from acciones_ud.identity.adapters.inbound.http.schemas.admin import (
@@ -14,9 +14,13 @@ from acciones_ud.identity.adapters.inbound.http.schemas.admin import (
     PremiumOut,
     RoleAssignmentOut,
     RoleOut,
+    UserDirectoryEntryOut,
+    UserDirectoryPageOut,
+    UserDirectoryQueryIn,
 )
 from acciones_ud.identity.adapters.inbound.http.schemas.auth import RegisterBaseIn, RegistrationOut
 from acciones_ud.identity.domain.auth_ports import Record
+from acciones_ud.identity.domain.directory import DirectoryEntry
 from acciones_ud.identity.domain.models import CurrentUser
 from acciones_ud.shared.domain.errors import AppError, ErrorCode
 from acciones_ud.shared.infrastructure.http_errors import error_responses
@@ -55,6 +59,38 @@ async def activate_broker(user_id: UUID, request: Request, user: AdminUser) -> R
     if "administrator" not in user.roles:
         raise AppError(403, ErrorCode.FORBIDDEN, "Administrator role required.")
     return await broker_activation_service(request).activate(user.user_id, user_id)
+
+
+@router.get(
+    "/users",
+    response_model=UserDirectoryPageOut,
+    responses=error_responses(401, 403, 422, 503),
+)
+async def list_users(
+    request: Request,
+    user: AdminUser,
+    query: Annotated[UserDirectoryQueryIn, Query()],
+) -> Record:
+    from acciones_ud.identity.composition import user_directory_service
+
+    page = await user_directory_service(request).list(query.to_domain())
+    return {
+        "items": page.items,
+        "total": page.total,
+        "limit": query.limit,
+        "offset": query.offset,
+    }
+
+
+@router.get(
+    "/users/{user_id}",
+    response_model=UserDirectoryEntryOut,
+    responses=error_responses(401, 403, 404, 422, 503),
+)
+async def get_user(user_id: UUID, request: Request, user: AdminUser) -> DirectoryEntry:
+    from acciones_ud.identity.composition import user_directory_service
+
+    return await user_directory_service(request).detail(user_id)
 
 
 @router.put(

@@ -16,6 +16,9 @@ from acciones_ud.identity.adapters.outbound.persistence.auth_context_repository 
 from acciones_ud.identity.adapters.outbound.persistence.auth_repository import AuthRepository
 from acciones_ud.identity.adapters.outbound.persistence.kyc_repository import KycRepository
 from acciones_ud.identity.adapters.outbound.persistence.rbac_repository import RbacRepository
+from acciones_ud.identity.adapters.outbound.persistence.user_directory_repository import (
+    UserDirectoryRepository,
+)
 from acciones_ud.identity.adapters.outbound.persistence.user_repository import UserRepository
 from acciones_ud.identity.adapters.outbound.security.cipher import SecretCipher
 from acciones_ud.identity.adapters.outbound.security.passwords import PasswordHasher
@@ -29,8 +32,9 @@ from acciones_ud.identity.application.login import AuthService
 from acciones_ud.identity.application.rbac_admin import RbacService
 from acciones_ud.identity.application.register import RegistrationService
 from acciones_ud.identity.application.sessions import SessionService
+from acciones_ud.identity.application.user_directory import UserDirectoryService
 from acciones_ud.identity.domain.account_ports import AccountWork
-from acciones_ud.identity.domain.admin_ports import AdminWork
+from acciones_ud.identity.domain.admin_ports import AdminWork, DirectoryWork
 from acciones_ud.identity.domain.auth_ports import AuthWork
 from acciones_ud.identity.domain.kyc_ports import KycWork
 from acciones_ud.identity.domain.models import CurrentUser
@@ -174,6 +178,25 @@ def broker_activation_service(request: Request) -> BrokerActivationService:
     if isinstance(override, BrokerActivationService):
         return override
     return BrokerActivationService(admin_uow, SystemClock())
+
+
+@asynccontextmanager
+async def directory_uow() -> AsyncIterator[DirectoryWork]:
+    from acciones_ud.shared.infrastructure.db import unit_of_work
+
+    async with unit_of_work() as session:
+
+        class Work:
+            directory = UserDirectoryRepository(session)
+
+        yield Work()
+
+
+def user_directory_service(request: Request) -> UserDirectoryService:
+    override = getattr(request.app.state, "user_directory_service", None)
+    if isinstance(override, UserDirectoryService):
+        return override
+    return UserDirectoryService(directory_uow, SystemClock())
 
 
 @asynccontextmanager

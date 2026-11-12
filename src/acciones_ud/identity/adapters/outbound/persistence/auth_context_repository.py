@@ -4,12 +4,16 @@ import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from acciones_ud.identity.adapters.outbound.persistence.tables import (
+    effective_assignment,
+    sessions,
+    users,
+)
+from acciones_ud.identity.adapters.outbound.persistence.tables import (
     role_assignments as ra,
 )
 from acciones_ud.identity.adapters.outbound.persistence.tables import (
     role_permissions as rp,
 )
-from acciones_ud.identity.adapters.outbound.persistence.tables import sessions, users
 from acciones_ud.identity.domain.models import CurrentUser
 from acciones_ud.shared.domain.clock import Clock
 
@@ -35,10 +39,7 @@ class AuthContextRepository:
                     ra,
                     sa.and_(
                         ra.c.user_id == users.c.id,
-                        users.c.account_status == "active",
-                        ra.c.status == "ACTIVE",
-                        ra.c.valid_from <= now,
-                        sa.or_(ra.c.valid_to.is_(None), now < ra.c.valid_to),
+                        effective_assignment(ra, users, now),
                     ),
                 )
                 .outerjoin(rp, rp.c.role_code == ra.c.role_code)

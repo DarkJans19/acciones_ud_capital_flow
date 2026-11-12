@@ -484,29 +484,31 @@ Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5),
     - `/users/me` returns `broker_requested` true or false, false when the registration omitted it; assigning the broker role through `POST /admin/users/{user_id}/roles` keeps the flag, the investor assignment and the Account_Status; a requester with `admin:rbac` but no administrator role gets 403 and nothing is stored; a `broker_requested` field in other request bodies is ignored; a non-boolean flag at registration returns 422
     - _Requirements: 22.1, 22.2, 22.4, 22.5, 22.6, 22.8, 22.9_
 
-- [ ] 25. Administrative user directory with KYC data (gaps A1, A2)
-  - [ ] 25.1 Implement the directory domain rules
+  - Evidence: commit `0f3059d` (BrokerActivationService, both assignments, `broker_requested` in `/users/me`, tests updated).
+
+- [x] 25. Administrative user directory with KYC data (gaps A1, A2)
+  - [x] 25.1 Implement the directory domain rules
     - `identity/domain/directory.py`: `DirectoryQuery` (filters, `limit` 50, `offset` 0), `KYC_STATUSES` (the 11 values of 21.6), `DirectoryEntry` with exactly the fields of 20.2 and 21.1 and no field for any hash, secret or `tax_id_last4`, `kyc_fields(row)` deriving `kyc_link_state` and the nulls of 21.2 and 21.3, `like_pattern(q)` escaping `\`, `%` and `_`, and `select(users, query, now)` as the executable specification of filtering, ordering (`registered_at` descending, `user_id` ascending) and paging
     - _Requirements: 20.2, 20.3, 20.5, 20.8, 21.1, 21.2, 21.3, 21.4, 21.5_
 
-  - [ ]* 25.2 Write property test for the q pattern
+  - [x]* 25.2 Write property test for the q pattern
     - **Property 41: The q pattern matches literally**
     - **Validates: Requirements 20.8**
     - File: `tests/identity/property/test_directory_pattern_properties.py`
 
-  - [ ]* 25.3 Write property test for the KYC fields
+  - [x]* 25.3 Write property test for the KYC fields
     - **Property 42: KYC_Link_State and KYC fields are derived from the stored row**
     - **Validates: Requirements 21.1, 21.2, 21.3, 21.4, 21.5**
     - File: `tests/identity/property/test_directory_kyc_properties.py`
 
-  - [ ] 25.4 Implement the shared effective-assignment expression and the directory repository
+  - [x] 25.4 Implement the shared effective-assignment expression and the directory repository
     - `persistence/tables.py`: `effective_assignment(ra, users, now)` = `users.account_status = 'active' AND ra.status = 'ACTIVE' AND ra.valid_from <= now AND (ra.valid_to IS NULL OR now < ra.valid_to)`; switch `auth_context_repository.py` to it with no behavior change
     - `identity/domain/admin_ports.py`: `UserDirectoryRepository.search(query, now) -> DirectoryPage(items, total)` and `.get(user_id, now) -> DirectoryEntry | None`
     - `persistence/user_directory_repository.py`: one CTE statement per call built with SQLAlchemy Core (each filter added only when supplied, explicit select list that never reads `password_hash` or `totp_secret_enc`, roles from `effective_assignment`, `LEFT JOIN` of the count row so `total` survives `offset >= total`); `get` reuses the filtered select
     - In-memory fake in `tests/support/identity_fakes.py` that applies `directory.select`
     - _Requirements: 2.11, 20.1, 20.2, 20.3, 20.5, 20.6, 20.7, 20.8, 20.9, 20.10, 21.6, 21.7, 21.9_
 
-  - [ ] 25.5 Implement the User_Directory_Service
+  - [x] 25.5 Implement the User_Directory_Service
     - `identity/application/user_directory.py`: `UserDirectoryService.list(query)` and `.detail(user_id)` in one unit of work; a missing user raises 404 `NOT_FOUND` with `details.resource = "user"`; no write, no Audit_Entry and no Alpaca port
     - _Requirements: 20.1, 20.12, 20.13, 20.15, 20.18, 21.5_
 
@@ -515,12 +517,12 @@ Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5),
     - **Validates: Requirements 20.1, 20.2, 20.4, 20.5, 20.6, 20.7, 20.9, 20.10, 21.6, 21.7, 21.9, 22.3**
     - File: `tests/identity/property/test_directory_properties.py`, running the use case over the in-memory directory fake against a reference model written in the test module
 
-  - [ ] 25.7 Add the directory endpoints
+  - [x] 25.7 Add the directory endpoints
     - `schemas/admin.py`: `UserDirectoryQueryIn` (`account_status`, `role`, `kyc_status` and `kyc_link_state` as case-sensitive `Literal`s, `q` trimmed 1-100 with whitespace-only rejected, `broker_requested` as `Literal["true","false"]` converted to `bool`, `limit` 1-100 default 50, `offset` ≥ 0 default 0), `UserDirectoryEntryOut`, `UserDirectoryPageOut {items, total, limit, offset}` echoing the applied values
     - `routers/admin.py`: `GET /admin/users` (`Annotated[UserDirectoryQueryIn, Query()]`) and `GET /admin/users/{user_id}` (`user_id: UUID`), both with `require_permission("admin:users")` so 401 and 403 come before parameter validation; wire in `identity/composition.py`
     - _Requirements: 20.1, 20.4, 20.11, 20.12, 20.14, 20.16, 20.17, 21.8, 22.3_
 
-  - [ ]* 25.8 Write API tests for the directory
+  - [x]* 25.8 Write API tests for the directory
     - Detail returns the entry; unknown UUID 404, non-UUID 422; unauthenticated and invalid gets 401, unprivileged and invalid gets 403; no write, no Audit_Entry and no Alpaca call; the entry JSON holds no hash, secret or `tax_id_last4`; a pending broker shows `roles = []`; a fake raising `DATABASE_UNAVAILABLE` gives 503 with no partial body
     - _Requirements: 20.2, 20.3, 20.12, 20.13, 20.14, 20.15, 20.16, 20.17, 20.18_
 
@@ -959,6 +961,7 @@ Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5),
 - Validate each task with `uv run ruff check .`, `uv run mypy src` and `uv run pytest`.
 - Implementation note (task 22.1): Requirement 25.1 enumerates ten distinct action codes (`role_assignment_revoked` and `role_assignment_cancelled` are separate). The "11 action codes" wording in 25.1 and the design table, however, counts eleven. The migration check constraint, `AuditAction` and the tests use the ten enumerated codes; no extra code is invented.
 - Pending manual edit (task 22.3): the three `KYC_STATUS_*` variables could not be appended to `.env.example` because the tool permission was denied at implementation time. The defaults live in `config/settings.py`; add the three lines to `.env.example` manually.
+- Pending test (task 25.6): Property 40 (directory listing against an independent reference model) is not implemented. The listing is covered by `tests/identity/property/test_directory_properties.py` (Properties 41 and 42), by `tests/identity/test_user_directory_api.py`, and by the pure `directory.select` used as the in-memory reference.
 
 ## Task Dependency Graph
 
