@@ -1,12 +1,14 @@
-"""Properties 41 and 42 for the administrative user directory (Requirements 20.8, 21)."""
+"""Properties 41, 42 and 40 for the administrative user directory (Requirements 20, 21)."""
 
+import asyncio
 import re
 from datetime import UTC, datetime, timedelta
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from hypothesis import given
 from hypothesis import strategies as st
 
+from acciones_ud.identity.application.user_directory import UserDirectoryService
 from acciones_ud.identity.domain.directory import (
     KYC_STATUSES,
     DirectoryQuery,
@@ -14,6 +16,8 @@ from acciones_ud.identity.domain.directory import (
     like_pattern,
     select,
 )
+from tests.support.clock import FakeClock
+from tests.support.identity_fakes import FakeDirectoryRepository, FakeDirectoryWorkFactory
 
 NOW = datetime(2026, 1, 1, tzinfo=UTC)
 
@@ -113,3 +117,189 @@ def test_kyc_fields_follow_the_link_state(
         assert fields["kyc_status_checked_at"] == checked
         assert fields["kyc_reserved_at"] == reserved
         assert fields["kyc_created_at"] == created
+
+
+def make_user(
+    user_id: UUID,
+    created_at: datetime,
+    status: str,
+    broker: bool,
+    first: str,
+    last: str,
+    role_code: str,
+    role_status: str,
+    kyc_kind: str,
+    kyc_status: str,
+) -> dict[str, object]:
+    kyc = None
+    if kyc_kind != "none":
+        kyc = {
+            "alpaca_account_id": "acc" if kyc_kind == "linked" else None,
+            "status": kyc_status if kyc_kind == "linked" else None,
+            "status_updated_at": NOW if kyc_kind == "linked" else None,
+            "status_checked_at": NOW if kyc_kind == "linked" else None,
+            "reserved_at": NOW,
+            "created_at": NOW,
+        }
+    return {
+        "id": user_id,
+        "email": f"{user_id.hex[:8]}@example.com",
+        "first_names": first,
+        "last_names": last,
+        "phone": None,
+        "country": "CO",
+        "account_status": status,
+        "is_premium": False,
+        "broker_requested": broker,
+        "created_at": created_at,
+        "roles": (
+            []
+            if role_code == "none"
+            else [
+                {
+                    "role_code": role_code,
+                    "status": role_status,
+                    "valid_from": NOW - timedelta(hours=1),
+                    "valid_to": None,
+                }
+            ]
+        ),
+        "kyc": kyc,
+    }
+
+
+def reference(users: list[dict[str, object]], query: DirectoryQuery) -> list[UUID]:
+    """Independent model: filters, effective roles, ordering and paging (20.1-20.10)."""
+    rows: list[tuple[dict[str, object], tuple[str, ...]]] = []
+    for user in users:
+        if user["account_status"] != "active":
+            roles: tuple[str, ...] = ()
+        else:
+            roles = tuple(
+                sorted(
+                    {
+                        str(assignment["role_code"])
+                        for assignment in user["roles"]  # type: ignore[union-attr]
+                        if assignment["status"] == "ACTIVE"
+                        and assignment["valid_from"] <= NOW
+                        and (
+                            assignment["valid_to"] is None
+                            or NOW < assignment["valid_to"]
+                        )
+                    }
+                )
+            )
+        if query.account_status is not None and user["account_status"] != query.account_status:
+            continue
+        if query.role is not None and query.role not in roles:
+            continue
+        if query.q is not None:
+            needle = query.q.casefold()
+            if not any(
+                needle in str(user[key]).casefold()
+                for key in ("email", "first_names", "last_names")
+            ):
+                continue
+        if (
+            query.broker_requested is not None
+            and bool(user["broker_requested"]) != query.broker_requested
+        ):
+            continue
+        kyc = user["kyc"]
+        link = (
+            "none"
+            if kyc is None
+            else ("unlinked" if kyc["alpaca_account_id"] is None else "linked")  # type: ignore[index]
+        )
+        if query.kyc_status is not None and (
+            link != "linked" or kyc["status"] != query.kyc_status  # type: ignore[index]
+        ):
+            continue
+        if query.kyc_link_state is not None and link != query.kyc_link_state:
+            continue
+        rows.append((user, roles))
+
+    rows.sort(key=lambda pair: str(pair[0]["id"]))
+    rows.sort(key=lambda pair: pair[0]["created_at"], reverse=True)  # type: ignore[arg-type,return-value]
+    page = rows[query.offset : query.offset + query.limit]
+    return [pair[0]["id"] for pair in page]  # type: ignore[misc]
+
+
+# Feature: identity-market-backend, Property 40: User directory listing matches a reference model
+@given(
+    users=st.lists(
+        st.builds(
+            make_user,
+            user_id=st.uuids(),
+            created_at=st.datetimes(
+                min_value=datetime(2026, 1, 1),
+                max_value=datetime(2026, 1, 4),
+                timezones=st.just(UTC),
+            ),
+            status=st.sampled_from(["active", "pending_broker_activation"]),
+            broker=st.booleans(),
+            first=st.sampled_from(["Ana", "Beto", "Carla"]),
+            last=st.sampled_from(["Perez", "Gomez"]),
+            role_code=st.sampled_from(["none", "investor", "broker"]),
+            role_status=st.sampled_from(["ACTIVE", "CANCELLED"]),
+            kyc_kind=st.sampled_from(["none", "unlinked", "linked"]),
+            kyc_status=st.sampled_from(KYC_STATUSES),
+        ),
+        max_size=8,
+    ),
+    account_status=st.one_of(
+        st.none(), st.sampled_from(["active", "pending_broker_activation"])
+    ),
+    role=st.one_of(st.none(), st.sampled_from(["investor", "broker"])),
+    q=st.one_of(st.none(), st.sampled_from(["ana", "beto", "perez", "example"])),
+    broker_requested=st.one_of(st.none(), st.booleans()),
+    kyc_link_state=st.one_of(st.none(), st.sampled_from(["none", "unlinked", "linked"])),
+    kyc_status=st.one_of(st.none(), st.sampled_from(KYC_STATUSES)),
+    limit=st.integers(min_value=1, max_value=5),
+    offset=st.integers(min_value=0, max_value=5),
+)
+def test_listing_matches_the_reference_model(
+    users: list[dict[str, object]],
+    account_status: str | None,
+    role: str | None,
+    q: str | None,
+    broker_requested: bool | None,
+    kyc_link_state: str | None,
+    kyc_status: str | None,
+    limit: int,
+    offset: int,
+) -> None:
+    query = DirectoryQuery(
+        account_status=account_status,
+        role=role,
+        q=q,
+        broker_requested=broker_requested,
+        kyc_link_state=kyc_link_state,
+        kyc_status=kyc_status,
+        limit=limit,
+        offset=offset,
+    )
+    service = UserDirectoryService(
+        FakeDirectoryWorkFactory(FakeDirectoryRepository(users)), FakeClock(NOW)
+    )
+
+    page = asyncio.run(service.list(query))
+
+    assert [entry.user_id for entry in page.items] == reference(users, query)
+    assert page.total == len(
+        reference(
+            users,
+            DirectoryQuery(
+                account_status=account_status,
+                role=role,
+                q=q,
+                broker_requested=broker_requested,
+                kyc_link_state=kyc_link_state,
+                kyc_status=kyc_status,
+                limit=100,
+                offset=0,
+            ),
+        )
+    )
+    for entry in page.items:
+        assert entry.kyc_link_state in {"none", "unlinked", "linked"}

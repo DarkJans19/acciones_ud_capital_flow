@@ -121,7 +121,7 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
     - File: `tests/shared/unit/test_cookies.py`: attributes of each cookie (HttpOnly, Secure, configured SameSite, path, Max-Age, optional Domain), set writes exactly `access_token` and `refresh_token`, clear removes both
     - _Requirements: 3.3, 4.2_
 
-- [ ] 2. Checkpoint - Shared foundation
+- [x] 2. Checkpoint - Shared foundation
   - Ensure all tests pass, ask the user if questions arise.
 
 ### MOD-01 identity track (owner: Daniel Sanabria)
@@ -298,7 +298,7 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
     - Rotation invalidates the old token; reuse revokes the session; ownership 404; revoke-others count; logout, current-session close and refresh failure clear both cookies
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9_
 
-- [ ] 7. Checkpoint - Identity authentication core
+- [x] 7. Checkpoint - Identity authentication core
   - Ensure all tests pass, ask the user if questions arise.
 
 - [x] 8. RBAC administration and broker activation (RF-03, RFP-02)
@@ -399,7 +399,7 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
     - Stored last four only; 409 and 422 without Alpaca calls; Alpaca 422/502/503 store nothing; status updated only on change; degraded `/users/me`; interests 422 keeps stored values
     - _Requirements: 6.1, 6.4, 6.5, 10.1, 10.2, 10.6, 10.7, 10.8, 10.9, 10.10, 10.11, 11.1, 11.2_
 
-- [ ] 11. Checkpoint - MOD-01 identity track complete
+- [x] 11. Checkpoint - MOD-01 identity track complete
   - Ensure all tests pass, ask the user if questions arise.
 
 ### MOD-01 identity: readme_agregar.md gaps (owner: Daniel Sanabria)
@@ -512,7 +512,7 @@ Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5),
     - `identity/application/user_directory.py`: `UserDirectoryService.list(query)` and `.detail(user_id)` in one unit of work; a missing user raises 404 `NOT_FOUND` with `details.resource = "user"`; no write, no Audit_Entry and no Alpaca port
     - _Requirements: 20.1, 20.12, 20.13, 20.15, 20.18, 21.5_
 
-  - [ ]* 25.6 Write property test for the directory listing
+  - [x]* 25.6 Write property test for the directory listing
     - **Property 40: User directory listing matches a reference model**
     - **Validates: Requirements 20.1, 20.2, 20.4, 20.5, 20.6, 20.7, 20.9, 20.10, 21.6, 21.7, 21.9, 22.3**
     - File: `tests/identity/property/test_directory_properties.py`, running the use case over the in-memory directory fake against a reference model written in the test module
@@ -674,7 +674,7 @@ Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5),
 
 ### MOD-02 market_data track (owner: Davidson Sánchez)
 
-- [ ] 12. Market data schema, domain contracts and symbol validation
+- [x] 12. Market data schema, domain contracts and symbol validation
   - [x] 12.1 Write migration `0003_market_data_schema`
     - `migrations/versions/0003_market_data_schema.py`, `revision = "0003_market_data_schema"`, `down_revision = "0002_initial_admin"`
     - Create `markets`, `schedule_overrides`, `instruments`, `catalog_state`, `instrument_snapshots` (with `quote_updated_at` and the `feed` check in `iex`, `sip`, `delayed_sip`), `market_clock_state`, `watchlists`, `watchlist_items`, `price_alerts`, `notifications`, `notification_deliveries` with every constraint and index of the design; enable RLS on each; seed the Market codes and the `catalog_state` and `market_clock_state` rows (`id = 1`)
@@ -690,18 +690,18 @@ Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5),
     - `market_data/domain/symbols.py`: `validate_symbol(raw)` (trim, 1-20 chars, `^[A-Za-z0-9./-]+$`, uppercase)
     - _Requirements: 16.1, 16.4, 19.6_
 
-  - [ ]* 12.4 Write property test for symbol validation
+  - [x]* 12.4 Write property test for symbol validation
     - **Property 22: Symbol path validation**
     - **Validates: Requirements 16.1, 16.4**
     - File: `tests/market_data/property/test_symbol_properties.py`
 
-- [ ] 13. Catalog, search, markets list and asset detail (RF-24, RF-28)
+- [x] 13. Catalog, search, markets list and asset detail (RF-24, RF-28)
   - [x] 13.1 Implement catalog merge and search ranking rules
     - `market_data/domain/catalog_merge.py`: merge fetched assets into the cache (listed flags, Alpaca fields overwrite, sector kept, null sector for new symbols, duplicate symbol keeps the `active` or first asset), single-asset merge
     - `market_data/domain/search.py`: query normalization, classification, rank group function used by the reference model and the SQL ordering
     - _Requirements: 12.1, 12.2, 12.5, 12.7, 16.2_
 
-  - [ ]* 13.2 Write property test for catalog merge
+  - [x]* 13.2 Write property test for catalog merge
     - **Property 18: Catalog merge preserves sectors**
     - **Validates: Requirements 12.5, 12.7, 16.2**
     - File: `tests/market_data/property/test_catalog_merge_properties.py`
@@ -723,21 +723,21 @@ Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5),
     - `market_data/adapters/inbound/http/schemas/instruments.py` and `routers/instruments.py`: `GET /instruments/search` and `GET /instruments/{symbol:path}` (registered after `/instruments/search`; later suffix routes are registered before it); `routers/markets.py`: `GET /markets`; all with `market:read` from `identity.adapters.inbound.http.deps`; wire in `market_data/composition.py`
     - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.6, 16.1, 16.4_
 
-  - [ ]* 13.7 Write property test for search over the in-memory instrument fake
+  - [x]* 13.7 Write property test for search over the in-memory instrument fake
     - **Property 17: Search matches a reference model**
     - **Validates: Requirements 12.1, 12.2, 12.4**
     - File: `tests/market_data/property/test_search_properties.py`; runs the search use case over an in-memory instrument repository fake in `tests/support/market_fakes.py` and compares with a reference model written in the test module; no database connection
 
-  - [ ]* 13.8 Write API tests for instruments
+  - [x]* 13.8 Write API tests for instruments
     - Reload on age and on empty cache; cache fallback keeps the reload timestamp; 502/503 with empty cache; 404 unknown asset with no write; 422 symbol with no Alpaca call; a symbol containing `/` reaches the validator instead of a routing 404; 500 on write failure leaves the cached row; tests override identity deps with `dependency_overrides`
     - _Requirements: 12.3, 12.5, 12.6, 12.8, 12.9, 16.3, 16.4, 16.5, 16.6_
 
-- [ ] 14. Quotes, candles, freshness, depth and price streaming (RF-25)
+- [x] 14. Quotes, candles, freshness, depth and price streaming (RF-25)
   - [x] 14.1 Implement price freshness rules
     - `market_data/domain/freshness.py`: `annotate(asset_class, feed, as_of, now, threshold_seconds, served_from_cache) -> Freshness` (`currency` `USD` only for `us_equity`, `source` `alpaca`, `data_age_seconds = max(0, floor(now - as_of))` or null, `is_delayed` only for `delayed_sip`, `is_stale` when served from cache, age null, or age above threshold) and `candle_meta(...)` returning the `currency`, `source`, `feed`, `is_delayed` subset
     - _Requirements: 13.11, 13.12, 13.13, 13.16_
 
-  - [ ]* 14.2 Write property test for freshness fields
+  - [x]* 14.2 Write property test for freshness fields
     - **Property 37: Freshness fields follow their formulas**
     - **Validates: Requirements 13.11, 13.12, 13.13, 13.16**
     - File: `tests/market_data/property/test_freshness_properties.py`
@@ -747,17 +747,17 @@ Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5),
     - `market_data/domain/bars.py`: request validation naming every invalid parameter (date-only `end` means end of day UTC) and bar mapping (range filter, ascending, page size cap)
     - _Requirements: 13.1, 13.2, 13.4, 13.14, 13.15_
 
-  - [ ]* 14.4 Write property test for snapshot mapping
+  - [x]* 14.4 Write property test for snapshot mapping
     - **Property 19: Snapshot mapping**
     - **Validates: Requirements 13.1**
     - File: `tests/market_data/property/test_quotes_properties.py`
 
-  - [ ]* 14.5 Write property test for bars mapping
+  - [x]* 14.5 Write property test for bars mapping
     - **Property 20: Bars mapping**
     - **Validates: Requirements 13.2**
     - File: `tests/market_data/property/test_bars_mapping_properties.py`
 
-  - [ ]* 14.6 Write property test for bars request validation
+  - [x]* 14.6 Write property test for bars request validation
     - **Property 21: Bars request validation**
     - **Validates: Requirements 13.4**
     - File: `tests/market_data/property/test_bars_validation_properties.py`
@@ -769,7 +769,7 @@ Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5),
     - `market_data/application/candles.py`: validate before any Alpaca call, pass through page token, add candle freshness metadata
     - _Requirements: 13.1, 13.2, 13.3, 13.5, 13.6, 13.8, 13.9, 13.11, 13.14, 13.15, 13.16_
 
-  - [ ]* 14.8 Write property test for the quote fallback decision
+  - [x]* 14.8 Write property test for the quote fallback decision
     - **Property 38: Quote fallback decision**
     - **Validates: Requirements 13.9, 13.14, 13.15**
     - File: `tests/market_data/property/test_quote_fallback_properties.py` (quote use case with in-memory fakes)
@@ -782,7 +782,7 @@ Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5),
     - `market_data/domain/streaming.py`: pure registry (client to symbols, symbol to clients), subscription validation (1-30 catalog symbols), fan-out targets, upstream union
     - _Requirements: 13.7, 13.10_
 
-  - [ ]* 14.11 Write property test for stream fan-out
+  - [x]* 14.11 Write property test for stream fan-out
     - **Property 23: Stream fan-out delivers exactly the subscribed symbols**
     - **Validates: Requirements 13.7, 13.10**
     - File: `tests/market_data/property/test_streaming_properties.py`
@@ -792,7 +792,7 @@ Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5),
     - `routers/stream.py`: `WS /ws/v1/market-feed` (registered without the `/api/v1` prefix) with cookie auth through `authenticate_access_token`, `market:read`, error message and close 1008 when disabled or unauthorized, close on token expiry; the handshake `Origin` is not checked (D4); start the hub in the `market_data/composition.py` startup hook when `PRICE_STREAMING_ENABLED=true`
     - _Requirements: 13.7, 13.10_
 
-  - [ ]* 14.13 Write tests for quotes, candles and streaming
+  - [x]* 14.13 Write tests for quotes, candles and streaming
     - Snapshot replaced on success; cached answer on 502/503 with a stored snapshot keeps the row unchanged; 502/503 without one; `is_delayed` for `delayed_sip`; 404 and 422 send no Alpaca request; page token passthrough; WebSocket rejection keeps the previous subscription
     - _Requirements: 13.3, 13.4, 13.5, 13.6, 13.8, 13.9, 13.10, 13.12, 13.14, 13.15_
 
@@ -800,7 +800,7 @@ Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5),
     - `market_data/domain/depth.py`: `from_latest_quote(doc) -> DepthResult`: empty `levels` without a `quote` object, otherwise exactly one `DepthLevel` from `bp`, `bs`, `ap`, `as` with missing or null keys as null, never computed or padded values, `full_depth_available = false`, `as_of` from `t`
     - _Requirements: 19.2, 19.3, 19.4, 19.5_
 
-  - [ ]* 14.15 Write property test for depth mapping
+  - [x]* 14.15 Write property test for depth mapping
     - **Property 39: Depth never fabricates levels**
     - **Validates: Requirements 19.1, 19.2, 19.3, 19.4, 19.5**
     - File: `tests/market_data/property/test_depth_properties.py`
@@ -810,28 +810,28 @@ Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5),
     - `GET /instruments/{symbol:path}/depth` (`DepthOut`, `market:read`) in `routers/instruments.py` and `schemas/instruments.py`, registered before `GET /instruments/{symbol:path}`; wire in `market_data/composition.py`
     - _Requirements: 19.1, 19.5, 19.6, 19.7, 19.8_
 
-  - [ ]* 14.17 Write API tests for depth
+  - [x]* 14.17 Write API tests for depth
     - Invalid symbol 422 and unknown symbol 404 without an Alpaca call; one-sided quote gives null side values; no quote gives an empty list; Alpaca 502/503 writes nothing
     - _Requirements: 19.1, 19.4, 19.5, 19.6, 19.7, 19.8_
 
-- [ ] 15. Calendar, clock and schedules (RF-27)
+- [x] 15. Calendar, clock and schedules (RF-27)
   - [x] 15.1 Implement schedule, calendar and time zone rules
     - `market_data/domain/schedule.py`: `resolve` (override, Alpaca trading day with Market defaults, holiday or weekend) and schedule validation
     - `market_data/domain/calendar.py`: range expansion (one entry per date, at most 366 days)
     - `market_data/domain/timezones.py`: conversion to ISO 8601 with offset; New York local times combined with the date
     - _Requirements: 15.1, 15.3, 15.4, 15.5, 15.6, 15.8, 15.10_
 
-  - [ ]* 15.2 Write property test for calendar expansion and schedule resolution
+  - [x]* 15.2 Write property test for calendar expansion and schedule resolution
     - **Property 26: Calendar expansion and schedule resolution**
     - **Validates: Requirements 15.1, 15.3, 15.7, 15.8**
     - File: `tests/market_data/property/test_calendar_properties.py`
 
-  - [ ]* 15.3 Write property test for time zone conversion
+  - [x]* 15.3 Write property test for time zone conversion
     - **Property 27: Time zone conversion preserves the instant**
     - **Validates: Requirements 15.4, 15.5**
     - File: `tests/market_data/property/test_timezone_properties.py`
 
-  - [ ]* 15.4 Write property test for schedule validation
+  - [x]* 15.4 Write property test for schedule validation
     - **Property 29: Schedule validation**
     - **Validates: Requirements 15.10**
     - File: `tests/market_data/property/test_schedule_validation_properties.py`
@@ -844,29 +844,29 @@ Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5),
     - `routers/markets.py` (`GET /markets/calendar`, `GET /markets/clock`, `GET /markets/{market_code}/status`, `market:read`) and `routers/admin_markets.py` (`PUT`/`DELETE /admin/markets/{market_code}/default-schedule`, `GET`/`POST /admin/markets/{market_code}/schedule-overrides`, `PUT`/`DELETE /admin/markets/{market_code}/schedule-overrides/{override_id}`, `admin:markets`); wire in `market_data/composition.py`
     - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5, 15.6, 15.7, 15.10, 15.11_
 
-  - [ ]* 15.7 Write API tests for calendar and schedules
+  - [x]* 15.7 Write API tests for calendar and schedules
     - Override applies to the next request; 404 unknown market and override; 422 range, date and time zone errors; default time zone `America/New_York`
     - _Requirements: 15.2, 15.5, 15.6, 15.7, 15.10, 15.11_
 
-- [ ] 16. Checkpoint - Market explorer
+- [x] 16. Checkpoint - Market explorer
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 17. Watchlists, price alerts, notifications and Alert_Engine (RF-26, RF-27)
+- [x] 17. Watchlists, price alerts, notifications and Alert_Engine (RF-26, RF-27)
   - [x] 17.1 Implement watchlist, alert, notification and clock-watch rules
     - `market_data/domain/watchlists.py` (limits 20 and 50, name bounds), `alerts.py` (`evaluate` for above, below, crosses; skip unavailable price), `notifications.py` (`channels_for(prefs, event_type)`), `clock_watch.py` (baseline then transitions)
     - _Requirements: 14.1, 14.6, 14.7, 14.11, 14.12, 14.14, 15.9, 15.12_
 
-  - [ ]* 17.2 Write property test for the alert engine
+  - [x]* 17.2 Write property test for the alert engine
     - **Property 24: Alert engine triggers once at the first satisfying evaluation**
     - **Validates: Requirements 14.6, 14.7, 14.14**
     - File: `tests/market_data/property/test_alert_properties.py`
 
-  - [ ]* 17.3 Write property test for channel selection and delivery isolation
+  - [x]* 17.3 Write property test for channel selection and delivery isolation
     - **Property 25: Notification channel selection and delivery isolation**
     - **Validates: Requirements 14.7, 14.11, 15.9**
     - File: `tests/market_data/property/test_notifier_properties.py`
 
-  - [ ]* 17.4 Write property test for the clock watcher
+  - [x]* 17.4 Write property test for the clock watcher
     - **Property 28: Clock watcher emits events exactly on transitions**
     - **Validates: Requirements 15.9, 15.12**
     - File: `tests/market_data/property/test_clock_watch_properties.py`
@@ -888,7 +888,7 @@ Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5),
     - `market_data/adapters/inbound/jobs/price_alert_loop.py` (active alerts grouped by symbol, one multi-symbol snapshot call, conditional trigger and notification in one transaction, `last_evaluated_price`) and `clock_watcher.py` (in-memory baseline, conditional `market_clock_state` update, broadcast); each iteration catches and logs errors; start both in the `market_data/composition.py` startup hook when `ALERT_ENGINE_ENABLED=true`
     - _Requirements: 14.6, 14.7, 14.14, 15.9, 15.12_
 
-  - [ ]* 17.9 Write tests for watchlists, alerts and the engine
+  - [x]* 17.9 Write tests for watchlists, alerts and the engine
     - 403 for non-premium; limits 20 and 50; 409 duplicate symbol; 404 ownership; failed sender marks only its delivery `failed`
     - _Requirements: 14.1, 14.3, 14.7, 14.8, 14.9, 14.11, 14.12, 14.13_
 
@@ -909,17 +909,17 @@ Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5),
     - `market_data/composition.py`: `build_senders(settings) -> list[ChannelSender]` returns `SmtpEmailSender` when `settings.smtp_host` is set else `LogEmailSender`, `TelegramBotSender` when `settings.telegram_bot_token` is set else `LogTelegramSender`, and always `SimulatedSmsSender`; use it in `notifier(request)` and in the Alert_Engine startup `Notifier`, keeping the `request.app.state.notifier` override
     - _Requirements: 14.15, 14.16, 14.17_
 
-  - [ ]* 17.13 Write tests for sender selection and no-destination handling
+  - [x]* 17.13 Write tests for sender selection and no-destination handling
     - Real sender chosen when its env var is set, log sender when unset, sms always simulated; a recipient with no email / no telegram chat id records `failed` `no_destination` and never contacts the network; use fakes/monkeypatch so no real SMTP or Telegram call happens
     - File: `tests/market_data/test_senders.py`
     - _Requirements: 14.15, 14.16, 14.17, 14.18_
 
-- [ ] 18. Dashboard (RFP-08)
+- [x] 18. Dashboard (RFP-08)
   - [x] 18.1 Implement dashboard assembly
     - `market_data/domain/dashboard.py`: interest matching by Market code or sector, fallback to default symbols, at most 10 in ascending symbol order, quote-unavailable flags, beginner flag and level
     - _Requirements: 11.3, 11.4, 11.5, 11.6, 11.7_
 
-  - [ ]* 18.2 Write property test for dashboard assembly
+  - [x]* 18.2 Write property test for dashboard assembly
     - **Property 16: Dashboard assembly**
     - **Validates: Requirements 11.3, 11.4, 11.7**
     - File: `tests/market_data/property/test_dashboard_properties.py`
@@ -928,16 +928,16 @@ Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5),
     - `persistence/user_profile_reader.py` (reads `users.interests` and `users.investor_level`); `market_data/application/dashboard.py` (3 s snapshot and clock timeouts, degraded `market_status_unavailable`); `routers/dashboard.py` (`GET /dashboard`, `market:read`); wire in `market_data/composition.py`
     - _Requirements: 11.3, 11.4, 11.5, 11.6, 11.7_
 
-  - [ ]* 18.4 Write API tests for the dashboard
+  - [x]* 18.4 Write API tests for the dashboard
     - Interest match, default fallback, slow or failing quote, clock failure
     - _Requirements: 11.3, 11.4, 11.5, 11.6, 11.7_
 
-- [ ] 19. Checkpoint - MOD-02 market_data track complete
+- [x] 19. Checkpoint - MOD-02 market_data track complete
   - Ensure all tests pass, ask the user if questions arise.
 
 ### Contract and integration (both owners)
 
-- [ ] 20. OpenAPI contract and cross-module integration
+- [x] 20. OpenAPI contract and cross-module integration
   - [x] 20.1 Complete OpenAPI error declarations
     - Check every router of both modules: each operation declares 401 and 403 where protected, 422 where it has input, and its documented errors from the design endpoint tables through `error_responses`; add any that are missing
     - _Requirements: 17.1, 17.2_
@@ -955,7 +955,7 @@ Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5),
     - Engine pointed at a closed port: registration, login, order controls and KYC submission return 503 `DATABASE_UNAVAILABLE`, store nothing and make no Alpaca account call
     - _Requirements: 1.9, 3.12, 9.6, 17.9_
 
-- [ ] 21. Final checkpoint - Ensure all tests pass
+- [x] 21. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes
@@ -971,8 +971,9 @@ Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5),
 - Applying migrations (`uv run alembic upgrade head` with `MIGRATION_DATABASE_URL`) is a manual developer step.
 - Validate each task with `uv run ruff check .`, `uv run mypy src` and `uv run pytest`.
 - Implementation note (task 22.1): Requirement 25.1 enumerates ten distinct action codes (`role_assignment_revoked` and `role_assignment_cancelled` are separate). The "11 action codes" wording in 25.1 and the design table, however, counts eleven. The migration check constraint, `AuditAction` and the tests use the ten enumerated codes; no extra code is invented.
-- Pending manual edit (task 22.3): the three `KYC_STATUS_*` variables could not be appended to `.env.example` because the tool permission was denied at implementation time. The defaults live in `config/settings.py`; add the three lines to `.env.example` manually.
-- Pending test (task 25.6): Property 40 (directory listing against an independent reference model) is not implemented. The listing is covered by `tests/identity/property/test_directory_properties.py` (Properties 41 and 42), by `tests/identity/test_user_directory_api.py`, and by the pure `directory.select` used as the in-memory reference.
+- Resolved (task 22.3): the three `KYC_STATUS_*` variables are now in `.env.example`; the defaults live in `config/settings.py`.
+- Property 40 (task 25.6): implemented in `tests/identity/property/test_directory_properties.py` against an independent reference model.
+- Extra tests: Property 17 (search) lives in `tests/market_data/property/test_search_properties.py`; the WebSocket rejection that keeps the previous subscription is in `tests/market_data/test_stream_api.py`.
 - Partial test (task 26.8): the fake-sleep timing of the first refresh cycle is not asserted. `run`, `_stopped_within` and `stop` are covered by inspection and by the enabled/disabled lifecycle tests.
 - Test style notes (task 28): 28.5 (atomicity) is an example test over an in-memory unit-of-work fake; 28.8 (listing parameters together) is parametrized examples over the HTTP layer. Both cover the rule but are not Hypothesis properties.
 
