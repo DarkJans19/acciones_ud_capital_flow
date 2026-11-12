@@ -6,7 +6,7 @@ Python 3.12 + FastAPI backend for MOD-01 (`identity`) and MOD-02 (`market_data`)
 
 This spec (`.kiro/specs/identity-market-backend`) is the single documentation base for MOD-01 and MOD-02. `specs/01-identity-security` and `specs/02-market-data` are superseded and are not a source of requirements, paths or tasks. CSRF tokens and Origin or Referer validation are out of scope by decision D4: cookie protection relies on the `SameSite` attribute of the `access_token` and `refresh_token` cookies, and CORS stays restricted to the configured origins (Requirement 17.4).
 
-The plan has three parts:
+The plan has four parts:
 
 1. **Shared foundation (tasks 1-2):** settings and startup validation, error model, database helpers, Alpaca HTTP plumbing, auth cookie helpers, app wiring with CORS, and test infrastructure. Both owners depend on it, so it comes first.
 2. **Two parallel tracks:**
@@ -14,6 +14,7 @@ The plan has three parts:
    - MOD-02 `market_data` (tasks 12-19), owner Davidson Sánchez.
    The only code dependency from `market_data` on `identity` is the auth dependency in `identity/adapters/inbound/http/deps.py` (`CurrentUser`, `get_current_user`, `require_permission`, `require_premium`, `authenticate_access_token`), delivered early in task 3.10. Until then, `market_data` API tests override those dependencies with FastAPI `dependency_overrides`.
 3. **Contract and integration (tasks 20-21):** OpenAPI error declarations and cross-module tests.
+4. **MOD-01 `readme_agregar.md` gaps (tasks 22-30), owner Daniel Sanabria:** revision `0005_identity_admin_gaps`, logout with optional credentials (C1), broker activation with the investor role (A3), the broker request flag (D1), the administrative user directory with KYC data (A1, A2), the KYC status cache and KYC_Refresh_Job (B3), KYC reconciliation (B4) and the identity Audit_Log (D3). The section sits right after task 11 because it extends the finished identity track; it shares no source file with the MOD-02 track.
 
 All REST paths are under `/api/v1` and follow the Plan Maestro paths of the design endpoint table. The WebSocket is `WS /ws/v1/market-feed`, outside the `/api/v1` prefix.
 
@@ -25,7 +26,7 @@ Reconciliations with the existing repository (no redesign):
 - The helpers that set and clear the `access_token` and `refresh_token` cookies together go to `shared/infrastructure/cookies.py`, as in the design. There is no identity-local `cookies.py`.
 - `identity.domain.totp_window.match` receives a TOTP code generator through a port. The `pyotp` wrapper is an outbound adapter, so the domain never imports a provider library.
 
-Identity HTTP adapters are split by path group: `routers/auth.py` (`/auth/register`, `/auth/register/broker`, `/auth/login`, `/auth/mfa/verify`), `routers/sessions.py` (`/auth/refresh`, `/auth/logout`, `/users/me/sessions...`), `routers/users.py` (`/users/me`, `/users/me/interests`, `/users/me/mfa/recovery-codes`), `routers/preferences.py` (`/users/preferences/*`, `/users/me/telegram`), `routers/admin.py` (`/admin/users/...`, `/admin/roles...`, `/admin/permissions`) and `routers/kyc.py` (`/kyc/*`).
+Identity HTTP adapters are split by path group: `routers/auth.py` (`/auth/register`, `/auth/register/broker`, `/auth/login`, `/auth/mfa/verify`), `routers/sessions.py` (`/auth/refresh`, `/auth/logout`, `/users/me/sessions...`), `routers/users.py` (`/users/me`, `/users/me/interests`, `/users/me/mfa/recovery-codes`), `routers/preferences.py` (`/users/preferences/*`, `/users/me/telegram`), `routers/admin.py` (`/admin/users/...`, `/admin/roles...`, `/admin/permissions`, `/admin/kyc/{user_id}/reconcile`, `/admin/audit-log`) and `routers/kyc.py` (`/kyc/*`).
 
 Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`, `uv run pytest`. Applying the Migration_Set with `uv run alembic upgrade head` is a manual developer step, not a gate.
 
@@ -40,8 +41,8 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
 
   - [x] 1.2 Add dependencies and test configuration
     - `uv add email-validator httpx websockets argon2-cffi PyJWT pyotp cryptography pycountry tzdata`; `uv add --dev hypothesis asgi-lifespan` (moves `httpx` from dev to runtime)
-    - In `pyproject.toml`: pytest `asyncio_mode = "auto"`, register the `db` marker
-    - Create `tests/conftest.py` with a Hypothesis profile (`max_examples=100`) and a hook that skips `db`-marked tests with a visible reason when `TEST_DATABASE_URL` is unset
+    - In `pyproject.toml`: pytest `asyncio_mode = "auto"`
+    - Create `tests/conftest.py` with a Hypothesis profile (`max_examples=100`)
     - _Requirements: 17.7_
 
   - [x] 1.3 Extend `Settings` and add startup validation
@@ -106,9 +107,9 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
     - **Validates: Requirements 17.4**
     - File: `tests/shared/property/test_cors_properties.py`
 
-  - [x] 1.14 Add database and ASGI test fixtures
-    - In `tests/conftest.py`: synchronous session-scoped fixture that points `DATABASE_URL`/`MIGRATION_DATABASE_URL` at `TEST_DATABASE_URL`, sets test `INITIAL_ADMIN_*` values, clears `get_settings` cache, runs `alembic.command.upgrade(..., "head")` and `downgrade(..., "base")` at session end
-    - Per-test engine from `build_engine(TEST_DATABASE_URL)` with a rolled-back transaction; async ASGI client fixture using `httpx.ASGITransport` and `asgi-lifespan` with `APP_ENV=test` settings
+  - [x] 1.14 Add settings and ASGI test fixtures
+    - In `tests/conftest.py`: a settings fixture with `APP_ENV=test` and test `INITIAL_ADMIN_*` values that clears the `get_settings` cache
+    - Async ASGI client fixture using `httpx.ASGITransport` and `asgi-lifespan`, with use cases and unit-of-work factories replaced by in-memory fakes through the `request.app.state` overrides and `dependency_overrides`; no fixture connects to a database
     - _Requirements: 17.7_
 
   - [x] 1.15 Implement the auth cookie helpers
@@ -214,8 +215,8 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
     - _Requirements: 1.1, 1.7, 2.1, 2.2, 2.3, 2.7, 2.9_
 
   - [x]* 4.7 Write API tests for registration
-    - 201 paths with `account_status`; a `role` value in the body is ignored and a broker gets no Role_Assignment; 409 for case/whitespace duplicates; 422 naming each field; no password in any body; administrator creation 401/403; `db`: concurrent duplicates give one 201 (1.8)
-    - _Requirements: 1.1, 1.4, 1.5, 1.6, 1.7, 1.8, 2.1, 2.2, 2.3, 2.4, 2.7, 2.15_
+    - 201 paths with `account_status`; a `role` value in the body is ignored and a broker gets no Role_Assignment; 409 for case/whitespace duplicates; 422 naming each field; no password in any body; administrator creation 401/403
+    - _Requirements: 1.1, 1.4, 1.5, 1.6, 1.7, 2.1, 2.2, 2.3, 2.4, 2.7, 2.15_
 
   - [x] 4.8 Write migration `0002_initial_admin` and the hash tool
     - `migrations/versions/0002_initial_admin.py` (revises `0001_identity_schema`): read `InitialAdminSettings`, fail naming each missing or invalid variable without values, validate with `identity.domain.validation`, require `$argon2id$` prefix, skip when `email_normalized` exists, otherwise insert user with `account_status = 'active'`, administrator Role_Assignment and 28 preferences with bound parameters; `downgrade()` is a no-op
@@ -280,8 +281,8 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
 
   - [x]* 5.12 Write API tests for login, MFA and recovery codes
     - No cookies on login; enrollment data only before confirmation; attributes of the `access_token` and `refresh_token` cookies; replayed code rejected; fifth failure invalidates the challenge; 422 does not consume an attempt; `auth_events` holds no password, code, recovery code or secret
-    - Recovery codes: confirmation returns 10 codes once and `/users/me` and a later verify do not; recovery login returns `recovery_codes_remaining`; a used or previous-set code returns 401 `MFA_FAILED`; regeneration without enrollment returns 409 and stores nothing; captured logs contain no issued code; `db`: two challenges racing on one code give one success and one 401 with `failed_attempts` + 1 (18.10); two concurrent regenerations leave exactly 10 current codes
-    - _Requirements: 3.1, 3.2, 3.3, 3.5, 3.6, 3.7, 3.8, 3.10, 3.11, 18.1, 18.2, 18.3, 18.4, 18.5, 18.7, 18.8, 18.10_
+    - Recovery codes: confirmation returns 10 codes once and `/users/me` and a later verify do not; recovery login returns `recovery_codes_remaining`; a used or previous-set code returns 401 `MFA_FAILED`; regeneration without enrollment returns 409 and stores nothing; captured logs contain no issued code
+    - _Requirements: 3.1, 3.2, 3.3, 3.5, 3.6, 3.7, 3.8, 3.10, 3.11, 18.1, 18.2, 18.3, 18.4, 18.5, 18.7, 18.8_
 
 - [x] 6. Sessions, refresh and logout (RFP-03)
   - [x] 6.1 Implement the Session_Service use cases
@@ -294,8 +295,8 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
     - _Requirements: 4.1, 4.2, 4.4, 4.6, 4.8, 4.9_
 
   - [x]* 6.3 Write API tests for sessions
-    - Rotation invalidates the old token; reuse revokes the session; ownership 404; revoke-others count; logout, current-session close and refresh failure clear both cookies; `db`: concurrent refreshes give at most one success (4.10)
-    - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10_
+    - Rotation invalidates the old token; reuse revokes the session; ownership 404; revoke-others count; logout, current-session close and refresh failure clear both cookies
+    - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9_
 
 - [ ] 7. Checkpoint - Identity authentication core
   - Ensure all tests pass, ask the user if questions arise.
@@ -321,8 +322,8 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
 
   - [x]* 8.5 Write API tests for administration and broker activation
     - A change applies to the next request; 403 leaves data unchanged; 404 per resource; 409 `LAST_ADMINISTRATOR`; 422 for a non-boolean premium value
-    - Broker: a pending broker gets 403 on `account:manage` endpoints; activation returns 200 with the broker assignment and the next request succeeds; activating an active user returns 409 `BROKER_NOT_PENDING` with no new assignment; `db`: concurrent activations give one 200, the rest 409, and exactly one broker Role_Assignment (2.14)
-    - _Requirements: 2.11, 2.12, 2.13, 2.14, 5.2, 5.4, 5.5, 5.6, 5.9, 5.10, 5.11, 5.12, 5.13_
+    - Broker: a pending broker gets 403 on `account:manage` endpoints; activation returns 200 with the broker assignment and the next request succeeds; activating an active user returns 409 `BROKER_NOT_PENDING` with no new assignment
+    - _Requirements: 2.11, 2.12, 2.13, 5.2, 5.4, 5.5, 5.6, 5.9, 5.10, 5.11, 5.12, 5.13_
 
 - [x] 9. Account preferences and settings (RF-07, RF-08, RF-09)
   - [x] 9.1 Implement preference merge and settings validators
@@ -333,7 +334,7 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
   - [x]* 9.2 Write property test for preference merge round trip
     - **Property 10: Notification preference merge round trip**
     - **Validates: Requirements 7.2, 7.4, 7.7, 7.8**
-    - File: `tests/identity/property/test_preferences_properties.py` (read-back half `db`-marked)
+    - File: `tests/identity/property/test_preferences_properties.py` (read-back half over the in-memory preference store)
 
   - [x]* 9.3 Write property test for rejected preference patches
     - **Property 11: Rejected preference patches change nothing**
@@ -401,6 +402,259 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
 - [ ] 11. Checkpoint - MOD-01 identity track complete
   - Ensure all tests pass, ask the user if questions arise.
 
+### MOD-01 identity: readme_agregar.md gaps (owner: Daniel Sanabria)
+
+Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5), 4.6 and 4.11-4.14 (D10), 6 and 23 (D8), 20 and 21 (D7), 22 (D6), 24 (D9) and 25 (D11), with Assumptions A10-A14. They extend the finished identity code of tasks 3-10 and share no source file with the MOD-02 track. Every test uses in-memory fakes, `httpx.ASGITransport` and dependency overrides; none uses a `db` marker or connects to a database.
+
+- [ ] 22. Schema, settings and error codes for the readme_agregar.md gaps
+  - [ ] 22.1 Write migration `0005_identity_admin_gaps`
+    - `migrations/versions/0005_identity_admin_gaps.py`, `revision = "0005_identity_admin_gaps"`, `down_revision = "0004_assignment_cancellation"` (never `0003_market_data_schema`, which would create a second head)
+    - `upgrade()`: add `kyc_accounts.status_checked_at timestamptz null`; create `admin_audit_log` with the columns and checks of the design "Tables" row (the 11 action codes of 25.1, `target_type` in `user`/`role`, `target_id` 1-100 characters, `payload jsonb` object check, `actor_user_id` FK `users` without cascade) and the indexes (`occurred_at desc`, `id desc`), (`actor_user_id`), (`target_type`, `target_id`), (`action`); enable RLS on it with no policies; create the function `admin_audit_log_immutable()` and a `BEFORE UPDATE OR DELETE` row trigger that raises; create index `ix_users_created_at_id` on (`created_at desc`, `id`)
+    - `downgrade()`: drop the trigger, the function, `admin_audit_log`, the index and the column
+    - Applying it with `uv run alembic upgrade head` and checking it against Supabase (single head, `alembic current` is `0005_identity_admin_gaps`, the trigger rejects `UPDATE` and `DELETE`) is a manual developer step, not an automated test
+    - _Requirements: 17.7, 20.1, 23.5, 25.2, 25.3, 25.14_
+
+  - [ ] 22.2 Add the new column and table to the identity table objects
+    - `identity/adapters/outbound/persistence/tables.py`: `status_checked_at` on `kyc_accounts` and an `admin_audit_log` Core `Table` (`id`, `actor_user_id`, `action`, `target_type`, `target_id`, `payload` JSONB, `occurred_at`); no `create_all`
+    - _Requirements: 23.5, 25.2_
+
+  - [ ] 22.3 Add the KYC status settings
+    - `src/acciones_ud/config/settings.py`: `kyc_status_refresh_enabled: str = "false"`, `kyc_status_refresh_interval_seconds: str = "900"`, `kyc_status_cache_ttl_seconds: str = "60"`, plain strings like `price_staleness_threshold_seconds`
+    - `require_api_settings` rejects by name only: an enabled flag whose lowercased value is not `true` or `false` (empty string included), an interval that is not a base-10 integer from 60 to 86,400, a TTL that is not a base-10 integer from 0 to 3,600; only an absent variable takes the default
+    - Add `kyc_refresh_config(settings)` returning the parsed enabled flag, interval and TTL for `identity/composition.py`
+    - Add the three variables with their defaults to `.env.example`
+    - _Requirements: 17.8, 23.1, 23.12_
+
+  - [ ]* 22.4 Extend the property test for missing and invalid configuration
+    - **Property 32: Missing configuration is reported by name only**
+    - **Validates: Requirements 13.17, 17.3, 17.8, 23.12**
+    - File: `tests/shared/property/test_config_properties.py`: generators add the three `KYC_STATUS_*` variables (absent takes the default, empty string invalid, other letter case of `true`/`false` accepted, non-integers and out-of-range integers rejected); the error names each invalid variable and contains no value
+    - Example smoke test: the app refuses to start with an invalid `KYC_STATUS_*` value and `FakeAlpacaAccounts` records no call
+
+  - [ ] 22.5 Add the new error codes
+    - `src/acciones_ud/shared/domain/errors.py`: add `KYC_RECONCILE_NOT_FOUND` (404), `KYC_RECONCILE_AMBIGUOUS` (409), `ALPACA_ACCOUNT_IN_USE` (409) and `KYC_SUBMISSION_IN_PROGRESS` (409) to `ErrorCode`
+    - _Requirements: 24.3, 24.4, 24.7, 24.8_
+
+- [ ] 23. Logout with optional credentials (gap C1, P0)
+  - [ ] 23.1 Implement the logout target rule
+    - `identity/domain/logout.py`: pure `target(access: AccessClaims | None, access_session_active: bool, refresh_digest: bytes | None)` deciding which Session to revoke (the access token's Session when valid and unrevoked, otherwise the Session of the matching refresh token, otherwise none) and the refresh-cookie shape check (43 URL-safe characters)
+    - _Requirements: 4.6, 4.11, 4.12_
+
+  - [ ] 23.2 Add the logout repository methods
+    - `identity/domain/auth_ports.py` and `persistence/auth_repository.py`: `revoke_if_active(user_id, session_id, now) -> bool` (`UPDATE sessions ... WHERE id = sid AND user_id = sub AND revoked_at IS NULL RETURNING id`) and `revoke_by_refresh_digest(digest, now) -> bool` (join on `refresh_tokens.token_hash`, no `rotated_at` or `expires_at` condition); the existing `revoke` stays unchanged
+    - In-memory versions in `tests/support/identity_fakes.py`, scriptable to raise `AppError(503, DATABASE_UNAVAILABLE)`
+    - _Requirements: 4.6, 4.11, 4.12, 4.14_
+
+  - [ ] 23.3 Rework the logout use case and endpoint
+    - `identity/application/sessions.py`: `SessionService.logout(access_token, refresh_token)` in one unit of work; the access step runs first and the refresh step only when the access step revoked nothing, so a refresh cookie never revokes a second Session
+    - `routers/sessions.py`: `POST /auth/logout` no longer declares `get_current_user`; it reads both cookies through `APIKeyCookie(auto_error=False)`, returns 204 with `clear_auth_cookies` for every credential state and never 401; on `AppError` `DATABASE_UNAVAILABLE` it builds the Error_Body response with the shared builder of `shared/infrastructure/http_errors.py` (expose it if needed), clears both cookies on it and returns 503
+    - OpenAPI documents 204 and 503 only, with both cookie schemes optional
+    - _Requirements: 4.6, 4.11, 4.12, 4.13, 4.14_
+
+  - [ ] 23.4 Write property test for logout
+    - **Property 44: Logout always clears both cookies and revokes exactly the reference Session**
+    - **Validates: Requirements 4.6, 4.11, 4.12, 4.13, 4.14**
+    - File: `tests/identity/property/test_logout_properties.py`, through `httpx.ASGITransport` with the in-memory session store override (`deadline=None`)
+
+  - [ ]* 23.5 Write API tests for logout
+    - Expired access token with a valid refresh cookie revokes that Session and returns 204 (the gap C1 case); a valid access token with another Session's refresh cookie revokes only the access token's Session; no cookies returns 204 with both cookies cleared; an unknown refresh hash changes nothing; 503 still clears both cookies and changes no Session; a refresh after logout returns 401 `REFRESH_INVALID`
+    - _Requirements: 4.2, 4.6, 4.11, 4.12, 4.13, 4.14_
+
+- [ ] 24. Broker activation with the investor role and the broker request flag (gaps A3, D1)
+  - [ ] 24.1 Implement BrokerActivationService
+    - `identity/application/broker_activation.py`: `BrokerActivationService.activate(actor_id, user_id)` replaces `RbacService.activate` in `rbac_admin.py`; one unit of work with the conditional `UPDATE users SET account_status = 'active' ... WHERE id = $1 AND account_status = 'pending_broker_activation' RETURNING id`, then a broker and an investor Role_Assignment through `RbacRepository.save_assignment` with the same `$now` from the `Clock` port and `valid_to` null; no row and the user exists gives 409 `BROKER_NOT_PENDING`, otherwise 404 `NOT_FOUND`; the RBAC seed is unchanged
+    - `schemas/admin.py`: `BrokerActivationOut {user_id, account_status, role_assignment, investor_assignment}` (`role_assignment` stays the broker assignment)
+    - `routers/admin.py`: `POST /admin/users/{user_id}/broker-activation` calls the new service (the administrator-role check stays); wire it in `identity/composition.py`; the Audit_Entry is added in task 28.4
+    - _Requirements: 2.12, 2.13, 2.14, 2.16, 2.17, 22.7_
+
+  - [ ]* 24.2 Write tests for broker activation
+    - Activation returns 200 with `role_assignment` (broker) and `investor_assignment`, and the next request holds `kyc:submit`; an active User with the Broker_Request_Flag true or false gets 409 `BROKER_NOT_PENDING` and no new assignment; a fake that fails the second insert leaves the User pending with no assignment and returns 503; unknown user 404; a requester with `admin:users` but no administrator role gets 403
+    - _Requirements: 2.3, 2.12, 2.13, 2.16, 2.17, 22.7_
+
+  - [ ] 24.3 Return the broker request flag in account information
+    - `identity/application/account_info.py` reads `users.broker_requested`; `schemas/users.py` adds `broker_requested: bool` (never null) to `UserMeOut`
+    - Check that no request schema other than investor registration declares `broker_requested` and that all keep `extra="ignore"`, so no later request changes the flag
+    - _Requirements: 22.1, 22.2, 22.8_
+
+  - [ ]* 24.4 Write API tests for the broker request flag
+    - `/users/me` returns `broker_requested` true or false, false when the registration omitted it; assigning the broker role through `POST /admin/users/{user_id}/roles` keeps the flag, the investor assignment and the Account_Status; a requester with `admin:rbac` but no administrator role gets 403 and nothing is stored; a `broker_requested` field in other request bodies is ignored; a non-boolean flag at registration returns 422
+    - _Requirements: 22.1, 22.2, 22.4, 22.5, 22.6, 22.8, 22.9_
+
+- [ ] 25. Administrative user directory with KYC data (gaps A1, A2)
+  - [ ] 25.1 Implement the directory domain rules
+    - `identity/domain/directory.py`: `DirectoryQuery` (filters, `limit` 50, `offset` 0), `KYC_STATUSES` (the 11 values of 21.6), `DirectoryEntry` with exactly the fields of 20.2 and 21.1 and no field for any hash, secret or `tax_id_last4`, `kyc_fields(row)` deriving `kyc_link_state` and the nulls of 21.2 and 21.3, `like_pattern(q)` escaping `\`, `%` and `_`, and `select(users, query, now)` as the executable specification of filtering, ordering (`registered_at` descending, `user_id` ascending) and paging
+    - _Requirements: 20.2, 20.3, 20.5, 20.8, 21.1, 21.2, 21.3, 21.4, 21.5_
+
+  - [ ]* 25.2 Write property test for the q pattern
+    - **Property 41: The q pattern matches literally**
+    - **Validates: Requirements 20.8**
+    - File: `tests/identity/property/test_directory_pattern_properties.py`
+
+  - [ ]* 25.3 Write property test for the KYC fields
+    - **Property 42: KYC_Link_State and KYC fields are derived from the stored row**
+    - **Validates: Requirements 21.1, 21.2, 21.3, 21.4, 21.5**
+    - File: `tests/identity/property/test_directory_kyc_properties.py`
+
+  - [ ] 25.4 Implement the shared effective-assignment expression and the directory repository
+    - `persistence/tables.py`: `effective_assignment(ra, users, now)` = `users.account_status = 'active' AND ra.status = 'ACTIVE' AND ra.valid_from <= now AND (ra.valid_to IS NULL OR now < ra.valid_to)`; switch `auth_context_repository.py` to it with no behavior change
+    - `identity/domain/admin_ports.py`: `UserDirectoryRepository.search(query, now) -> DirectoryPage(items, total)` and `.get(user_id, now) -> DirectoryEntry | None`
+    - `persistence/user_directory_repository.py`: one CTE statement per call built with SQLAlchemy Core (each filter added only when supplied, explicit select list that never reads `password_hash` or `totp_secret_enc`, roles from `effective_assignment`, `LEFT JOIN` of the count row so `total` survives `offset >= total`); `get` reuses the filtered select
+    - In-memory fake in `tests/support/identity_fakes.py` that applies `directory.select`
+    - _Requirements: 2.11, 20.1, 20.2, 20.3, 20.5, 20.6, 20.7, 20.8, 20.9, 20.10, 21.6, 21.7, 21.9_
+
+  - [ ] 25.5 Implement the User_Directory_Service
+    - `identity/application/user_directory.py`: `UserDirectoryService.list(query)` and `.detail(user_id)` in one unit of work; a missing user raises 404 `NOT_FOUND` with `details.resource = "user"`; no write, no Audit_Entry and no Alpaca port
+    - _Requirements: 20.1, 20.12, 20.13, 20.15, 20.18, 21.5_
+
+  - [ ]* 25.6 Write property test for the directory listing
+    - **Property 40: User directory listing matches a reference model**
+    - **Validates: Requirements 20.1, 20.2, 20.4, 20.5, 20.6, 20.7, 20.9, 20.10, 21.6, 21.7, 21.9, 22.3**
+    - File: `tests/identity/property/test_directory_properties.py`, running the use case over the in-memory directory fake against a reference model written in the test module
+
+  - [ ] 25.7 Add the directory endpoints
+    - `schemas/admin.py`: `UserDirectoryQueryIn` (`account_status`, `role`, `kyc_status` and `kyc_link_state` as case-sensitive `Literal`s, `q` trimmed 1-100 with whitespace-only rejected, `broker_requested` as `Literal["true","false"]` converted to `bool`, `limit` 1-100 default 50, `offset` ≥ 0 default 0), `UserDirectoryEntryOut`, `UserDirectoryPageOut {items, total, limit, offset}` echoing the applied values
+    - `routers/admin.py`: `GET /admin/users` (`Annotated[UserDirectoryQueryIn, Query()]`) and `GET /admin/users/{user_id}` (`user_id: UUID`), both with `require_permission("admin:users")` so 401 and 403 come before parameter validation; wire in `identity/composition.py`
+    - _Requirements: 20.1, 20.4, 20.11, 20.12, 20.14, 20.16, 20.17, 21.8, 22.3_
+
+  - [ ]* 25.8 Write API tests for the directory
+    - Detail returns the entry; unknown UUID 404, non-UUID 422; unauthenticated and invalid gets 401, unprivileged and invalid gets 403; no write, no Audit_Entry and no Alpaca call; the entry JSON holds no hash, secret or `tax_id_last4`; a pending broker shows `roles = []`; a fake raising `DATABASE_UNAVAILABLE` gives 503 with no partial body
+    - _Requirements: 20.2, 20.3, 20.12, 20.13, 20.14, 20.15, 20.16, 20.17, 20.18_
+
+- [ ] 26. KYC status cache and KYC_Refresh_Job (gap B3)
+  - [ ] 26.1 Implement the KYC cache rules
+    - `identity/domain/kyc_cache.py`: `KycStatusState`, `serve_cached(checked_at, now, ttl_seconds)` (true only when TTL > 0, `checked_at` not null and `now - checked_at <= ttl`; a future `checked_at` counts as fresh), `apply_status_check(stored, retrieved, retrieved_at)` (None when the stored check is later; otherwise sets `checked_at` and changes `status` and `status_updated_at` only on a different status), and `cycle_action(outcome)` (store, skip, end cycle)
+    - _Requirements: 23.4, 23.5, 23.6, 23.7, 23.8, 23.9_
+
+  - [ ]* 26.2 Write property test for status checks
+    - **Property 46: Status checks never move backwards and failures change nothing**
+    - **Validates: Requirements 6.5, 23.5, 23.10**
+    - File: `tests/identity/property/test_kyc_status_check_properties.py`
+
+  - [ ] 26.3 Replace `update_status` with `record_status_check`
+    - `identity/domain/kyc_ports.py` and `persistence/kyc_repository.py`: `record_status_check(account, retrieved_at)` keyed on `alpaca_account_id` only, one `UPDATE` with the `status_checked_at IS NULL OR status_checked_at <= $retrieved_at` guard and the `CASE` on `status_updated_at`; it never inserts a row or changes `alpaca_account_id`; add `linked_account_ids()`
+    - `identity/application/kyc.py`: `KycService.status` keeps asking Alpaca and stores `status_checked_at` through `record_status_check`
+    - In-memory versions in `tests/support/identity_fakes.py` that apply `apply_status_check`
+    - _Requirements: 10.4, 23.5, 23.10_
+
+  - [ ] 26.4 Add the KYC status cache to account information
+    - `identity/application/account_info.py`: `AccountInfoService` gains `cache_ttl_seconds`; one unit of work reads the user and KYC rows (503 before any Alpaca call); none or unlinked gives `kyc_status = null` with no call; linked and `serve_cached` returns the stored status with no call; otherwise `get_account` (10 s), where `AlpacaError` gives `kyc_status_unavailable = true` with no write, and success calls `record_status_check` in a new unit of work whose `DATABASE_UNAVAILABLE` is logged without values and swallowed
+    - `identity/composition.py`: `account_info_service(request)` passes the TTL parsed by `kyc_refresh_config`
+    - _Requirements: 6.1, 6.4, 6.5, 6.6, 23.4, 23.6, 23.11_
+
+  - [ ]* 26.5 Write property test for the cache decision
+    - **Property 45: KYC status cache freshness decision**
+    - **Validates: Requirements 6.4, 23.4, 23.6**
+    - File: `tests/identity/property/test_kyc_cache_properties.py` (pure `serve_cached` and the account information use case over fakes, asserting when `FakeAlpacaAccounts` is called)
+
+  - [ ] 26.6 Implement the KYC_Refresh_Job and its lifecycle
+    - `identity/adapters/inbound/jobs/__init__.py` and `kyc_refresh_job.py`: `KycRefreshJob(accounts, uow, clock, interval_seconds)` with `start`, `stop`, `run`, `run_cycle` following `market_data/adapters/inbound/jobs/clock_watcher.py`; first cycle one interval after start; next sleep starts after the cycle ends; snapshot of `linked_account_ids()` at cycle start; 429 ends the cycle, other `AlpacaError` skips the account, one transaction per stored account; no new request once stopping; per-cycle exceptions logged without ids or values; `stop()` sets the event and waits at most 10 s, then cancels
+    - `identity/composition.py`: `startup(app)` builds and starts the job with `AlpacaAccountsClient(app.state.alpaca_broker)` when enabled and stores it in `app.state.kyc_refresh_job`; `shutdown(app)` awaits `job.stop()` before disposing the engine
+    - `main.py`: enter the Alpaca broker client into the `AsyncExitStack` before pushing `identity.shutdown`, so the job stops before the client closes
+    - _Requirements: 23.2, 23.3, 23.7, 23.8, 23.9, 23.10, 23.13, 23.14_
+
+  - [ ]* 26.7 Write property test for a refresh cycle
+    - **Property 47: A KYC_Refresh_Job cycle follows its outcome script**
+    - **Validates: Requirements 23.2, 23.7, 23.8, 23.9, 23.10**
+    - File: `tests/identity/property/test_kyc_refresh_job_properties.py`, with `FakeAlpacaAccounts` and an in-memory KYC store
+
+  - [ ]* 26.8 Write tests for the cache and the job
+    - No Alpaca call for none or unlinked; database failure before the Alpaca call gives 503 with no call; a failing store after retrieval still returns the retrieved status with `kyc_status_unavailable = false`; with a fake sleep, the first cycle starts one interval after startup and the next one interval after the previous ends; a disabled flag starts no job; `stop()` during an in-flight fake request waits up to 10 s, then cancels without a write
+    - _Requirements: 6.4, 6.5, 6.6, 23.2, 23.3, 23.11, 23.13, 23.14_
+
+- [ ] 27. KYC reconciliation (gap B4)
+  - [ ] 27.1 Add the account list to the Alpaca accounts port, client and fake
+    - `identity/domain/kyc.py`: `AlpacaAccountSummary {id, status, updated_at, contact_email}`; `identity/domain/kyc_ports.py`: `AlpacaAccountsPort.list_accounts(query, timeout=10)`, and `get_account` documents 404 as `AlpacaNotFound`
+    - `alpaca/accounts_client.py`: `list_accounts` calls `GET /v1/accounts?query=<email>&entities=contact` and maps `contact.email_address`, errors through `classify` and `raise_for_alpaca`; `get_account` raises `AlpacaNotFound` on 404
+    - `alpaca/fake_accounts.py`: scripted `list_accounts` with call recording
+    - _Requirements: 24.1, 24.2, 24.3, 17.5, 17.6_
+
+  - [ ] 27.2 Implement the reconciliation decision rules and error mapping
+    - `identity/domain/kyc_reconcile.py`: `precheck(state, supplied, now)` following the design decision table (`AlreadyLinked`, `KYC_ACCOUNT_EXISTS`, `KYC_SUBMISSION_IN_PROGRESS` under 120 s, `LookupById`, `SearchByEmail`, identifiers compared as `UUID`), `pick_candidate(accounts, registered_email)` (trimmed, lowercased contact email: `Found`, `NotFound`, `Ambiguous(count)`), and `reconcile_alpaca_error(exc) -> AppError` (`AlpacaNotFound` 404 `KYC_RECONCILE_NOT_FOUND`, `AlpacaUnavailable` 502, `AlpacaRateLimited` 503, `AlpacaAuthError` and `AlpacaValidationError` 500 `INTERNAL_ERROR`; never `to_app_error`, never `SYMBOL_NOT_FOUND`)
+    - _Requirements: 24.2, 24.3, 24.4, 24.5, 24.6, 24.8, 24.9_
+
+  - [ ] 27.3 Add the reconciliation repository methods
+    - `identity/domain/kyc_ports.py` and `persistence/kyc_repository.py`: `get_by_alpaca_id(account_id)`, `link_new(...)` (`INSERT ... ON CONFLICT DO NOTHING RETURNING user_id`, `tax_id_last4` null), `link_reserved(...)` (`UPDATE ... WHERE alpaca_account_id IS NULL AND reserved_at = $observed RETURNING user_id` inside `session.begin_nested()`, a unique violation becomes 409 `ALPACA_ACCOUNT_IN_USE`, `tax_id_last4` not in the `SET` list); identifiers stored as canonical lowercase UUID text
+    - In-memory versions in `tests/support/identity_fakes.py`
+    - _Requirements: 24.1, 24.7, 24.10, 24.12_
+
+  - [ ] 27.4 Implement KycReconcileService
+    - `identity/application/kyc_reconcile.py`: `KycReconcileService.reconcile(actor_id, user_id, alpaca_account_id)`; unit of work 1 reads the user (404 `NOT_FOUND`) and the KYC row and runs `precheck`; the Alpaca call runs outside any transaction; unit of work 2 checks the in-use identifier, writes with `retrieved_at = clock.now()` and, when the write matches no row, re-reads and re-applies `precheck`; database failures give 503 with no change; tax identifiers never reach the response, an Error_Body or a log; the `kyc_reconciled` Audit_Entry is added in task 28.4
+    - _Requirements: 24.1, 24.2, 24.5, 24.7, 24.9, 24.10, 24.11, 24.12, 24.13_
+
+  - [ ] 27.5 Add the reconciliation endpoint
+    - `schemas/kyc.py`: `KycReconcileIn {alpaca_account_id: UUID | None = None}` and `KycReconcileOut {user_id, alpaca_account_id, status, outcome}`
+    - `routers/admin.py`: `POST /admin/kyc/{user_id}/reconcile` with `require_permission("admin:users")`, `user_id: UUID` and `Body(default=None)` so an absent body, `{}` and a null value all search by email; a non-UUID is 422 before any Alpaca call; wire in `identity/composition.py`
+    - _Requirements: 24.1, 24.2, 24.13, 24.14_
+
+  - [ ] 27.6 Write property test for reconciliation
+    - **Property 48: Reconciliation follows the decision table**
+    - **Validates: Requirements 24.1, 24.2, 24.3, 24.4, 24.5, 24.6, 24.7, 24.8, 24.9, 24.10, 24.11**
+    - File: `tests/identity/property/test_kyc_reconcile_properties.py`, running the use case over `FakeAlpacaAccounts` and the in-memory KYC store against a reference table written in the test module
+
+  - [ ]* 27.7 Write API tests for reconciliation
+    - Unknown user 404 `NOT_FOUND` and invalid UUIDs (path or body) 422, both with no Alpaca call; 401 and 403 store nothing and send no Alpaca request; the response, Error_Body and captured logs hold no tax identifier
+    - _Requirements: 24.10, 24.13, 24.14_
+
+- [ ] 28. Audit log of identity administrative actions (gap D3)
+  - [ ] 28.1 Implement the audit domain rules
+    - `identity/domain/audit.py`: `AuditAction` (`StrEnum` of the 11 codes of 25.1), `AuditEntry` (frozen dataclass), `PAYLOAD_KEYS` per action and `build_entry(...)` that raises `ValueError` on a missing or extra payload key and serializes UUID and datetime values to ISO strings (`valid_to` null when open-ended)
+    - _Requirements: 25.1, 25.2, 25.6_
+
+  - [ ] 28.2 Write property test for audit payloads
+    - **Property 49: Audit payloads hold exactly the whitelisted keys**
+    - **Validates: Requirements 25.1, 25.6**
+    - File: `tests/identity/property/test_audit_payload_properties.py`
+
+  - [ ] 28.3 Implement the audit log repository and unit-of-work wiring
+    - `identity/domain/admin_ports.py`: `AuditLogRepository.append(entry)` and `.search(query) -> AuditPage(items, total)`; no update or delete method
+    - `persistence/audit_log_repository.py`: `append` and a `search` CTE ordered by `occurred_at DESC, id DESC` with exact, case-sensitive equality filters; a failing `append` raises 503 `DATABASE_UNAVAILABLE`
+    - `AdminWork`, the identity unit of work used by registration and the reconciliation unit of work gain an `audit` attribute bound to the same `AsyncSession` (wired in `identity/composition.py`)
+    - In-memory audit fake and a unit-of-work fake in `tests/support/identity_fakes.py` that buffer writes and commit only when the block exits without an exception, scriptable to fail `append`
+    - _Requirements: 25.3, 25.4, 25.9, 25.14_
+
+  - [ ] 28.4 Write Audit_Entries from every administrative use case
+    - `rbac_admin.py`: `premium_changed`, `role_assignment_created`, `role_assignment_updated` (with the previous validity), `role_assignment_revoked`, `role_assignment_cancelled` (also for the 200 on an already cancelled assignment), `role_permission_added`, `role_permission_removed`
+    - `broker_activation.py`: `broker_activated` with both assignment ids; `register.py`: `RegistrationService.create_administrator(payload, actor_id)` writes `administrator_created` (the router passes the actor); `kyc_reconcile.py`: `kyc_reconciled` with `outcome` `linked` or `already_linked`
+    - Each writer calls `append` as the last step inside the same `unit_of_work` as the change, with `actor_user_id` from `CurrentUser.user_id` and `occurred_at` equal to the use case's `now`; an earlier `AppError` stores no entry
+    - _Requirements: 25.1, 25.2, 25.3, 25.4, 25.5_
+
+  - [ ] 28.5 Write property test for audit atomicity
+    - **Property 50: Audit entries are atomic with their administrative change**
+    - **Validates: Requirements 25.1, 25.2, 25.3, 25.4, 25.5**
+    - File: `tests/identity/property/test_audit_atomicity_properties.py`, over the in-memory unit-of-work fake with scripted successes, early `AppError`s and failing appends
+
+  - [ ] 28.6 Add the audit log read endpoint
+    - `identity/application/audit_log.py`: `AuditLogService.list(query)` (read-only)
+    - `schemas/admin.py`: `AuditLogQueryIn` (`action` `Literal` of the 11 codes, `actor_user_id` UUID, `target_type` `user`/`role`, `target_id` 1-100, `limit` 1-100 default 50, `offset` ≥ 0 default 0), `AuditEntryOut`, `AuditLogPageOut {items, total, limit, offset}`
+    - `routers/admin.py`: `GET /admin/audit-log` with `require_permission("admin:rbac")`; no endpoint creates, updates or deletes an Audit_Entry; wire in `identity/composition.py`
+    - _Requirements: 25.7, 25.8, 25.9, 25.10, 25.11, 25.12, 25.13_
+
+  - [ ]* 28.7 Write property test for the audit log listing
+    - **Property 51: Audit log listing matches a reference model**
+    - **Validates: Requirements 25.7, 25.8, 25.9, 25.14**
+    - File: `tests/identity/property/test_audit_log_properties.py`, over the in-memory audit fake
+
+  - [ ]* 28.8 Write property test for admin listing parameters
+    - **Property 43: Admin listing parameters are validated together**
+    - **Validates: Requirements 20.4, 20.11, 21.8, 25.8, 25.10**
+    - File: `tests/identity/property/test_admin_query_properties.py`, targeting `UserDirectoryQueryIn` and `AuditLogQueryIn` through `httpx.ASGITransport` with the use cases overridden
+
+  - [ ]* 28.9 Write API tests for the audit log
+    - `occurred_at` lies between request receipt and response; a failed administrative request (404, 409, 422) stores no entry; 401 and 403 return no entries; a failing `append` returns 503 and leaves the change unstored
+    - _Requirements: 25.2, 25.4, 25.5, 25.11, 25.13_
+
+- [ ] 29. OpenAPI contract for the readme_agregar.md endpoints
+  - [ ] 29.1 Declare the error responses of the new and changed operations
+    - With `error_responses`, as in task 20.1: `GET /admin/users` (401, 403, 422, 503), `GET /admin/users/{user_id}` (401, 403, 404, 422, 503), `POST /admin/users/{user_id}/broker-activation` (401, 403, 404, 409, 422, 503), `POST /admin/kyc/{user_id}/reconcile` (401, 403, 404, 409, 422, 500, 502, 503), `GET /admin/audit-log` (401, 403, 422, 503), and `POST /auth/logout` with 204 and 503 only (no 401)
+    - _Requirements: 4.14, 17.1, 17.2, 25.12_
+
+  - [ ]* 29.2 Extend the OpenAPI contract tests
+    - The paths match the design endpoint table, including `/admin/users`, `/admin/users/{user_id}`, `/admin/kyc/{user_id}/reconcile` and `/admin/audit-log`; every new operation lists its errors with the `ErrorBody` schema; logout declares no 401 and both cookie schemes as optional; no operation creates, updates or deletes an Audit_Entry
+    - _Requirements: 4.14, 17.1, 17.2, 25.12_
+
+- [ ] 30. Checkpoint - readme_agregar.md gaps complete
+  - Ensure all tests pass, ask the user if questions arise.
+
 ### MOD-02 market_data track (owner: Davidson Sánchez)
 
 - [ ] 12. Market data schema, domain contracts and symbol validation
@@ -452,10 +706,10 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
     - `market_data/adapters/inbound/http/schemas/instruments.py` and `routers/instruments.py`: `GET /instruments/search` and `GET /instruments/{symbol:path}` (registered after `/instruments/search`; later suffix routes are registered before it); `routers/markets.py`: `GET /markets`; all with `market:read` from `identity.adapters.inbound.http.deps`; wire in `market_data/composition.py`
     - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.6, 16.1, 16.4_
 
-  - [ ]* 13.7 Write DB-backed property test for search
-    - **Property 17: Search matches a reference model (DB-backed)**
+  - [ ]* 13.7 Write property test for search over the in-memory instrument fake
+    - **Property 17: Search matches a reference model**
     - **Validates: Requirements 12.1, 12.2, 12.4**
-    - File: `tests/market_data/property/test_search_properties.py` (`db` marker, `deadline=None`)
+    - File: `tests/market_data/property/test_search_properties.py`; runs the search use case over an in-memory instrument repository fake in `tests/support/market_fakes.py` and compares with a reference model written in the test module; no database connection
 
   - [ ]* 13.8 Write API tests for instruments
     - Reload on age and on empty cache; cache fallback keeps the reload timestamp; 502/503 with empty cache; 404 unknown asset with no write; 422 symbol with no Alpaca call; a symbol containing `/` reaches the validator instead of a routing 404; 500 on write failure leaves the cached row; tests override identity deps with `dependency_overrides`
@@ -618,7 +872,7 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
     - _Requirements: 14.6, 14.7, 14.14, 15.9, 15.12_
 
   - [ ]* 17.9 Write tests for watchlists, alerts and the engine
-    - 403 for non-premium; limits 20 and 50; 409 duplicate symbol; 404 ownership; failed sender marks only its delivery `failed`; `db`: two racing evaluations create exactly one notification
+    - 403 for non-premium; limits 20 and 50; 409 duplicate symbol; 404 ownership; failed sender marks only its delivery `failed`
     - _Requirements: 14.1, 14.3, 14.7, 14.8, 14.9, 14.11, 14.12, 14.13_
 
   - [x] 17.10 Add Recipient contact fields and read them in the recipient directory
@@ -675,12 +929,9 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
     - Walk `/openapi.json`: `/openapi.json` and `/docs` reachable without a token; every operation lists its errors with the `ErrorBody` schema; the paths match the design endpoint table; the OpenAPI document and captured logs contain no configured secret value
     - _Requirements: 17.1, 17.2, 17.3_
 
-  - [ ]* 20.3 Write the cross-module API flow test
-    - `db`: register, login, MFA verify, then search instruments, read a quote and create a watchlist as a premium user, with Alpaca fakes wired through both module compositions
-    - _Requirements: 1.1, 3.3, 5.11, 12.1, 13.1, 14.1_
-
-  - [x]* 20.4 Write Migration_Set smoke tests
-    - `tests/migrations/`: upgrade head on an empty database (tables including `mfa_recovery_codes`, seeds, initial Administrator with `account_status = 'active'`, 28 preferences, `alembic current` is `0003_market_data_schema`); downgrade base and upgrade again; existing administrator email with different case and spaces; empty `INITIAL_ADMIN_PHONE` stops at `0001_identity_schema`; extra failing revision in a `tmp_path` script location leaves `0003_market_data_schema`; app refuses to start with a missing variable or an invalid `ALPACA_DATA_FEED`
+  - [x]* 20.4 Verify the Migration_Set and write startup smoke tests
+    - The Migration_Set was verified manually against the real Supabase database: upgrade head (tables including `mfa_recovery_codes`, seeds, initial Administrator with `account_status = 'active'`, 28 preferences), downgrade and upgrade again, existing administrator email with different case and spaces, missing `INITIAL_ADMIN_*` value stopping at `0001_identity_schema`, failing revision leaving the previous revision applied
+    - Automated smoke test without a database: the app refuses to start with a missing variable or an invalid `ALPACA_DATA_FEED`
     - _Requirements: 2.5, 2.8, 2.10, 5.1, 7.3, 13.17, 17.7, 17.8_
 
   - [x]* 20.5 Write database-unavailable integration tests
@@ -692,11 +943,11 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
 
 ## Notes
 
-- Tasks marked with `*` are optional and can be skipped for a faster MVP. Property tests for security-critical rules (Properties 4, 5, 6, 7, 9, 13, 31, 33, 34, 35, 36) are not marked optional. Property 5 is required because it also covers recovery-code attempts.
+- Tasks marked with `*` are optional and can be skipped for a faster MVP. Property tests for security-critical rules (Properties 4, 5, 6, 7, 9, 13, 31, 33, 34, 35, 36, 44, 48, 49, 50) are not marked optional. Property 5 is required because it also covers recovery-code attempts. Properties 44 (logout cookies), 48 (reconciliation decision table), 49 (audit payload whitelist) and 50 (audit atomicity) are required because they guard session revocation, account linking and the audit trail.
 - Each property test carries the tag comment `# Feature: identity-market-backend, Property N: <title>` and uses the Hypothesis profile from `tests/conftest.py` (at least 100 examples).
-- `db`-marked tests need `TEST_DATABASE_URL` pointing at a disposable Postgres, never the shared development database, because fixtures run `downgrade base`. Without it they are skipped with a visible reason.
+- Database behavior was verified manually against the real Supabase database. Automated tests use in-memory fakes and `httpx.ASGITransport` and never connect to a database. The new SQL of tasks 22-28 (revision `0005_identity_admin_gaps`, the directory and audit-log statements, `record_status_check`, the reconciliation writes and the immutability trigger) must be checked manually against Supabase after implementation.
 - Alpaca is never called in tests; fakes are wired through the module `composition.py` files.
-- The two tracks share no source files after task 1. Their only shared surfaces are the identity auth dependency (task 3.10), the shared cookie module (task 1.15) and database tables: `market_data` reads `users` and `notification_preferences` (tasks 17.7, 18.3), and `identity` reads `markets` and `instruments.sector` for interests (task 10.7). Revision `0003_market_data_schema` revises `0002_initial_admin`, so the chain stays linear.
+- The two tracks share no source files after task 1. Their only shared surfaces are the identity auth dependency (task 3.10), the shared cookie module (task 1.15) and database tables: `market_data` reads `users` and `notification_preferences` (tasks 17.7, 18.3), and `identity` reads `markets` and `instruments.sector` for interests (task 10.7). Revision `0003_market_data_schema` revises `0002_initial_admin`, the existing `0004_assignment_cancellation` revises `0003_market_data_schema`, and `0005_identity_admin_gaps` (task 22.1) revises `0004_assignment_cancellation`, so the chain stays linear with one head.
 - There are no CSRF or Origin tasks (decision D4). CORS restricted to the configured origins is covered by tasks 1.12 and 1.13.
 - Instrument routes declare `{symbol:path}`; the suffix routes (`/quote`, `/candles`, `/depth`) and `/instruments/search` are registered before `GET /instruments/{symbol:path}`.
 - Assumption A9 (stock depth is top of book only, and how Alpaca reports a missing side) must be checked manually against the contracted Alpaca plan; it is not a coding task.
@@ -714,20 +965,20 @@ Validation commands (from `AGENTS.md`): `uv run ruff check .`, `uv run mypy src`
     { "id": 3, "tasks": ["1.13", "1.16"] },
     { "id": 4, "tasks": ["1.14"] },
     { "id": 5, "tasks": ["3.1", "3.2", "12.1", "12.2"] },
-    { "id": 6, "tasks": ["3.3", "3.6", "3.9", "4.1", "5.1", "5.4", "10.1", "10.4", "12.3", "13.1", "13.3", "14.1", "14.3", "14.10", "14.14", "15.1", "17.1", "18.1"] },
-    { "id": 7, "tasks": ["3.4", "3.5", "3.7", "3.8", "3.10", "4.2", "4.3", "4.4", "4.8", "5.2", "5.3", "5.5", "5.6", "8.1", "9.1", "10.2", "10.3", "12.4", "13.2", "13.4", "14.2", "14.4", "14.5", "14.6", "14.11", "14.15", "15.2", "15.3", "15.4", "17.2", "17.3", "17.4", "18.2"] },
-    { "id": 8, "tasks": ["3.11", "4.5", "5.7", "5.8", "6.1", "8.2", "8.3", "9.2", "9.3", "9.4", "9.5", "13.5", "13.7", "15.5", "17.5", "17.7"] },
-    { "id": 9, "tasks": ["4.6", "5.9", "13.6", "14.7"] },
-    { "id": 10, "tasks": ["4.7", "5.10", "13.8", "14.8", "14.9"] },
-    { "id": 11, "tasks": ["5.11", "5.12", "6.2", "14.12"] },
-    { "id": 12, "tasks": ["6.3", "8.4", "14.13", "14.16"] },
-    { "id": 13, "tasks": ["8.5", "9.6", "14.17", "15.6"] },
-    { "id": 14, "tasks": ["9.7", "10.5", "15.7", "17.6"] },
-    { "id": 15, "tasks": ["10.6", "17.8"] },
-    { "id": 16, "tasks": ["10.7", "17.9", "18.3"] },
-    { "id": 17, "tasks": ["10.8", "10.9", "18.4"] },
-    { "id": 18, "tasks": ["20.1"] },
-    { "id": 19, "tasks": ["20.2", "20.3", "20.4", "20.5"] }
+    { "id": 6, "tasks": ["3.3", "3.6", "3.9", "4.1", "5.1", "5.4", "10.1", "10.4", "12.3", "13.1", "13.3", "14.1", "14.3", "14.10", "14.14", "15.1", "17.1", "18.1", "22.1", "22.2", "22.3", "22.5", "23.1", "25.1", "26.1", "28.1"] },
+    { "id": 7, "tasks": ["3.4", "3.5", "3.7", "3.8", "3.10", "4.2", "4.3", "4.4", "4.8", "5.2", "5.3", "5.5", "5.6", "8.1", "9.1", "10.2", "10.3", "12.4", "13.2", "13.4", "14.2", "14.4", "14.5", "14.6", "14.11", "14.15", "15.2", "15.3", "15.4", "17.2", "17.3", "17.4", "18.2", "22.4", "23.2", "25.2", "25.3", "26.2", "27.1", "28.2"] },
+    { "id": 8, "tasks": ["3.11", "4.5", "5.7", "5.8", "6.1", "8.2", "8.3", "9.2", "9.3", "9.4", "9.5", "13.5", "13.7", "15.5", "17.5", "17.7", "23.3", "25.4", "27.2"] },
+    { "id": 9, "tasks": ["4.6", "5.9", "13.6", "14.7", "23.4", "24.1", "25.5", "26.3"] },
+    { "id": 10, "tasks": ["4.7", "5.10", "13.8", "14.8", "14.9", "23.5", "24.2", "24.3", "25.6", "25.7", "27.3"] },
+    { "id": 11, "tasks": ["5.11", "5.12", "6.2", "14.12", "24.4", "25.8", "26.4", "27.4"] },
+    { "id": 12, "tasks": ["6.3", "8.4", "14.13", "14.16", "26.5", "26.6", "27.6"] },
+    { "id": 13, "tasks": ["8.5", "9.6", "14.17", "15.6", "26.7", "26.8", "27.5"] },
+    { "id": 14, "tasks": ["9.7", "10.5", "15.7", "17.6", "27.7", "28.3"] },
+    { "id": 15, "tasks": ["10.6", "17.8", "28.4"] },
+    { "id": 16, "tasks": ["10.7", "17.9", "18.3", "28.5", "28.6"] },
+    { "id": 17, "tasks": ["10.8", "10.9", "17.13", "18.4", "28.7", "28.8", "28.9", "29.1"] },
+    { "id": 18, "tasks": ["20.1", "29.2"] },
+    { "id": 19, "tasks": ["20.2", "20.4", "20.5"] }
   ]
 }
 ```

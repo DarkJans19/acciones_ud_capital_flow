@@ -7,6 +7,8 @@ otro equipo y consume el contrato OpenAPI (`/openapi.json`, `/docs`).
 ## Fuente de requisitos
 
 - Catalogo funcional principal: `requerimientos_acciones_ud_v2 (1).pdf` (RF-01 a RF-47, RFP-01 a RFP-13).
+- Version de trabajo del catalogo por modulo: `.kiro/steering/requerimientos-proyecto.md`. Ahi los RFP vigentes
+  son obligatorios y RFP-06 y RFP-07 estan descartados. Usarlo al crear el spec de cada modulo.
 - Specs del equipo: `.kiro/specs/` es la unica base de documentacion. La carpeta `specs/` quedo reemplazada.
 - Ningun asunto pendiente se vuelve supuesto silencioso: se documenta como decision o assumption.
 

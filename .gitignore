@@ -223,3 +223,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Node (herramientas; el proyecto es Python/uv)
+node_modules/
