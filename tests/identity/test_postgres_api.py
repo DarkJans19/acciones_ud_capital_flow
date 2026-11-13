@@ -167,7 +167,11 @@ async def test_full_identity_interests_preferences_and_kyc(postgres_app: object)
         degraded = (await http.get("/api/v1/kyc/status")).json()
         assert degraded["stale"] and degraded["can_trade"]
         app.state.provider_outcomes.append((500, {}))
-        assert (await http.get("/api/v1/users/me")).json()["kyc_status_unavailable"]
+        # 23.4: the stored status check is fresh, so /users/me serves the cache
+        # instead of calling Alpaca again.
+        cached = (await http.get("/api/v1/users/me")).json()
+        assert cached["kyc_status"] == "ACTIVE"
+        assert cached["kyc_status_unavailable"] is False
 
 
 @pytest.mark.parametrize(
@@ -315,7 +319,9 @@ async def test_future_cancellation_preserves_dates_and_is_never_effective(
             future = await AuthContextRepository(
                 session, FakeClock(start + timedelta(hours=1))
             ).get(UUID(uid), sid)
-            assert future is not None and future.roles == frozenset({"broker"})
+            assert future is not None and future.roles == frozenset(
+                {"broker", "investor"}
+            )
             assert "admin:users" not in future.permissions
 
 

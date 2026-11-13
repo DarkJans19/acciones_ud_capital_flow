@@ -1,4 +1,5 @@
 import asyncio
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from uuid import uuid4
 
@@ -6,11 +7,16 @@ import pytest
 import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
+from acciones_ud.identity.adapters.outbound.persistence.audit_log_repository import (
+    AuditLogRepository,
+)
 from acciones_ud.identity.adapters.outbound.persistence.rbac_repository import RbacRepository
 from acciones_ud.identity.adapters.outbound.persistence.tables import role_assignments, users
 from acciones_ud.identity.adapters.outbound.persistence.user_repository import UserRepository
 from acciones_ud.identity.adapters.outbound.security.passwords import PasswordHasher
+from acciones_ud.identity.application.broker_activation import BrokerActivationService
 from acciones_ud.identity.domain.registration import build_new_user
+from acciones_ud.shared.domain.clock import SystemClock
 from acciones_ud.shared.domain.errors import AppError, ErrorCode
 from tests.identity.test_registration_security import payload
 
@@ -51,26 +57,40 @@ async def test_duplicate_registration_and_atomic_activation(migrated_database: s
                 )
             ).all()
 
+        @asynccontextmanager
+        async def admin_uow():
+            async with factory() as session, session.begin():
+
+                class Work:
+                    admin = RbacRepository(session)
+                    audit = AuditLogRepository(session)
+
+                yield Work()
+
         async def activate() -> object:
             try:
-                async with factory() as session, session.begin():
-                    return await RbacRepository(session).activate_broker(user_id, datetime.now(UTC))
+                return await BrokerActivationService(admin_uow, SystemClock()).activate(
+                    None, user_id
+                )
             except AppError as exc:
                 return exc.code
 
         activated = await asyncio.gather(*(activate() for _ in range(4)))
         assert activated.count(ErrorCode.BROKER_NOT_PENDING) == 3
         async with factory() as session:
-            assert (
-                len(
-                    (
-                        await session.execute(
-                            sa.select(role_assignments).where(role_assignments.c.user_id == user_id)
+            rows = (
+                (
+                    await session.execute(
+                        sa.select(role_assignments).where(
+                            role_assignments.c.user_id == user_id
                         )
-                    ).all()
+                    )
                 )
-                == 1
+                .mappings()
+                .all()
             )
+            assert {row["role_code"] for row in rows} == {"broker", "investor"}
+            assert len(rows) == 2
     finally:
         async with factory() as session, session.begin():
             await session.execute(users.delete().where(users.c.email_normalized == email))

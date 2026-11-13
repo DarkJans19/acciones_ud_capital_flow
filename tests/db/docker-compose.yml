@@ -1,0 +1,10 @@
+services:
+  postgres:
+    build: .
+    container_name: acciones-ud-test-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "55432:5432"

@@ -82,6 +82,8 @@ def migrated_database() -> Iterator[str]:
     get_settings.cache_clear()
     config = Config("alembic.ini")
     try:
+        # Repeatable runs: a previous failed run may have left a partial schema.
+        command.downgrade(config, "base")
         command.upgrade(config, "head")
         yield url
     finally:

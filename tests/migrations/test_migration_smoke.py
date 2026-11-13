@@ -42,7 +42,7 @@ def test_migration_round_trip_and_failed_revision_keeps_previous(
     command.upgrade(config, "head")
     assert (
         scalar(migrated_database, "SELECT version_num FROM alembic_version")
-        == "0004_assignment_cancellation"
+        == "0005_identity_admin_gaps"
     )
     assert scalar(migrated_database, "SELECT count(*) FROM markets") == 7
     assert scalar(migrated_database, "SELECT count(*) FROM notification_preferences") == 28
@@ -59,7 +59,7 @@ def test_migration_round_trip_and_failed_revision_keeps_previous(
     command.upgrade(config, "head")
     assert (
         scalar(migrated_database, "SELECT version_num FROM alembic_version")
-        == "0004_assignment_cancellation"
+        == "0005_identity_admin_gaps"
     )
 
 
@@ -79,12 +79,12 @@ def test_failing_ddl_revision_rolls_back_only_that_revision(
 
     location = tmp_path / "migrations"
     shutil.copytree("migrations", location)
-    (location / "versions" / "0005_probe_failure.py").write_text(
+    (location / "versions" / "0006_probe_failure.py").write_text(
         """
 from alembic import op
 import sqlalchemy as sa
-revision = "0005_probe_failure"
-down_revision = "0004_assignment_cancellation"
+revision = "0006_probe_failure"
+down_revision = "0005_identity_admin_gaps"
 branch_labels = None
 depends_on = None
 def upgrade():
@@ -101,6 +101,6 @@ def downgrade():
         command.upgrade(config, "head")
     assert (
         scalar(migrated_database, "SELECT version_num FROM alembic_version")
-        == "0004_assignment_cancellation"
+        == "0005_identity_admin_gaps"
     )
     assert scalar(migrated_database, "SELECT to_regclass('public.identity_failed_probe')") is None
