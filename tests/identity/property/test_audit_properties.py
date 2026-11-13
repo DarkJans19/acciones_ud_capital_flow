@@ -1,5 +1,6 @@
 """Properties 49, 50 and 51 for the Audit_Log (Requirement 25)."""
 
+import asyncio
 import json
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -188,6 +189,31 @@ class FakeAdmin:
 
 # Feature: identity-market-backend, Property 50: Audit entries are atomic with their
 # administrative change
+@given(st.lists(st.tuples(st.booleans(), st.booleans()), max_size=6))
+def test_atomicity_across_administrative_operations(
+    script: list[tuple[bool, bool]],
+) -> None:
+    repo = FakeAdmin()
+    service = RbacService(repo.work, FakeClock(NOW))
+    stored: dict[UUID, bool] = {}
+    successes = 0
+
+    for fail_audit, value in script:
+        repo.fail_audit = fail_audit
+        before = dict(repo.premium)
+        succeeded = True
+        try:
+            asyncio.run(service.premium(repo.user_id, value, ACTOR))
+        except AppError:
+            succeeded = False
+
+        if succeeded:
+            stored = {repo.user_id: value}
+            successes += 1
+        assert repo.premium == (stored if succeeded else before)
+        assert len(repo.entries) == successes
+
+
 async def test_a_failing_audit_write_rolls_back_the_change() -> None:
     repo = FakeAdmin()
     repo.fail_audit = True

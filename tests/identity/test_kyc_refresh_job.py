@@ -246,6 +246,36 @@ async def test_cycle_stores_nothing_once_stopping() -> None:
     assert accounts.calls == []
 
 
+async def test_first_cycle_waits_one_interval_and_cycles_do_not_overlap() -> None:
+    events: list[str] = []
+    waits: list[float] = []
+
+    class RecordingStore(FakeKycStore):
+        async def linked_account_ids(self) -> list[str]:
+            events.append("cycle")
+            return []
+
+    async def fake_wait(seconds: float) -> bool:
+        waits.append(seconds)
+        events.append("wait")
+        return len(waits) >= 2
+
+    job = KycRefreshJob(
+        FakeAlpacaAccounts([]),
+        RecordingStore().work,
+        FakeClock(NOW),
+        900,
+        wait=fake_wait,
+    )
+
+    await job.run()
+
+    # wait(interval) -> cycle -> wait(interval): the first cycle is one interval
+    # after start and the next one starts after the previous cycle ended (23.2, 23.14).
+    assert waits == [900, 900]
+    assert events == ["wait", "cycle", "wait"]
+
+
 def test_disabled_flag_starts_no_job(api_settings: Settings) -> None:
     app = create_app(api_settings)
 

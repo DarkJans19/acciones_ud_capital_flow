@@ -6,6 +6,7 @@ holds a database transaction while waiting on Alpaca.
 
 import asyncio
 import logging
+from collections.abc import Awaitable, Callable
 
 from acciones_ud.identity.domain.kyc_ports import AlpacaAccountsPort, KycWorkFactory
 from acciones_ud.shared.domain.alpaca_errors import AlpacaError, AlpacaRateLimited
@@ -24,16 +25,19 @@ class KycRefreshJob:
         uow: KycWorkFactory,
         clock: Clock,
         interval_seconds: int,
+        wait: Callable[[float], Awaitable[bool]] | None = None,
     ) -> None:
         self.accounts, self.uow, self.clock = accounts, uow, clock
         self.interval_seconds = interval_seconds
         self._stopping = asyncio.Event()
         self._task: asyncio.Task[None] | None = None
+        # Injected only by tests to assert the interval without real sleeping.
+        self._wait = wait or self._stopped_within
 
     async def run(self) -> None:
         # First cycle one interval after start; the next sleep starts after a cycle
         # ends, so cycles never overlap (23.2, 23.14).
-        while not await self._stopped_within(self.interval_seconds):
+        while not await self._wait(self.interval_seconds):
             try:
                 await self.run_cycle()
             except Exception:
