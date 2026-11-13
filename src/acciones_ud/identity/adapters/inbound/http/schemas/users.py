@@ -15,6 +15,7 @@ class UserMeOut(BaseModel):
     registered_at: datetime
     contracted_plan: None = None
     is_premium: bool
+    broker_requested: bool
     associated_broker: None = None
     roles: list[str]
     kyc_status: str | None

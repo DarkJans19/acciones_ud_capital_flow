@@ -3,7 +3,9 @@ from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
+from acciones_ud.identity.domain.audit import AuditEntry, AuditPage, AuditQuery
 from acciones_ud.identity.domain.auth_ports import Record
+from acciones_ud.identity.domain.directory import DirectoryEntry, DirectoryPage, DirectoryQuery
 
 
 class AdminRepository(Protocol):
@@ -24,14 +26,36 @@ class AdminRepository(Protocol):
         assignment_id: UUID | None,
     ) -> Record: ...
     async def change_permission(self, role: str, permission: str, remove: bool) -> Record: ...
-    async def activate_broker(self, user_id: UUID, now: datetime) -> Record: ...
+    async def mark_broker_active(self, user_id: UUID, now: datetime) -> None: ...
     async def set_premium(self, user_id: UUID, value: bool) -> Record: ...
+
+
+class AuditLogRepository(Protocol):
+    async def append(self, entry: AuditEntry) -> None: ...
+    async def search(self, query: AuditQuery) -> AuditPage: ...
 
 
 class AdminWork(Protocol):
     @property
     def admin(self) -> AdminRepository: ...
 
+    @property
+    def audit(self) -> AuditLogRepository: ...
+
 
 class AdminWorkFactory(Protocol):
     def __call__(self) -> AbstractAsyncContextManager[AdminWork]: ...
+
+
+class DirectoryRepository(Protocol):
+    async def search(self, query: DirectoryQuery, now: datetime) -> DirectoryPage: ...
+    async def get(self, user_id: UUID, now: datetime) -> DirectoryEntry | None: ...
+
+
+class DirectoryWork(Protocol):
+    @property
+    def directory(self) -> DirectoryRepository: ...
+
+
+class DirectoryWorkFactory(Protocol):
+    def __call__(self) -> AbstractAsyncContextManager[DirectoryWork]: ...

@@ -1,11 +1,13 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Body, Depends, Query, Request
 
 from acciones_ud.identity.adapters.inbound.http.deps import require_permission
 from acciones_ud.identity.adapters.inbound.http.schemas.admin import (
     AssignmentIn,
+    AuditLogPageOut,
+    AuditLogQueryIn,
     BrokerActivationOut,
     CreateAssignmentIn,
     PermissionIn,
@@ -14,9 +16,14 @@ from acciones_ud.identity.adapters.inbound.http.schemas.admin import (
     PremiumOut,
     RoleAssignmentOut,
     RoleOut,
+    UserDirectoryEntryOut,
+    UserDirectoryPageOut,
+    UserDirectoryQueryIn,
 )
 from acciones_ud.identity.adapters.inbound.http.schemas.auth import RegisterBaseIn, RegistrationOut
+from acciones_ud.identity.adapters.inbound.http.schemas.kyc import KycReconcileIn, KycReconcileOut
 from acciones_ud.identity.domain.auth_ports import Record
+from acciones_ud.identity.domain.directory import DirectoryEntry
 from acciones_ud.identity.domain.models import CurrentUser
 from acciones_ud.shared.domain.errors import AppError, ErrorCode
 from acciones_ud.shared.infrastructure.http_errors import error_responses
@@ -41,7 +48,9 @@ async def create_administrator(
 
     if "administrator" not in user.roles:
         raise AppError(403, ErrorCode.FORBIDDEN, "Administrator role required.")
-    return await registration_service(request).create_administrator(body.model_dump())
+    return await registration_service(request).create_administrator(
+        body.model_dump(), user.user_id
+    )
 
 
 @router.post(
@@ -50,11 +59,62 @@ async def create_administrator(
     responses=error_responses(401, 403, 404, 409, 422, 503),
 )
 async def activate_broker(user_id: UUID, request: Request, user: AdminUser) -> Record:
-    from acciones_ud.identity.composition import rbac_service
+    from acciones_ud.identity.composition import broker_activation_service
 
     if "administrator" not in user.roles:
         raise AppError(403, ErrorCode.FORBIDDEN, "Administrator role required.")
-    return await rbac_service(request).activate(user_id)
+    return await broker_activation_service(request).activate(user.user_id, user_id)
+
+
+@router.get(
+    "/users",
+    response_model=UserDirectoryPageOut,
+    responses=error_responses(401, 403, 422, 503),
+)
+async def list_users(
+    request: Request,
+    user: AdminUser,
+    query: Annotated[UserDirectoryQueryIn, Query()],
+) -> Record:
+    from acciones_ud.identity.composition import user_directory_service
+
+    page = await user_directory_service(request).list(query.to_domain())
+    return {
+        "items": page.items,
+        "total": page.total,
+        "limit": query.limit,
+        "offset": query.offset,
+    }
+
+
+@router.get(
+    "/users/{user_id}",
+    response_model=UserDirectoryEntryOut,
+    responses=error_responses(401, 403, 404, 422, 503),
+)
+async def get_user(user_id: UUID, request: Request, user: AdminUser) -> DirectoryEntry:
+    from acciones_ud.identity.composition import user_directory_service
+
+    return await user_directory_service(request).detail(user_id)
+
+
+@router.post(
+    "/kyc/{user_id}/reconcile",
+    response_model=KycReconcileOut,
+    responses=error_responses(401, 403, 404, 409, 422, 500, 502, 503),
+)
+async def reconcile_kyc(
+    user_id: UUID,
+    request: Request,
+    user: AdminUser,
+    body: Annotated[KycReconcileIn | None, Body()] = None,
+) -> Record:
+    from acciones_ud.identity.composition import kyc_reconcile_service
+
+    alpaca_account_id = body.alpaca_account_id if body is not None else None
+    return await kyc_reconcile_service(request).reconcile(
+        user.user_id, user_id, alpaca_account_id
+    )
 
 
 @router.put(
@@ -65,7 +125,7 @@ async def activate_broker(user_id: UUID, request: Request, user: AdminUser) -> R
 async def premium(user_id: UUID, body: PremiumIn, request: Request, user: AdminUser) -> Record:
     from acciones_ud.identity.composition import rbac_service
 
-    return await rbac_service(request).premium(user_id, body.is_premium)
+    return await rbac_service(request).premium(user_id, body.is_premium, user.user_id)
 
 
 @router.get(
@@ -93,7 +153,7 @@ async def create_assignment(
     if body.role in {"broker", "administrator"} and "administrator" not in user.roles:
         raise AppError(403, ErrorCode.FORBIDDEN, "Administrator role required.")
     return await rbac_service(request).save(
-        user_id, body.role, body.valid_from, body.valid_to, None
+        user_id, body.role, body.valid_from, body.valid_to, None, actor_id=user.user_id
     )
 
 
@@ -108,7 +168,7 @@ async def update_assignment(
     from acciones_ud.identity.composition import rbac_service
 
     return await rbac_service(request).save(
-        user_id, None, body.valid_from, body.valid_to, assignment_id
+        user_id, None, body.valid_from, body.valid_to, assignment_id, actor_id=user.user_id
     )
 
 
@@ -151,7 +211,9 @@ async def permissions(request: Request, user: RbacUser) -> list[Record]:
 async def add_permission(role: str, body: PermissionIn, request: Request, user: RbacUser) -> Record:
     from acciones_ud.identity.composition import rbac_service
 
-    return await rbac_service(request).change_permission(role, body.permission_code, False)
+    return await rbac_service(request).change_permission(
+        role, body.permission_code, False, user.user_id
+    )
 
 
 @router.delete(
@@ -164,4 +226,27 @@ async def remove_permission(
 ) -> Record:
     from acciones_ud.identity.composition import rbac_service
 
-    return await rbac_service(request).change_permission(role, permission_code, True)
+    return await rbac_service(request).change_permission(
+        role, permission_code, True, user.user_id
+    )
+
+
+@router.get(
+    "/audit-log",
+    response_model=AuditLogPageOut,
+    responses=error_responses(401, 403, 422, 503),
+)
+async def audit_log(
+    request: Request,
+    user: RbacUser,
+    query: Annotated[AuditLogQueryIn, Query()],
+) -> Record:
+    from acciones_ud.identity.composition import audit_log_service
+
+    page = await audit_log_service(request).list(query.to_domain())
+    return {
+        "items": page.items,
+        "total": page.total,
+        "limit": query.limit,
+        "offset": query.offset,
+    }

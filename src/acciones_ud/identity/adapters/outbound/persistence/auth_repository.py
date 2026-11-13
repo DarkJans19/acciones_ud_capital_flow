@@ -246,6 +246,27 @@ class AuthRepository:
         ).first()
         return row is not None
 
+    async def revoke_if_active(self, user_id: UUID, session_id: UUID, now: datetime) -> bool:
+        # Same conditional UPDATE as revoke(); named for the logout decision (4.6).
+        return await self.revoke(user_id, session_id, now)
+
+    async def revoke_by_refresh_digest(self, digest: bytes, now: datetime) -> bool:
+        # No rotated_at or expires_at condition: an expired or rotated token still
+        # identifies its Session for revocation (A11, 4.11).
+        row = (
+            await self.session.execute(
+                t.sessions.update()
+                .where(
+                    t.sessions.c.id == t.refresh_tokens.c.session_id,
+                    t.refresh_tokens.c.token_hash == digest,
+                    t.sessions.c.revoked_at.is_(None),
+                )
+                .values(revoked_at=now)
+                .returning(t.sessions.c.id)
+            )
+        ).first()
+        return row is not None
+
     async def revoke_others(self, user_id: UUID, session_id: UUID, now: datetime) -> int:
         live_refresh = sa.exists(
             sa.select(t.refresh_tokens.c.id).where(

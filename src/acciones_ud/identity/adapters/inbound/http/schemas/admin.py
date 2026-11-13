@@ -2,8 +2,18 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import AwareDatetime, BaseModel, StrictBool, field_validator, model_validator
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    StrictBool,
+    field_validator,
+    model_validator,
+)
 
+from acciones_ud.identity.domain.audit import AuditAction, AuditQuery
+from acciones_ud.identity.domain.directory import DirectoryQuery
 from acciones_ud.identity.domain.models import AssignmentStatus
 from acciones_ud.identity.domain.rbac import validate_validity
 
@@ -52,6 +62,7 @@ class BrokerActivationOut(BaseModel):
     user_id: UUID
     account_status: Literal["active"]
     role_assignment: RoleAssignmentOut
+    investor_assignment: RoleAssignmentOut
 
 
 class PremiumOut(BaseModel):
@@ -67,3 +78,136 @@ class RoleOut(BaseModel):
 class PermissionOut(BaseModel):
     code: str
     description: str
+
+
+KycStatus = Literal[
+    "INACTIVE",
+    "ONBOARDING",
+    "SUBMITTED",
+    "SUBMISSION_FAILED",
+    "ACTION_REQUIRED",
+    "ACCOUNT_UPDATED",
+    "APPROVAL_PENDING",
+    "APPROVED",
+    "REJECTED",
+    "ACTIVE",
+    "ACCOUNT_CLOSED",
+]
+
+
+class UserDirectoryQueryIn(BaseModel):
+    account_status: Literal["active", "pending_broker_activation"] | None = None
+    role: Literal["investor", "broker", "administrator"] | None = None
+    q: str | None = None
+    # A plain bool would also accept 1, 0, yes, no, on and off (20.9).
+    broker_requested: Literal["true", "false"] | None = None
+    kyc_status: KycStatus | None = None
+    kyc_link_state: Literal["none", "unlinked", "linked"] | None = None
+    limit: int = Field(default=50, ge=1, le=100)
+    offset: int = Field(default=0, ge=0)
+
+    @field_validator("q")
+    @classmethod
+    def trimmed_q(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        trimmed = value.strip()
+        if not 1 <= len(trimmed) <= 100:
+            raise ValueError("q must have 1 to 100 characters after trimming")
+        return trimmed
+
+    def to_domain(self) -> DirectoryQuery:
+        return DirectoryQuery(
+            account_status=self.account_status,
+            role=self.role,
+            q=self.q,
+            broker_requested=(
+                None if self.broker_requested is None else self.broker_requested == "true"
+            ),
+            kyc_status=self.kyc_status,
+            kyc_link_state=self.kyc_link_state,
+            limit=self.limit,
+            offset=self.offset,
+        )
+
+
+class UserDirectoryEntryOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    user_id: UUID
+    email: str
+    first_names: str
+    last_names: str
+    phone: str | None
+    country: str | None
+    account_status: str
+    is_premium: bool
+    roles: list[str]
+    broker_requested: bool
+    registered_at: datetime
+    kyc_link_state: Literal["none", "unlinked", "linked"]
+    kyc_alpaca_account_id: str | None
+    kyc_status: str | None
+    kyc_status_updated_at: datetime | None
+    kyc_status_checked_at: datetime | None
+    kyc_reserved_at: datetime | None
+    kyc_created_at: datetime | None
+
+
+class UserDirectoryPageOut(BaseModel):
+    items: list[UserDirectoryEntryOut]
+    total: int
+    limit: int
+    offset: int
+
+
+AuditActionCode = Literal[
+    "administrator_created",
+    "broker_activated",
+    "premium_changed",
+    "role_assignment_created",
+    "role_assignment_updated",
+    "role_assignment_revoked",
+    "role_assignment_cancelled",
+    "role_permission_added",
+    "role_permission_removed",
+    "kyc_reconciled",
+]
+
+
+class AuditLogQueryIn(BaseModel):
+    action: AuditActionCode | None = None
+    actor_user_id: UUID | None = None
+    target_type: Literal["user", "role"] | None = None
+    target_id: str | None = Field(default=None, min_length=1, max_length=100)
+    limit: int = Field(default=50, ge=1, le=100)
+    offset: int = Field(default=0, ge=0)
+
+    def to_domain(self) -> AuditQuery:
+        return AuditQuery(
+            action=AuditAction(self.action) if self.action is not None else None,
+            actor_user_id=self.actor_user_id,
+            target_type=self.target_type,
+            target_id=self.target_id,
+            limit=self.limit,
+            offset=self.offset,
+        )
+
+
+class AuditEntryOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    actor_user_id: UUID
+    action: str
+    target_type: str
+    target_id: str
+    payload: dict[str, object]
+    occurred_at: datetime
+
+
+class AuditLogPageOut(BaseModel):
+    items: list[AuditEntryOut]
+    total: int
+    limit: int
+    offset: int

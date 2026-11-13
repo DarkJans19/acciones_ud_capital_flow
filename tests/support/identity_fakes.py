@@ -5,6 +5,12 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 from acciones_ud.identity.domain.auth_ports import AuthWork, Record
+from acciones_ud.identity.domain.directory import (
+    DirectoryEntry,
+    DirectoryPage,
+    DirectoryQuery,
+    select,
+)
 from acciones_ud.identity.domain.mfa import Challenge
 
 
@@ -114,6 +120,19 @@ class FakeAuthRepository:
         session["revoked_at"] = now
         return True
 
+    async def revoke_if_active(self, user_id: UUID, session_id: UUID, now: datetime) -> bool:
+        return await self.revoke(user_id, session_id, now)
+
+    async def revoke_by_refresh_digest(self, digest: bytes, now: datetime) -> bool:
+        row = self.refreshes.get(digest)
+        if row is None:
+            return False
+        session = self.sessions[row["sid"]]
+        if session["revoked_at"] is not None:
+            return False
+        session["revoked_at"] = now
+        return True
+
     async def revoke_others(self, user_id: UUID, session_id: UUID, now: datetime) -> int:
         count = 0
         for row in self.sessions.values():
@@ -123,12 +142,51 @@ class FakeAuthRepository:
         return count
 
 
-class FakeAuthWorkFactory:
-    def __init__(self, repository: FakeAuthRepository) -> None:
+class FakeDirectoryRepository:
+    """Applies the pure ``directory.select`` reference model (no database)."""
+
+    def __init__(self, users: list[Record], failure: Exception | None = None) -> None:
+        self.users = users
+        self.failure = failure
+
+    async def search(self, query: DirectoryQuery, now: datetime) -> DirectoryPage:
+        if self.failure is not None:
+            raise self.failure
+        return select(self.users, query, now)
+
+    async def get(self, user_id: UUID, now: datetime) -> DirectoryEntry | None:
+        if self.failure is not None:
+            raise self.failure
+        matches = [user for user in self.users if user["id"] == user_id]
+        page = select(matches, DirectoryQuery(limit=1), now)
+        return page.items[0] if page.items else None
+
+
+class FakeDirectoryWorkFactory:
+    def __init__(self, repository: FakeDirectoryRepository) -> None:
         self.repository = repository
 
     @asynccontextmanager
+    async def __call__(self) -> AsyncIterator[object]:
+        repo = self.repository
+
+        class Work:
+            directory = repo
+
+        yield Work()
+
+
+class FakeAuthWorkFactory:
+    def __init__(
+        self, repository: FakeAuthRepository, failure: Exception | None = None
+    ) -> None:
+        self.repository = repository
+        self.failure = failure
+
+    @asynccontextmanager
     async def __call__(self) -> AsyncIterator[AuthWork]:
+        if self.failure is not None:
+            raise self.failure
         snapshot = deepcopy(self.repository.__dict__)
         repo = self.repository
 

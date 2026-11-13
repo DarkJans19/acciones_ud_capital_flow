@@ -3,6 +3,7 @@ from datetime import datetime
 from uuid import UUID
 
 from acciones_ud.identity.domain.admin_ports import AdminWorkFactory
+from acciones_ud.identity.domain.audit import AuditAction, build_entry
 from acciones_ud.identity.domain.auth_ports import Record
 from acciones_ud.identity.domain.models import AssignmentStatus, RoleAssignment
 from acciones_ud.identity.domain.rbac import guard_last_administrator, validate_validity
@@ -10,25 +11,29 @@ from acciones_ud.shared.domain.clock import Clock
 from acciones_ud.shared.domain.errors import AppError, ErrorCode
 
 
+def assignment_out(row: Record, now: datetime) -> Record:
+    """Shared RoleAssignment view; ``effective`` mirrors the RBAC check (5.7)."""
+    return {
+        "id": row["id"],
+        "role": row["role_code"],
+        "valid_from": row["valid_from"],
+        "valid_to": row["valid_to"],
+        "status": row.get("status", "ACTIVE"),
+        "cancelled_at": row.get("cancelled_at"),
+        "cancelled_by": row.get("cancelled_by"),
+        "effective": row.get("account_status", "active") == "active"
+        and row.get("status", "ACTIVE") == "ACTIVE"
+        and row["valid_from"] <= now
+        and (row["valid_to"] is None or now < row["valid_to"]),
+    }
+
+
 class RbacService:
     def __init__(self, uow: AdminWorkFactory, clock: Clock) -> None:
         self.uow, self.clock = uow, clock
 
     def assignment_out(self, row: Record) -> Record:
-        now = self.clock.now()
-        return {
-            "id": row["id"],
-            "role": row["role_code"],
-            "valid_from": row["valid_from"],
-            "valid_to": row["valid_to"],
-            "status": row.get("status", "ACTIVE"),
-            "cancelled_at": row.get("cancelled_at"),
-            "cancelled_by": row.get("cancelled_by"),
-            "effective": row.get("account_status", "active") == "active"
-            and row.get("status", "ACTIVE") == "ACTIVE"
-            and row["valid_from"] <= now
-            and (row["valid_to"] is None or now < row["valid_to"]),
-        }
+        return assignment_out(row, self.clock.now())
 
     async def assignments(self, user_id: UUID) -> list[Record]:
         async with self.uow() as work:
@@ -64,6 +69,17 @@ class RbacService:
             if old:
                 if old.get("status") == "CANCELLED":
                     if revoke:
+                        if actor_id is not None:
+                            await work.audit.append(
+                                build_entry(
+                                    AuditAction.ROLE_ASSIGNMENT_CANCELLED,
+                                    actor_id,
+                                    "user",
+                                    str(user_id),
+                                    {"assignment_id": old["id"], "role": old["role_code"]},
+                                    now,
+                                )
+                            )
                         return self.assignment_out(old)
                     raise AppError(409, ErrorCode.ASSIGNMENT_CANCELLED, "Assignment is cancelled.")
                 if revoke and old["valid_from"] >= now:
@@ -91,6 +107,16 @@ class RbacService:
                     active = {r["user_id"] for r in all_rows if r["account_status"] == "active"}
                     guard_last_administrator(before, after, now, active)
                     result = await repo.cancel_assignment(user_id, old["id"], actor_id, now)
+                    await work.audit.append(
+                        build_entry(
+                            AuditAction.ROLE_ASSIGNMENT_CANCELLED,
+                            actor_id,
+                            "user",
+                            str(user_id),
+                            {"assignment_id": result["id"], "role": result["role_code"]},
+                            now,
+                        )
+                    )
                     return self.assignment_out({**result, "account_status": user["account_status"]})
                 role = old["role_code"]
                 start = old["valid_from"] if revoke else start
@@ -116,6 +142,31 @@ class RbacService:
                 active = {r["user_id"] for r in all_rows if r["account_status"] == "active"}
                 guard_last_administrator(before, after, now, active)
             result = await repo.save_assignment(user_id, role, start, end, assignment_id)
+            if actor_id is not None:
+                if old is None:
+                    action = AuditAction.ROLE_ASSIGNMENT_CREATED
+                    payload = {
+                        "assignment_id": result["id"],
+                        "role": role,
+                        "valid_from": start,
+                        "valid_to": end,
+                    }
+                elif revoke:
+                    action = AuditAction.ROLE_ASSIGNMENT_REVOKED
+                    payload = {"assignment_id": result["id"], "role": role}
+                else:
+                    action = AuditAction.ROLE_ASSIGNMENT_UPDATED
+                    payload = {
+                        "assignment_id": result["id"],
+                        "role": role,
+                        "previous_valid_from": old["valid_from"],
+                        "previous_valid_to": old["valid_to"],
+                        "valid_from": start,
+                        "valid_to": end,
+                    }
+                await work.audit.append(
+                    build_entry(action, actor_id, "user", str(user_id), payload, now)
+                )
             return self.assignment_out({**result, "account_status": user["account_status"]})
 
     async def roles(self) -> list[Record]:
@@ -126,16 +177,45 @@ class RbacService:
         async with self.uow() as work:
             return await work.admin.permissions()
 
-    async def change_permission(self, role: str, permission: str, remove: bool) -> Record:
+    async def change_permission(
+        self, role: str, permission: str, remove: bool, actor_id: UUID | None = None
+    ) -> Record:
+        now = self.clock.now()
         async with self.uow() as work:
-            return await work.admin.change_permission(role, permission, remove)
-
-    async def activate(self, user_id: UUID) -> Record:
-        async with self.uow() as work:
-            result = await work.admin.activate_broker(user_id, self.clock.now())
-            result["role_assignment"] = self.assignment_out(result["role_assignment"])
+            result = await work.admin.change_permission(role, permission, remove)
+            if actor_id is not None:
+                action = (
+                    AuditAction.ROLE_PERMISSION_REMOVED
+                    if remove
+                    else AuditAction.ROLE_PERMISSION_ADDED
+                )
+                await work.audit.append(
+                    build_entry(
+                        action,
+                        actor_id,
+                        "role",
+                        role,
+                        {"permission_code": permission},
+                        now,
+                    )
+                )
             return result
 
-    async def premium(self, user_id: UUID, value: bool) -> Record:
+    async def premium(
+        self, user_id: UUID, value: bool, actor_id: UUID | None = None
+    ) -> Record:
+        now = self.clock.now()
         async with self.uow() as work:
-            return await work.admin.set_premium(user_id, value)
+            result = await work.admin.set_premium(user_id, value)
+            if actor_id is not None:
+                await work.audit.append(
+                    build_entry(
+                        AuditAction.PREMIUM_CHANGED,
+                        actor_id,
+                        "user",
+                        str(user_id),
+                        {"is_premium": value},
+                        now,
+                    )
+                )
+            return result

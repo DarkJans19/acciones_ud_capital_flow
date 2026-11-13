@@ -63,6 +63,25 @@ async def postgres_app(
                 ids = sa.select(t.users.c.id).where(
                     t.users.c.email_normalized.like(app.state.test_tag + "%@example.com")
                 )
+                # The audit actor FK has no cascade (25.2) and the log is append-only
+                # (25.14), so the test fixture disables the trigger to clean up.
+                await session.execute(
+                    sa.text(
+                        "ALTER TABLE admin_audit_log "
+                        "DISABLE TRIGGER trg_admin_audit_log_immutable"
+                    )
+                )
+                await session.execute(
+                    t.admin_audit_log.delete().where(
+                        t.admin_audit_log.c.actor_user_id.in_(ids)
+                    )
+                )
+                await session.execute(
+                    sa.text(
+                        "ALTER TABLE admin_audit_log "
+                        "ENABLE TRIGGER trg_admin_audit_log_immutable"
+                    )
+                )
                 for table in (t.auth_events, t.mfa_challenges, t.role_assignments):
                     await session.execute(table.delete().where(table.c.user_id.in_(ids)))
                 await session.execute(t.users.delete().where(t.users.c.id.in_(ids)))

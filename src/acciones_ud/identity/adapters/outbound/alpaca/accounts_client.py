@@ -5,7 +5,7 @@ from pydantic import AwareDatetime, BaseModel, Field, ValidationError
 
 from acciones_ud.identity.adapters.outbound.alpaca.kyc_mapping import account_opening_document
 from acciones_ud.identity.domain.auth_ports import Record
-from acciones_ud.identity.domain.kyc import AlpacaAccount
+from acciones_ud.identity.domain.kyc import AlpacaAccount, AlpacaAccountSummary
 from acciones_ud.identity.domain.kyc_submission import AccountOpeningRequest
 from acciones_ud.identity.domain.redaction import redact
 from acciones_ud.shared.domain.alpaca_errors import (
@@ -22,6 +22,14 @@ class AccountResponse(BaseModel):
     updated_at: AwareDatetime | None = None
 
 
+class ContactResponse(BaseModel):
+    email_address: str | None = None
+
+
+class AccountListResponse(AccountResponse):
+    contact: ContactResponse | None = None
+
+
 class AlpacaAccountsClient:
     def __init__(self, client: httpx.AsyncClient) -> None:
         self.client = client
@@ -36,6 +44,35 @@ class AlpacaAccountsClient:
         return await self._request(
             "GET", "/v1/accounts/" + quote(account_id, safe=""), timeout=timeout
         )
+
+    async def list_accounts(
+        self, query: str, timeout: float = 10
+    ) -> list[AlpacaAccountSummary]:
+        try:
+            response = await self.client.get(
+                "/v1/accounts",
+                params={"query": query, "entities": "contact"},
+                timeout=timeout,
+            )
+        except httpx.RequestError as exc:
+            raise classify(exc) from None
+        raise_for_alpaca(response)
+        try:
+            documents = response.json()
+            if not isinstance(documents, list):
+                raise ValueError()
+            accounts = [AccountListResponse.model_validate(item) for item in documents]
+        except (ValidationError, ValueError, TypeError):
+            raise AlpacaUnavailable() from None
+        return [
+            AlpacaAccountSummary(
+                item.id,
+                item.status,
+                item.updated_at,
+                item.contact.email_address if item.contact else None,
+            )
+            for item in accounts
+        ]
 
     async def _request(
         self,

@@ -20,17 +20,22 @@ def error_responses(*statuses: int) -> dict[int | str, dict[str, Any]]:
     return {status: {"model": ErrorBody} for status in statuses}
 
 
+def error_body_response(exc: AppError) -> JSONResponse:
+    """Shared Error_Body response used by the handler and by logout on 503 (4.14)."""
+    return JSONResponse(
+        status_code=exc.status,
+        content={
+            "code": exc.code,
+            "message": exc.message,
+            "details": exc.details,
+        },
+    )
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppError)
     async def app_error(request: Request, exc: AppError) -> JSONResponse:
-        response = JSONResponse(
-            status_code=exc.status,
-            content={
-                "code": exc.code,
-                "message": exc.message,
-                "details": exc.details,
-            },
-        )
+        response = error_body_response(exc)
         if exc.code == ErrorCode.REFRESH_INVALID:
             from acciones_ud.shared.infrastructure.cookies import clear_auth_cookies
 

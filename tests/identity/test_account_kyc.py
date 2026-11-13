@@ -46,6 +46,7 @@ class AccountFake:
             "country": "CO",
             "account_status": "active",
             "is_premium": False,
+            "broker_requested": False,
             "telegram_chat_id": None,
             "interests": [],
             "investor_level": None,
@@ -106,10 +107,21 @@ class KycFake:
     async def get(self, user_id: UUID) -> Record | None:
         return self.row
 
-    async def update_status(self, user_id: UUID, account: AlpacaAccount) -> None:
+    async def record_status_check(self, account: AlpacaAccount, retrieved_at: datetime) -> None:
         assert self.row
-        self.row.update(status=account.status, status_updated_at=account.updated_at)
+        checked = self.row.get("status_checked_at")
+        if checked is not None and checked > retrieved_at:
+            return
+        if self.row["status"] != account.status:
+            self.row["status"] = account.status
+            self.row["status_updated_at"] = account.updated_at or retrieved_at
+        self.row["status_checked_at"] = retrieved_at
         self.writes += 1
+
+    async def linked_account_ids(self) -> list[str]:
+        if self.row and self.row.get("alpaca_account_id"):
+            return [self.row["alpaca_account_id"]]
+        return []
 
     @asynccontextmanager
     async def work(self) -> AsyncIterator[KycWork]:
@@ -240,12 +252,14 @@ async def test_status_fallback_and_read_only_me() -> None:
     live = await service.status(uuid4())
     assert not live["stale"] and live["can_trade"] and repo.writes == 1
     user_repo = AccountFake()
-    info = AccountInfoService(user_repo.work, repo.work, FakeAlpacaAccounts([AlpacaUnavailable()]))
+    info = AccountInfoService(user_repo.work, repo.work, FakeAlpacaAccounts([]), clock=clock)
     current = CurrentUser(
         user_repo.user_id, uuid4(), "ana@example.com", "pending_broker_activation", False
     )
     result = await info.me(current)
-    assert result["kyc_status"] is None and result["kyc_status_unavailable"]
+    # The stored status check is fresh, so /users/me serves the cache (23.4).
+    assert result["kyc_status"] == "ACTIVE" and not result["kyc_status_unavailable"]
+    assert result["broker_requested"] is False
     assert "DO-NOT-LEAK" not in str(result) and "PRIVATE" not in str(result)
     assert user_repo.writes == 0 and repo.writes == 1
     empty = KycFake()

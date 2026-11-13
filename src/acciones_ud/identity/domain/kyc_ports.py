@@ -3,19 +3,37 @@ from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
+from acciones_ud.identity.domain.audit import AuditEntry, AuditPage, AuditQuery
 from acciones_ud.identity.domain.auth_ports import Record
-from acciones_ud.identity.domain.kyc import AlpacaAccount
+from acciones_ud.identity.domain.kyc import AlpacaAccount, AlpacaAccountSummary
 from acciones_ud.identity.domain.kyc_submission import AccountOpeningRequest
 
 
 class AlpacaAccountsPort(Protocol):
     async def create_account(self, request: AccountOpeningRequest) -> AlpacaAccount: ...
     async def get_account(self, account_id: str, timeout: float = 10) -> AlpacaAccount: ...
+    async def list_accounts(
+        self, query: str, timeout: float = 10
+    ) -> list[AlpacaAccountSummary]: ...
 
 
 class KycRepository(Protocol):
     async def get(self, user_id: UUID) -> Record | None: ...
-    async def update_status(self, user_id: UUID, account: AlpacaAccount) -> None: ...
+    async def user_email(self, user_id: UUID) -> str: ...
+    async def record_status_check(self, account: AlpacaAccount, retrieved_at: datetime) -> None: ...
+    async def linked_account_ids(self) -> list[str]: ...
+    async def get_by_alpaca_id(self, account_id: str) -> Record | None: ...
+    async def link_new(
+        self, user_id: UUID, account_id: str, status: str, retrieved_at: datetime
+    ) -> bool: ...
+    async def link_reserved(
+        self,
+        user_id: UUID,
+        account_id: str,
+        status: str,
+        retrieved_at: datetime,
+        observed_reserved_at: datetime,
+    ) -> bool: ...
     async def reserve(self, user_id: UUID, now: datetime) -> bool: ...
     async def complete(
         self, user_id: UUID, reservation: datetime, account: AlpacaAccount, tax_last4: str
@@ -23,9 +41,17 @@ class KycRepository(Protocol):
     async def release(self, user_id: UUID, reservation: datetime) -> None: ...
 
 
+class AuditLogRepository(Protocol):
+    async def append(self, entry: AuditEntry) -> None: ...
+    async def search(self, query: AuditQuery) -> AuditPage: ...
+
+
 class KycWork(Protocol):
     @property
     def kyc(self) -> KycRepository: ...
+
+    @property
+    def audit(self) -> AuditLogRepository: ...
 
 
 class KycWorkFactory(Protocol):
