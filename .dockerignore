@@ -1,0 +1,15 @@
+# Allow only the files needed to build and run the backend.
+**
+!Dockerfile
+!.dockerignore
+!pyproject.toml
+!uv.lock
+!README.md
+!alembic.ini
+!src/
+!src/**
+!migrations/
+!migrations/**
+**/__pycache__/
+**/*.py[cod]
+**/.env*
