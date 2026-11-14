@@ -1,0 +1,30 @@
+name: acciones-ud
+
+x-backend: &backend
+  image: acciones-ud-backend:local
+  build:
+    context: .
+  env_file:
+    - path: .env
+      format: raw
+
+services:
+  api:
+    <<: *backend
+    ports:
+      - "127.0.0.1:${API_PORT:-8000}:8000"
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  migrate:
+    <<: *backend
+    profiles: [tools]
+    command: [alembic, upgrade, head]
+    restart: "no"
+    healthcheck:
+      disable: true
