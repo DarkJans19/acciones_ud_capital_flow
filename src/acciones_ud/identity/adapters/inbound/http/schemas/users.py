@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -13,7 +14,7 @@ class UserMeOut(BaseModel):
     country: str
     account_status: str
     registered_at: datetime
-    contracted_plan: None = None
+    contracted_plan: Literal["monthly", "annual"] | None = None
     is_premium: bool
     broker_requested: bool
     associated_broker: None = None

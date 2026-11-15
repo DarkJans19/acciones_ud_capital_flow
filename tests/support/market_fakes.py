@@ -489,6 +489,9 @@ class MemoryDirectory:
     async def recipients(self, event_type: str) -> list[Recipient]:
         return list(self.recipients_value)
 
+    async def recipient(self, user_id: UUID, event_type: str) -> Recipient | None:
+        return next((r for r in self.recipients_value if r.user_id == user_id and r.channels), None)
+
 
 def directory_uow(directory: MemoryDirectory) -> DirectoryFactory:
     @asynccontextmanager

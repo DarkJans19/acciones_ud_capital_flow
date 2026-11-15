@@ -25,6 +25,12 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
 def api_settings() -> Settings:
     return Settings(
         _env_file=None,
+        stripe_secret_key="sk_test_fixture",
+        stripe_webhook_secret="whsec_fixture",
+        stripe_price_monthly_id="price_monthly",
+        stripe_price_annual_id="price_annual",
+        wallet_reconciler_enabled="false",
+        orders_jobs_enabled="false",
         app_env="test",
         database_url="postgresql+asyncpg://test:test@localhost/test",
         migration_database_url="postgresql+asyncpg://test:test@localhost/test",

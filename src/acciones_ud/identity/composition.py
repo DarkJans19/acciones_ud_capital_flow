@@ -288,4 +288,5 @@ def account_info_service(request: Request) -> AccountInfoService:
         AlpacaAccountsClient(request.app.state.alpaca_broker),
         config.cache_ttl_seconds,
         SystemClock(),
+        getattr(request.app.state, "contracted_plan_reader", None),
     )

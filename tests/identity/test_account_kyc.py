@@ -21,7 +21,13 @@ from acciones_ud.identity.domain.interests import normalize_interests
 from acciones_ud.identity.domain.kyc import AlpacaAccount, can_trade, financial_range
 from acciones_ud.identity.domain.kyc_ports import KycWork
 from acciones_ud.identity.domain.models import CurrentUser
-from acciones_ud.identity.domain.preferences import default_preferences, merge, validate_patch
+from acciones_ud.identity.domain.preferences import (
+    CHANNELS,
+    EVENT_TYPES,
+    default_preferences,
+    merge,
+    validate_patch,
+)
 from acciones_ud.identity.domain.redaction import last4, redact
 from acciones_ud.identity.domain.settings import validate_settings
 from acciones_ud.shared.domain.alpaca_errors import (
@@ -153,7 +159,7 @@ async def test_account_defaults_and_atomic_rejection() -> None:
     result = await service.preferences(
         repo.user_id, [{"event_type": "market_open", "channel": "telegram", "enabled": True}]
     )
-    assert len(result["preferences"]) == 28
+    assert len(result["preferences"]) == len(EVENT_TYPES) * len(CHANNELS)
     assert (await service.interests(repo.user_id, ["nyse", "NYSE", "technology"], "beginner")) == {
         "interests": ["NYSE", "Technology"],
         "level": "beginner",
@@ -176,7 +182,7 @@ def test_preference_merge(pairs: list[tuple[int, int, bool]]) -> None:
     channels = ["in_app", "email", "sms", "telegram"]
     patch = [{"event_type": events[e], "channel": channels[c], "enabled": v} for e, c, v in pairs]
     result = merge(stored, patch)
-    assert len(result) == 28
+    assert len(result) == len(EVENT_TYPES) * len(CHANNELS)
     reference = {(p["event_type"], p["channel"]): p["enabled"] for p in stored + patch}
     assert {(p["event_type"], p["channel"]): p["enabled"] for p in result} == reference
 

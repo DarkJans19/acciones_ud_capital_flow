@@ -9,6 +9,23 @@ from starlette.exceptions import HTTPException
 
 from acciones_ud.shared.domain.errors import AppError, ErrorCode
 
+ORDER_HTTP_STATUSES = {
+    ErrorCode.ORDER_ACCOUNT_NOT_ACTIVE: 409,
+    ErrorCode.QUOTE_UNAVAILABLE: 503,
+    ErrorCode.ASSET_NOT_TRADABLE: 422,
+    ErrorCode.INSUFFICIENT_BUYING_POWER: 409,
+    ErrorCode.INSUFFICIENT_POSITION: 409,
+    ErrorCode.DAILY_ORDER_LIMIT_REACHED: 409,
+    ErrorCode.EXTRA_AUTHORIZATION_REQUIRED: 409,
+    ErrorCode.EXTRA_AUTHORIZATION_INVALID: 401,
+    ErrorCode.ORDER_REJECTED: 422,
+    ErrorCode.ORDER_NOT_FOUND: 404,
+    ErrorCode.INVALID_ORDER_STATE: 409,
+    ErrorCode.ORDER_NOT_CANCELLABLE: 409,
+    ErrorCode.MARKET_CLOSED: 409,
+    ErrorCode.MFA_ENROLLMENT_REQUIRED: 409,
+}
+
 
 class ErrorBody(BaseModel):
     code: str
@@ -23,7 +40,7 @@ def error_responses(*statuses: int) -> dict[int | str, dict[str, Any]]:
 def error_body_response(exc: AppError) -> JSONResponse:
     """Shared Error_Body response used by the handler and by logout on 503 (4.14)."""
     return JSONResponse(
-        status_code=exc.status,
+        status_code=ORDER_HTTP_STATUSES.get(exc.code, exc.status),
         content={
             "code": exc.code,
             "message": exc.message,
@@ -49,12 +66,17 @@ def register_exception_handlers(app: FastAPI) -> None:
             {"field": ".".join(str(x) for x in e["loc"]), "issue": e["type"]} for e in exc.errors()
         ]
         first = errors[0]["field"] if errors else "request"
+        details: dict[str, object] = {"errors": errors}
+        if request.url.path.startswith(
+            ("/api/v1/wallet", "/api/v1/subscriptions", "/api/v1/orders")
+        ):
+            details = {"fields": [entry["field"] for entry in errors]}
         return JSONResponse(
             status_code=422,
             content={
                 "code": ErrorCode.VALIDATION_ERROR,
                 "message": f"Invalid field: {first}",
-                "details": {"errors": errors},
+                "details": details,
             },
         )
 

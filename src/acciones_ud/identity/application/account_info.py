@@ -2,6 +2,7 @@ import logging
 
 from acciones_ud.identity.domain.account_ports import AccountWorkFactory
 from acciones_ud.identity.domain.auth_ports import Record
+from acciones_ud.identity.domain.contracted_plan import ContractedPlanReader
 from acciones_ud.identity.domain.kyc_cache import serve_cached
 from acciones_ud.identity.domain.kyc_ports import AlpacaAccountsPort, KycWorkFactory
 from acciones_ud.identity.domain.models import CurrentUser
@@ -20,10 +21,12 @@ class AccountInfoService:
         alpaca: AlpacaAccountsPort,
         cache_ttl_seconds: int = 60,
         clock: Clock | None = None,
+        plans: ContractedPlanReader | None = None,
     ) -> None:
         self.accounts, self.kyc, self.alpaca = accounts, kyc, alpaca
         self.cache_ttl_seconds = cache_ttl_seconds
         self.clock = clock or SystemClock()
+        self.plans = plans
 
     async def me(self, current: CurrentUser) -> Record:
         # Both reads happen before any Alpaca call, so a database failure is 503 (6.6).
@@ -74,7 +77,7 @@ class AccountInfoService:
         result.update(
             user_id=current.user_id,
             registered_at=user["created_at"],
-            contracted_plan=None,
+            contracted_plan=await self.plans.get(current.user_id) if self.plans else None,
             associated_broker=None,
             roles=sorted(current.roles),
             kyc_status=status,

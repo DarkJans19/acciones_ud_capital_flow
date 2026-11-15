@@ -3,6 +3,8 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, StrictBool, StrictInt
 
+from acciones_ud.identity.domain.preferences import CHANNELS, EVENT_TYPES
+
 
 class PreferenceIn(BaseModel):
     event_type: Literal[
@@ -13,13 +15,18 @@ class PreferenceIn(BaseModel):
         "price_changes",
         "execution_confirmations",
         "daily_summary",
+        "balance_changes",
+        "order_executions",
+        "order_updates",
     ]
     channel: Literal["in_app", "email", "sms", "telegram"]
     enabled: StrictBool
 
 
 class PreferencesIn(BaseModel):
-    preferences: list[PreferenceIn] = Field(min_length=1, max_length=28)
+    preferences: list[PreferenceIn] = Field(
+        min_length=1, max_length=len(EVENT_TYPES) * len(CHANNELS)
+    )
 
 
 class PortfolioViewIn(BaseModel):

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
 from functools import lru_cache
 from urllib.parse import parse_qs, urlsplit
 
@@ -9,6 +10,23 @@ from sqlalchemy.engine import make_url
 
 
 class Settings(BaseSettings):
+    order_reference_commission_rate: str = "0.02"
+    order_reauth_price_deviation_pct: str = "1.00"
+    order_reauth_window_minutes: str = "30"
+    order_local_max_age_days: str = "5"
+    order_reconcile_interval_seconds: str = "15"
+    order_scheduler_interval_seconds: str = "30"
+    order_alpaca_submit_timeout_seconds: str = "4"
+    orders_jobs_enabled: str = "true"
+    stripe_secret_key: SecretStr | None = None
+    stripe_webhook_secret: SecretStr | None = None
+    stripe_price_monthly_id: str | None = None
+    stripe_price_annual_id: str | None = None
+    stripe_checkout_success_url: str = "http://localhost:3000/subscription/success"
+    stripe_checkout_cancel_url: str = "http://localhost:3000/subscription/cancel"
+    wallet_max_transfer_amount: str = "50000.00"
+    wallet_reconcile_interval_seconds: str = "60"
+    wallet_reconciler_enabled: str = "true"
     app_name: str = "Acciones UD API"
     app_env: str = "development"
     database_url: str | None = None
@@ -116,6 +134,45 @@ REQUIRED = (
 def require_api_settings(settings: Settings) -> None:
     """RF-02, RNF configuration: report variable names, never their values."""
     invalid: set[str] = set()
+    for name, decimal_low, decimal_high in (
+        ("order_reference_commission_rate", Decimal(0), Decimal(1)),
+        ("order_reauth_price_deviation_pct", Decimal(0), Decimal(100)),
+        ("order_alpaca_submit_timeout_seconds", Decimal(1), Decimal(4)),
+    ):
+        try:
+            number = Decimal(getattr(settings, name))
+            if (
+                not number.is_finite()
+                or not decimal_low <= number <= decimal_high
+                or (name == "order_reauth_price_deviation_pct" and number == 0)
+            ):
+                invalid.add(name.upper())
+        except (InvalidOperation, TypeError):
+            invalid.add(name.upper())
+    for name, prefix in {
+        "stripe_secret_key": "sk_test_",
+        "stripe_webhook_secret": "whsec_",
+        "stripe_price_monthly_id": "price_",
+        "stripe_price_annual_id": "price_",
+    }.items():
+        value = getattr(settings, name)
+        raw = value.get_secret_value() if isinstance(value, SecretStr) else value
+        if not raw or not raw.startswith(prefix) or len(raw) <= len(prefix):
+            invalid.add(name.upper())
+    try:
+        amount = Decimal(settings.wallet_max_transfer_amount)
+        exponent = amount.as_tuple().exponent
+        if not amount.is_finite() or amount < 1 or not isinstance(exponent, int) or exponent < -2:
+            invalid.add("WALLET_MAX_TRANSFER_AMOUNT")
+    except (InvalidOperation, TypeError):
+        invalid.add("WALLET_MAX_TRANSFER_AMOUNT")
+    for name in ("stripe_checkout_success_url", "stripe_checkout_cancel_url"):
+        try:
+            url = urlsplit(getattr(settings, name))
+            if url.scheme not in {"http", "https"} or not url.netloc:
+                invalid.add(name.upper())
+        except ValueError:
+            invalid.add(name.upper())
     for name in REQUIRED:
         if name in {"alpaca_broker_api_key", "alpaca_broker_api_secret"} and settings.client_id:
             continue
@@ -145,6 +202,11 @@ def require_api_settings(settings: Settings) -> None:
     if settings.alpaca_data_feed not in {"iex", "sip", "delayed_sip"}:
         invalid.add("ALPACA_DATA_FEED")
     bounds = {
+        "order_reauth_window_minutes": (1, 1440),
+        "order_local_max_age_days": (1, 90),
+        "order_reconcile_interval_seconds": (5, 3600),
+        "order_scheduler_interval_seconds": (5, 3600),
+        "wallet_reconcile_interval_seconds": (10, 3600),
         "access_token_ttl_seconds": (1, 900),
         "refresh_token_ttl_seconds": (1, 604800),
         "price_staleness_threshold_seconds": (1, 86400),
@@ -164,7 +226,13 @@ def require_api_settings(settings: Settings) -> None:
                 invalid.add(name.upper())
         except (ValueError, TypeError):
             invalid.add(name.upper())
-    for name in ("price_streaming_enabled", "alert_engine_enabled", "kyc_status_refresh_enabled"):
+    for name in (
+        "price_streaming_enabled",
+        "alert_engine_enabled",
+        "kyc_status_refresh_enabled",
+        "wallet_reconciler_enabled",
+        "orders_jobs_enabled",
+    ):
         if getattr(settings, name).lower() not in {"true", "false"}:
             invalid.add(name.upper())
     if settings.totp_encryption_key:

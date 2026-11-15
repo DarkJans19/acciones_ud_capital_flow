@@ -20,7 +20,9 @@ def test_conversion_preserves_the_instant(instant: datetime, name: str) -> None:
     target = ZoneInfo(name)
     converted = datetime.fromisoformat(iso(instant, target))
     assert converted == instant
-    assert converted.utcoffset() == target.utcoffset(instant)
+    # ZoneInfo.utcoffset interprets its argument as local wall time. Convert the
+    # UTC instant first so DST transitions use the correct local time and fold.
+    assert converted.utcoffset() == instant.astimezone(target).utcoffset()
 
 
 @given(INSTANTS, st.text(max_size=20))

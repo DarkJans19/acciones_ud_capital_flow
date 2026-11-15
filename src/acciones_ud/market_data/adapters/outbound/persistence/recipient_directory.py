@@ -14,6 +14,13 @@ class RecipientDirectory:
         self.session = session
 
     async def recipients(self, event_type: str) -> list[Recipient]:
+        return await self._recipients(event_type, None)
+
+    async def recipient(self, user_id: UUID, event_type: str) -> Recipient | None:
+        values = await self._recipients(event_type, user_id)
+        return next((value for value in values if value.channels), None)
+
+    async def _recipients(self, event_type: str, user_id: UUID | None) -> list[Recipient]:
         rows = (
             await self.session.execute(
                 sa.text(
@@ -21,9 +28,10 @@ class RecipientDirectory:
                     "u.email, u.telegram_chat_id "
                     "FROM notification_preferences p "
                     "JOIN users u ON u.id = p.user_id "
-                    "WHERE p.event_type = :event"
+                    "WHERE p.event_type = :event "
+                    + ("AND p.user_id = :user_id" if user_id else "")
                 ),
-                {"event": event_type},
+                {"event": event_type, "user_id": user_id},
             )
         ).all()
         by_user: dict[UUID, list[tuple[str, str, bool]]] = {}
@@ -41,4 +49,5 @@ class RecipientDirectory:
                 telegram_chat_id=contacts[user_id][1],
             )
             for user_id, preferences in by_user.items()
+            if any(enabled for _, _, enabled in preferences)
         ]

@@ -7,6 +7,9 @@ import pytest
 import sqlalchemy as sa
 from alembic import command
 from alembic.config import Config
+from alembic.script import ScriptDirectory
+
+from acciones_ud.identity.domain.preferences import CHANNELS, EVENT_TYPES
 
 pytestmark = pytest.mark.db
 
@@ -42,10 +45,12 @@ def test_migration_round_trip_and_failed_revision_keeps_previous(
     command.upgrade(config, "head")
     assert (
         scalar(migrated_database, "SELECT version_num FROM alembic_version")
-        == "0005_identity_admin_gaps"
+        == ScriptDirectory.from_config(config).get_current_head()
     )
     assert scalar(migrated_database, "SELECT count(*) FROM markets") == 7
-    assert scalar(migrated_database, "SELECT count(*) FROM notification_preferences") == 28
+    assert scalar(migrated_database, "SELECT count(*) FROM notification_preferences") == (
+        len(CHANNELS) * len(EVENT_TYPES)
+    )
     command.downgrade(config, "base")
     phone = os.environ["INITIAL_ADMIN_PHONE"]
     monkeypatch.setenv("INITIAL_ADMIN_PHONE", "")
@@ -59,7 +64,7 @@ def test_migration_round_trip_and_failed_revision_keeps_previous(
     command.upgrade(config, "head")
     assert (
         scalar(migrated_database, "SELECT version_num FROM alembic_version")
-        == "0005_identity_admin_gaps"
+        == ScriptDirectory.from_config(config).get_current_head()
     )
 
 
@@ -79,6 +84,7 @@ def test_failing_ddl_revision_rolls_back_only_that_revision(
 
     location = tmp_path / "migrations"
     shutil.copytree("migrations", location)
+    previous_head = ScriptDirectory.from_config(Config("alembic.ini")).get_current_head()
     (location / "versions" / "0006_probe_failure.py").write_text(
         """
 from alembic import op
@@ -92,15 +98,14 @@ def upgrade():
     op.execute("SELECT identity_function_that_does_not_exist()")
 def downgrade():
     pass
-""",
+        """.replace(
+            'down_revision = "0005_identity_admin_gaps"', f'down_revision = "{previous_head}"'
+        ),
         encoding="utf-8",
     )
     config = Config("alembic.ini")
     config.set_main_option("script_location", str(location))
     with pytest.raises(SQLAlchemyError):
         command.upgrade(config, "head")
-    assert (
-        scalar(migrated_database, "SELECT version_num FROM alembic_version")
-        == "0005_identity_admin_gaps"
-    )
+    assert scalar(migrated_database, "SELECT version_num FROM alembic_version") == previous_head
     assert scalar(migrated_database, "SELECT to_regclass('public.identity_failed_probe')") is None

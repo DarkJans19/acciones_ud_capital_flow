@@ -47,3 +47,9 @@ async def require_premium(user: Annotated[CurrentUser, Depends(get_current_user)
     if not user.is_premium:
         raise AppError(403, ErrorCode.PREMIUM_REQUIRED, "Premium account required.")
     return user
+
+
+async def require_broker(user: Annotated[CurrentUser, Depends(get_current_user)]) -> CurrentUser:
+    if user.account_status != "active" or "broker" not in user.roles:
+        raise AppError(403, ErrorCode.FORBIDDEN, "Broker role required.")
+    return user

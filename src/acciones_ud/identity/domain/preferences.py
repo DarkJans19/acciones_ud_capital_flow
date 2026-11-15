@@ -6,6 +6,9 @@ EVENT_TYPES = (
     "price_changes",
     "execution_confirmations",
     "daily_summary",
+    "balance_changes",
+    "order_executions",
+    "order_updates",
 )
 CHANNELS = ("in_app", "email", "sms", "telegram")
 
@@ -22,7 +25,7 @@ def validate_patch(patch: list[dict[str, object]], has_phone: bool, has_telegram
     from acciones_ud.shared.domain.errors import AppError, ErrorCode
 
     seen: set[tuple[object, object]] = set()
-    if not 1 <= len(patch) <= 28:
+    if not 1 <= len(patch) <= len(EVENT_TYPES) * len(CHANNELS):
         raise AppError(422, ErrorCode.VALIDATION_ERROR, "Invalid field: preferences")
     for entry in patch:
         event, channel, enabled = (
