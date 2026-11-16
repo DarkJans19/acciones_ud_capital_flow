@@ -1,5 +1,6 @@
 import asyncio
 import os
+from uuid import uuid4
 
 import pytest
 import sqlalchemy as sa
@@ -14,8 +15,6 @@ def test_existing_email_variant_is_never_promoted_or_replaced(migrated_database:
     from sqlalchemy.ext.asyncio import async_sessionmaker
 
     from acciones_ud.identity.adapters.outbound.persistence import tables as t
-    from acciones_ud.identity.adapters.outbound.persistence.user_repository import UserRepository
-    from acciones_ud.identity.domain.registration import build_new_user
     from acciones_ud.shared.domain.clock import SystemClock
     from acciones_ud.shared.infrastructure.db import build_engine
 
@@ -27,25 +26,25 @@ def test_existing_email_variant_is_never_promoted_or_replaced(migrated_database:
         engine = build_engine(migrated_database)
         try:
             factory = async_sessionmaker(engine, expire_on_commit=False)
-            record, _ = build_new_user(
-                "investor",
-                {
-                    "first_names": "Existing",
-                    "last_names": "Account",
-                    "email": "  " + os.environ["INITIAL_ADMIN_EMAIL"].upper() + "  ",
-                    "phone": "+15555550100",
-                    "country": "US",
-                    "password": "ExistingPassword123",
-                    "terms_accepted": True,
-                    "monthly_report": False,
-                },
-            )
-            record.update(
+            # Seed only the 0001 user row. The current repository also inserts
+            # preferences introduced in later revisions, which do not exist yet.
+            existing_id = uuid4()
+            email = os.environ["INITIAL_ADMIN_EMAIL"]
+            record = dict(
+                id=existing_id,
+                first_names="Existing",
+                last_names="Account",
+                email="  " + email.upper() + "  ",
+                email_normalized=email.strip().lower(),
+                phone="+15555550100",
+                country="US",
                 password_hash=os.environ["INITIAL_ADMIN_PASSWORD_HASH"],
                 terms_accepted_at=SystemClock().now(),
+                monthly_report=False,
             )
             async with factory() as session, session.begin():
-                return await UserRepository(session).insert(record, None)
+                await session.execute(sa.insert(t.users).values(**record))
+            return existing_id
         finally:
             await engine.dispose()
 

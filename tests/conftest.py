@@ -31,6 +31,7 @@ def api_settings() -> Settings:
         stripe_price_annual_id="price_annual",
         wallet_reconciler_enabled="false",
         orders_jobs_enabled="false",
+        portfolio_jobs_enabled="false",
         app_env="test",
         database_url="postgresql+asyncpg://test:test@localhost/test",
         migration_database_url="postgresql+asyncpg://test:test@localhost/test",

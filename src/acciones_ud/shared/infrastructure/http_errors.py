@@ -10,6 +10,8 @@ from starlette.exceptions import HTTPException
 from acciones_ud.shared.domain.errors import AppError, ErrorCode
 
 ORDER_HTTP_STATUSES = {
+    ErrorCode.INVALID_PERIOD: 422,
+    ErrorCode.ACCOUNT_NOT_LINKED: 409,
     ErrorCode.ORDER_ACCOUNT_NOT_ACTIVE: 409,
     ErrorCode.QUOTE_UNAVAILABLE: 503,
     ErrorCode.ASSET_NOT_TRADABLE: 422,

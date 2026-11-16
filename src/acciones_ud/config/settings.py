@@ -10,6 +10,9 @@ from sqlalchemy.engine import make_url
 
 
 class Settings(BaseSettings):
+    portfolio_risk_window_days: str = "90"
+    portfolio_report_interval_seconds: str = "900"
+    portfolio_jobs_enabled: str = "true"
     # Zero disables only the outer deadline for temporary sandbox diagnostics.
     order_creation_deadline_seconds: float = Field(default=5, ge=0, le=120, allow_inf_nan=False)
     order_reference_commission_rate: str = "0.02"
@@ -204,6 +207,8 @@ def require_api_settings(settings: Settings) -> None:
     if settings.alpaca_data_feed not in {"iex", "sip", "delayed_sip"}:
         invalid.add("ALPACA_DATA_FEED")
     bounds = {
+        "portfolio_risk_window_days": (7, 365),
+        "portfolio_report_interval_seconds": (60, 86400),
         "order_reauth_window_minutes": (1, 1440),
         "order_local_max_age_days": (1, 90),
         "order_reconcile_interval_seconds": (5, 3600),
@@ -234,6 +239,7 @@ def require_api_settings(settings: Settings) -> None:
         "kyc_status_refresh_enabled",
         "wallet_reconciler_enabled",
         "orders_jobs_enabled",
+        "portfolio_jobs_enabled",
     ):
         if getattr(settings, name).lower() not in {"true", "false"}:
             invalid.add(name.upper())

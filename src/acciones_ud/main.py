@@ -10,6 +10,7 @@ from acciones_ud.config.settings import Settings, get_settings, require_api_sett
 from acciones_ud.identity import composition as identity
 from acciones_ud.market_data import composition as market_data
 from acciones_ud.orders import composition as orders
+from acciones_ud.portfolio import composition as portfolio
 from acciones_ud.shared.infrastructure.alpaca_http import build_client
 from acciones_ud.shared.infrastructure.alpaca_oauth import build_oauth_client
 from acciones_ud.shared.infrastructure.http_errors import register_exception_handlers
@@ -54,7 +55,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             await wallet.startup(app)
             stack.push_async_callback(wallet.shutdown, app)
             await orders.startup(app)
-            stack.push_async_callback(orders.shutdown, app)
+
+            async def shutdown_orders_and_portfolio() -> None:
+                try:
+                    await orders.shutdown(app)
+                finally:
+                    await portfolio.shutdown(app)
+
+            stack.push_async_callback(shutdown_orders_and_portfolio)
+            await portfolio.startup(app)
             yield
 
     app = FastAPI(title=settings.app_name, version="0.1.0", lifespan=lifespan)
@@ -71,6 +80,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     identity.register(app)
     market_data.register(app)
     wallet.register(app)
+    portfolio.register(app)
     orders.register(app)
 
     default_openapi = app.openapi

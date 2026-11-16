@@ -110,7 +110,10 @@ def register(app: FastAPI) -> None:
         ),
         sessions=MarketSessionAdapter(lambda: market_data.calendar_service(scope)),
         buying_power=WalletBuyingPowerAdapter(app.state.wallet_funding_port),
-        positions=AlpacaPositionsClient(lambda: app.state.alpaca_broker),
+        positions=getattr(
+            app.state, "order_position_port",
+            AlpacaPositionsClient(lambda: app.state.alpaca_broker),
+        ),
         alpaca=AlpacaOrdersClient(lambda: app.state.alpaca_broker),
         brokers=InstalledBrokerLink(app),
         notifier=OrderNotifierAdapter(market_data.directory_uow, market_data.notifier(scope)),

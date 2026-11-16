@@ -20,6 +20,15 @@ Decisiones de diseño adicionales a las del requisito (P1 a P14, A1 a A3):
 
 ### Investigación (resumen)
 
+**Corrección verificada de D1 (implementación MOD-05):** una prueba generativa
+demostró que sumar y restar siempre con precisión 40 pierde residuos y contradice
+la igualdad exacta de Req. 3.4. Las divisiones de costo conservan precisión 40;
+las acumulaciones y restas usan la precisión necesaria para conservar exactamente
+los operandos decimales, sin cuantizar. La propiedad de conservación evalúa ambos
+miembros con precisión suficiente y comparación `==`, sin tolerancias.
+Los identificadores de ejecución conservan el tipo texto del ledger de `orders`;
+el cursor de ejecuciones codifica `(timestamp, execution_id)` textual.
+
 - **Alpaca Broker API, posiciones** (`.agents/skills/alpaca-broker-trading-orders/SKILL.md`, [getPositionsForAccount](https://docs.alpaca.markets/reference/getpositionsforaccount)):
   - `GET /v1/trading/accounts/{account_id}/positions` devuelve por símbolo `symbol`, `exchange`, `qty`, `qty_available`, `avg_entry_price`, `current_price`, `market_value`, `cost_basis` y `side`, con los valores numéricos como cadenas decimales.
   - `GET /v1/trading/accounts/{account_id}/positions/{symbol}` devuelve una posición o 404 si no existe; el adaptador del Position_Port traduce ese 404 a `qty_available = 0` (Req. 10.2).
@@ -354,7 +363,7 @@ Solo se definen propiedades para las partes críticas de la política de pruebas
 
 | Situación | Error de dominio o aplicación | HTTP | `code` |
 |---|---|---|---|
-| Sin cookie o token inválido | dependencia de `identity` | 401 | `UNAUTHENTICATED` (existente) |
+| Sin cookie o token inválido | dependencia de `identity` | 401 | `NOT_AUTHENTICATED` (contrato existente verificado en 1.3) |
 | Sin rol requerido | `ForbiddenError` | 403 | `FORBIDDEN` |
 | Report ajeno o inexistente; cliente no vinculado | `NotFoundError` | 404 | `NOT_FOUND` |
 | Investor sin Linked_Account | `AccountNotLinkedError` | 409 | `ACCOUNT_NOT_LINKED` |
@@ -380,6 +389,15 @@ Por indicación del usuario, solo son obligatorias las pruebas de las partes cr�
 **Opcionales (unidad y API con fakes):** fallback de precio y `price_source` (1.4), orden y `hide_threshold` con los cuatro valores de `sort_by` (1.5, 1.6), `reconciliation_mismatch` y log (1.7), errores de Alpaca (1.8, 10.3), comisión de referencia (2.3), Period inválido (2.4, 4.6, 6.5), estadísticas vacías (4.5), `insufficient_data` (5.6), contenido de Reports (6.1, 6.2, 9.1, 9.2, 9.5), Report_Scheduler con reloj y calendario falsos (7.1 a 7.5), Position_Port (10.1, 10.2), configuración inválida (12.6), ausencia de secretos (12.7) y presencia de esquemas de error en `/openapi.json` (12.8).
 
 **Opcionales (base de datos, marca `db`):** paginación de historial y reportes (2.2, 8.1, 8.3), trigger de inmutabilidad (6.4), índice único de Reports programados (7.4), consulta `ExecutionLedger` con Broker firmante (9.2) y migración `0008` con `upgrade`/`downgrade` (12.9). Sin `TEST_DATABASE_URL` se saltan.
+
+**Integración HTTP con PostgreSQL:** `tests/portfolio/api/test_postgres_flow.py`
+reutiliza el registro, MFA y KYC reales del backend; siembra ejecuciones y reservas
+en PostgreSQL y verifica posiciones, preferencias, historial paginado, estadísticas,
+equity de wallet, riesgo, reportes persistidos, propiedad, programación y
+notificaciones sin duplicados. También comprueba que un 429 de Alpaca no almacena
+un reporte. Solo los proveedores externos usan fakes; los repositorios y las
+migraciones son reales. Se ejecuta con `TEST_DATABASE_URL` sobre el contenedor
+desechable de `tests/db`, que admite el `upgrade`/`downgrade` del fixture.
 
 **Por qué PBT aplica:** el núcleo del módulo son cálculos puros sobre decimales (costo, resultado, porcentajes, puntaje de riesgo, redondeo) con un espacio de entradas grande, invariantes claros (conservación, suma 100,00, rango 0–100) y modelos de referencia simples. Las partes de I/O (Alpaca, base de datos, notificaciones) no usan PBT.
 
