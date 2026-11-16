@@ -13,7 +13,6 @@ from acciones_ud.shared.infrastructure.http_errors import error_responses
 
 router = APIRouter(prefix="/orders", tags=["orders"], responses=error_responses(422))
 Key = Annotated[str, Header(alias="Idempotency-Key", pattern=r"^[\x20-\x7e]{8,128}$")]
-CREATION_DEADLINE_SECONDS = 5.0
 
 
 @router.post(
@@ -31,7 +30,8 @@ async def preview(body: s.OrderIn, request: Request, user: Investor) -> object:
 )
 async def create(body: s.OrderIn, request: Request, user: Investor, key: Key) -> object:
     try:
-        async with asyncio.timeout(CREATION_DEADLINE_SECONDS):
+        seconds = request.app.state.settings.order_creation_deadline_seconds
+        async with asyncio.timeout(seconds if seconds else None):
             order = await orders(request).create(
                 user.user_id, body.to_request(), key, body.totp_code
             )

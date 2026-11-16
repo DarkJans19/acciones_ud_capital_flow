@@ -152,10 +152,13 @@ class OrderContext:
         asset = await self.assets.get(request.symbol)
         if asset is None or not asset.active or not asset.tradable:
             raise OrderDomainError(422, ErrorCode.ASSET_NOT_TRADABLE, "Asset is not tradable.")
-        reference = await self.quotes.current_price(request.symbol)
+        # Independent reads use separate ports/transactions. Run them together
+        # without sharing an AsyncSession or weakening the investor lock below.
+        reference, controls = await asyncio.gather(
+            self.quotes.current_price(request.symbol), self.controls.get(user_id)
+        )
         if reference is None or not reference.is_finite() or reference <= 0:
             raise OrderDomainError(503, ErrorCode.QUOTE_UNAVAILABLE, "Quote is unavailable.")
-        controls = await self.controls.get(user_id)
         request = replace(request, type=request.type or controls.default_order_type)
         tentative_base = (
             request.limit_price

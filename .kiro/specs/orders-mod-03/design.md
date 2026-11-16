@@ -3,6 +3,19 @@
 
 ## Diagnóstico y validación real (2026-11-15)
 
+Por autorización explícita para pruebas sandbox, ORDER_CREATION_DEADLINE_SECONDS
+permite desactivar temporalmente el presupuesto exterior con 0. El defecto sigue
+en 5 segundos; se aceptan valores finitos de 0 a 120. El timeout del envío a
+Alpaca, idempotencia y reconciliación se conservan. Esta excepción de diagnóstico
+no certifica el requisito de rendimiento ni debe confundirse con liquidación.
+
+La cotización y los controles se leen concurrentemente mediante puertos con
+transacciones independientes. Se conserva la comprobación previa de cuenta y
+activo, el bloqueo del inversionista y la idempotencia. Una prueba de barrera
+verifica que ambas lecturas progresan sin dependencia secuencial. Esta mejora
+no constituye certificación del presupuesto: la medición Docker posterior
+sigue superando cinco segundos, incluyendo autenticación.
+
 Se adopta la clasificación SQLSTATE compartida descrita en wallet-mod-04:
 503 queda reservado a indisponibilidad, con errores separados para esquema,
 permisos, integridad y datos. 0007 extiende/restaura el vocabulario CHECK de

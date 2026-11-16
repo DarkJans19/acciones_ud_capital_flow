@@ -4,12 +4,14 @@ from functools import lru_cache
 from urllib.parse import parse_qs, urlsplit
 
 from cryptography.fernet import Fernet
-from pydantic import SecretStr, model_validator
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
 
 
 class Settings(BaseSettings):
+    # Zero disables only the outer deadline for temporary sandbox diagnostics.
+    order_creation_deadline_seconds: float = Field(default=5, ge=0, le=120, allow_inf_nan=False)
     order_reference_commission_rate: str = "0.02"
     order_reauth_price_deviation_pct: str = "1.00"
     order_reauth_window_minutes: str = "30"

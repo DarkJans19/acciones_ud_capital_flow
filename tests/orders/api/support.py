@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 from fastapi import FastAPI
 
 from acciones_ud.orders.adapters.inbound.http.routers.broker_reviews import router as broker_router
@@ -8,6 +10,7 @@ from acciones_ud.shared.infrastructure.http_errors import register_exception_han
 
 def api_for(context):
     app = FastAPI()
+    app.state.settings = SimpleNamespace(order_creation_deadline_seconds=5)
     register_exception_handlers(app)
     service = OrderService(context)
     app.state.order_service = service

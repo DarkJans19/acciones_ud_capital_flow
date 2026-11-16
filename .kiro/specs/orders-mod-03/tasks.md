@@ -8,6 +8,7 @@
 - [x] S2. Ejecutar los casos disponibles con investor existente y documentar casos condicionados por mercado/MOD-06/fondeo en e2e-validation.md; flujo positivo pendiente en S4.
 - [x] S3. Verificar no regresión y entregar guía reproducible: 467 passed, 20 skipped; Ruff/Mypy/compileall/build correctos.
 - [ ] S4. Completar creación/cancelación/reserva y FILL reales tras fondeo; resolver la latencia de prevalidación que supera el presupuesto de 5 segundos.
+  - [x] S4.1. Por autorización temporal, permitir deadline 0 y verificar en Docker creación market/limit, idempotencia y cancelación con reservas liberadas tras fondeo wire sandbox. Evidencia en temporary-deadline-and-funding.md; no equivale a certificar FILL ni <5 s.
 
 Implementación del paquete `orders` (`src/acciones_ud/orders/`) en Python 3.12 con arquitectura hexagonal: primero se verifican los supuestos del diseño, luego el dominio puro, la persistencia, los adaptadores, los casos de uso, los jobs y por último la API HTTP y el cableado en `main.py`.
 
