@@ -70,14 +70,23 @@ class StripeWebhookService:
                             if kind == "customer.subscription.deleted"
                             else data["status"]
                         )
+                        # Since Basil, billing periods live on subscription
+                        # items. Accept both signed snapshot formats while
+                        # keeping outbound Stripe calls pinned to 2024-06-20.
+                        items = (data.get("items") or {}).get("data", [])
+                        period = items[0] if items else {}
                         updated = replace(
                             subscription,
                             stripe_subscription_id=str(data["id"]),
                             stripe_customer_id=data.get("customer")
                             or subscription.stripe_customer_id,
                             status=status,
-                            current_period_start=timestamp(data.get("current_period_start")),
-                            current_period_end=timestamp(data.get("current_period_end")),
+                            current_period_start=timestamp(
+                                data.get("current_period_start", period.get("current_period_start"))
+                            ),
+                            current_period_end=timestamp(
+                                data.get("current_period_end", period.get("current_period_end"))
+                            ),
                             cancel_at_period_end=bool(data.get("cancel_at_period_end", False)),
                             stripe_event_created_at=created,
                         )
@@ -98,6 +107,10 @@ class StripeWebhookService:
         if kind == "checkout.session.completed":
             return await work.subscriptions.get(stripe_checkout_session_id=str(data["id"]))
         external = data.get("subscription") if kind.startswith("invoice.") else data.get("id")
+        if kind.startswith("invoice.") and not external:
+            parent = data.get("parent") or {}
+            if parent.get("type") == "subscription_details":
+                external = (parent.get("subscription_details") or {}).get("subscription")
         if isinstance(external, dict):
             external = external.get("id")
         if external:

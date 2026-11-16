@@ -1,3 +1,5 @@
+import logging
+import re
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from uuid import uuid4
@@ -46,7 +48,51 @@ async def get_session() -> AsyncIterator[AsyncSession]:
 
 
 def database_error(exc: Exception) -> AppError:
-    return AppError(503, ErrorCode.DATABASE_UNAVAILABLE, "Database operation could not complete.")
+    # Never log str(exc), SQL, parameters or driver details: they can contain
+    # credentials, personal data and request bodies. SQLSTATE is sufficient
+    # to distinguish a deployment fault from a connectivity failure.
+    raw_state = getattr(getattr(exc, "orig", None), "sqlstate", None)
+    state = (
+        raw_state
+        if isinstance(raw_state, str) and re.fullmatch(r"[0-9A-Z]{5}", raw_state)
+        else None
+    )
+    status, code, message = (
+        503,
+        ErrorCode.DATABASE_UNAVAILABLE,
+        "Database operation could not complete.",
+    )
+    if state == "42501" or (state and state.startswith("28")):
+        status, code, message = (
+            500,
+            ErrorCode.DATABASE_PERMISSION_ERROR,
+            "Database access configuration requires attention.",
+        )
+    elif state and state.startswith("42"):
+        status, code, message = (
+            500,
+            ErrorCode.DATABASE_SCHEMA_ERROR,
+            "Database schema or query requires attention.",
+        )
+    elif state and state.startswith("23"):
+        status, code, message = (
+            409,
+            ErrorCode.DATABASE_INTEGRITY_ERROR,
+            "Operation conflicts with stored data constraints.",
+        )
+    elif state and state.startswith("22"):
+        status, code, message = (
+            500,
+            ErrorCode.DATABASE_DATA_ERROR,
+            "Database value could not be processed.",
+        )
+    logging.getLogger(__name__).error(
+        "Database operation failed code=%s sqlstate=%s exception_type=%s",
+        code,
+        state or "unknown",
+        type(exc).__name__,
+    )
+    return AppError(status, code, message)
 
 
 @asynccontextmanager

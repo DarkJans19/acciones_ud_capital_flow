@@ -34,7 +34,10 @@ class ErrorBody(BaseModel):
 
 
 def error_responses(*statuses: int) -> dict[int | str, dict[str, Any]]:
-    return {status: {"model": ErrorBody} for status in statuses}
+    # Endpoints that use persistence can also encounter a deployment/schema
+    # error, distinct from a retryable connection failure (503).
+    declared = {*statuses, 409, 500} if 503 in statuses else set(statuses)
+    return {status: {"model": ErrorBody} for status in sorted(declared)}
 
 
 def error_body_response(exc: AppError) -> JSONResponse:

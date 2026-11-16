@@ -32,3 +32,10 @@ def test_wallet_migration_reverses() -> None:
         assert f"DROP TABLE {table}" in sql
     assert "ON CONFLICT DO NOTHING" in sql
     assert "WHERE status IN ('active','trialing','past_due')" in sql
+    upgrade, downgrade = sql.split("DELETE FROM notification_preferences", 1)
+    assert upgrade.index("ADD CONSTRAINT notification_preferences_event_type_check") < (
+        upgrade.index("INSERT INTO notification_preferences")
+    )
+    assert "'balance_changes'" in upgrade.split("CHECK (", 1)[1].split(";", 1)[0]
+    restored = downgrade.split("ADD CONSTRAINT notification_preferences_event_type_check", 1)[1]
+    assert "balance_changes" not in restored.split(";", 1)[0]

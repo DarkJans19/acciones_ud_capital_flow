@@ -59,7 +59,13 @@ async def logout(
     try:
         await session_service(request).logout(access_token, refresh_token)
     except AppError as exc:
-        if exc.code is not ErrorCode.DATABASE_UNAVAILABLE:
+        if exc.code not in {
+            ErrorCode.DATABASE_UNAVAILABLE,
+            ErrorCode.DATABASE_SCHEMA_ERROR,
+            ErrorCode.DATABASE_PERMISSION_ERROR,
+            ErrorCode.DATABASE_INTEGRITY_ERROR,
+            ErrorCode.DATABASE_DATA_ERROR,
+        }:
             raise
         response: Response = error_body_response(exc)
         clear_auth_cookies(response, request.app.state.settings)

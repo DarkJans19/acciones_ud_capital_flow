@@ -257,6 +257,16 @@ c(channel) ON CONFLICT DO NOTHING
 
 
 def upgrade() -> None:
+    op.drop_constraint(
+        "notification_preferences_event_type_check", "notification_preferences", type_="check"
+    )
+    op.create_check_constraint(
+        "notification_preferences_event_type_check",
+        "notification_preferences",
+        "event_type IN ('market_open','market_close','proposals','approval_requests',"
+        "'price_changes','execution_confirmations','daily_summary','balance_changes',"
+        "'order_executions','order_updates')",
+    )
     for statement in STATEMENTS:
         op.execute(sa.text(statement))
 
@@ -267,6 +277,15 @@ def downgrade() -> None:
             "DELETE FROM notification_preferences "
             "WHERE event_type IN ('order_executions','order_updates')"
         )
+    )
+    op.drop_constraint(
+        "notification_preferences_event_type_check", "notification_preferences", type_="check"
+    )
+    op.create_check_constraint(
+        "notification_preferences_event_type_check",
+        "notification_preferences",
+        "event_type IN ('market_open','market_close','proposals','approval_requests',"
+        "'price_changes','execution_confirmations','daily_summary','balance_changes')",
     )
     for name in (
         "order_activity_cursors",

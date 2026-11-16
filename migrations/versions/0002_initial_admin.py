@@ -6,7 +6,6 @@ import sqlalchemy as sa
 from alembic import op
 
 from acciones_ud.config.settings import InitialAdminSettings
-from acciones_ud.identity.domain.preferences import default_preferences
 from acciones_ud.identity.domain.validation import (
     normalize_email,
     valid_country,
@@ -19,6 +18,19 @@ revision = "0002_initial_admin"
 down_revision = "0001_identity_schema"
 branch_labels = None
 depends_on = None
+
+# Snapshot of the vocabulary allowed by 0001. New event types are seeded by
+# their own migrations, never by mutable application code during bootstrap.
+INITIAL_EVENTS = (
+    "market_open",
+    "market_close",
+    "proposals",
+    "approval_requests",
+    "price_changes",
+    "execution_confirmations",
+    "daily_summary",
+)
+INITIAL_CHANNELS = ("in_app", "email", "sms", "telegram")
 
 
 def upgrade() -> None:
@@ -77,7 +89,16 @@ def upgrade() -> None:
         INSERT INTO notification_preferences (user_id, event_type, channel, enabled)
         VALUES (:user_id, :event_type, :channel, :enabled)
     """),
-        [{"user_id": user_id, **p} for p in default_preferences()],
+        [
+            {
+                "user_id": user_id,
+                "event_type": event,
+                "channel": channel,
+                "enabled": channel == "in_app",
+            }
+            for event in INITIAL_EVENTS
+            for channel in INITIAL_CHANNELS
+        ],
     )
 
 

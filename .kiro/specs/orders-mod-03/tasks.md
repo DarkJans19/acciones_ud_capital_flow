@@ -2,6 +2,13 @@
 
 ## Overview
 
+### Estabilización solicitada (2026-11-15)
+
+- [x] S1. Aplicar migración corregida y comprobar tablas/permisos en Supabase real.
+- [x] S2. Ejecutar los casos disponibles con investor existente y documentar casos condicionados por mercado/MOD-06/fondeo en e2e-validation.md; flujo positivo pendiente en S4.
+- [x] S3. Verificar no regresión y entregar guía reproducible: 467 passed, 20 skipped; Ruff/Mypy/compileall/build correctos.
+- [ ] S4. Completar creación/cancelación/reserva y FILL reales tras fondeo; resolver la latencia de prevalidación que supera el presupuesto de 5 segundos.
+
 Implementación del paquete `orders` (`src/acciones_ud/orders/`) en Python 3.12 con arquitectura hexagonal: primero se verifican los supuestos del diseño, luego el dominio puro, la persistencia, los adaptadores, los casos de uso, los jobs y por último la API HTTP y el cableado en `main.py`.
 
 **Prerrequisito:** `wallet-mod-04` debe estar implementado antes de empezar, porque `orders` usa el `AlpacaFundingPort` que publica `wallet` y el `RecipientDirectory` agregado por su diseño.

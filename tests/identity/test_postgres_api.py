@@ -548,7 +548,7 @@ async def test_registration_partial_write_is_rolled_back(postgres_app: object) -
         async with unit_of_work() as session:
             # User insert succeeds; role FK fails next. Neither user nor preferences may survive.
             await UserRepository(session).insert(record, "unknown-role")
-    assert failed.value.code == "DATABASE_UNAVAILABLE"
+    assert failed.value.code == "DATABASE_INTEGRITY_ERROR"
     async with app.state.sql_factory() as session:
         assert not (
             await session.execute(

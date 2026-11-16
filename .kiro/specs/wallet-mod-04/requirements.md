@@ -1,5 +1,19 @@
 # Requirements Document
 
+## Corrección de despliegue y diagnóstico (2026-11-15)
+
+RF-10–12, RF-36–40 y RNF de trazabilidad: las migraciones deben funcionar
+sobre usuarios existentes y en instalaciones nuevas. Antes de sembrar nuevos
+eventos se amplía su CHECK; el bootstrap conserva el vocabulario histórico.
+Una caída de conexión sigue siendo 503 `DATABASE_UNAVAILABLE`; errores SQL de
+esquema, permisos, integridad y datos se distinguen mediante códigos seguros y
+logs con SQLSTATE y request ID, sin SQL ni valores sensibles.
+
+RF-10–12: el webhook debe persistir períodos y asociar facturas tanto en los
+snapshots 2024-06-20 como en el formato de eventos actual observado en sandbox,
+sin relajar firma, propiedad ni idempotencia. Una reproducción firmada local
+se documenta como tal y no equivale a entrega automática del proveedor.
+
 ## Introduction
 
 Este spec cubre el módulo de desarrollo MOD-04 "Billetera, Gestión de Fondos y Tesorería Multi-Moneda" del backend de Acciones UD (responsable: Davidson E. Sánchez Gordillo). El módulo se implementa como el paquete `wallet` dentro del monolito modular hexagonal (`src/acciones_ud/wallet/`) y depende solo de MOD-01 (`identity`), ya implementado. Es el primer módulo pendiente en el orden de dependencias del catálogo (MOD-04 → MOD-03 → MOD-05 → MOD-06 → MOD-07), porque MOD-03 necesita consultar el efectivo disponible antes de crear órdenes.

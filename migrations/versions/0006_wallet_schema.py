@@ -10,6 +10,17 @@ depends_on = None
 
 
 def upgrade() -> None:
+    # The original identity schema restricts the event vocabulary. Extend it
+    # before seeding preferences for existing users (including non-empty DBs).
+    op.drop_constraint(
+        "notification_preferences_event_type_check", "notification_preferences", type_="check"
+    )
+    op.create_check_constraint(
+        "notification_preferences_event_type_check",
+        "notification_preferences",
+        "event_type IN ('market_open','market_close','proposals','approval_requests',"
+        "'price_changes','execution_confirmations','daily_summary','balance_changes')",
+    )
     op.create_table(
         "wallet_bank_relationships",
         sa.Column("id", sa.Uuid(), primary_key=True),
@@ -166,6 +177,15 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.execute(sa.text("DELETE FROM notification_preferences WHERE event_type='balance_changes'"))
+    op.drop_constraint(
+        "notification_preferences_event_type_check", "notification_preferences", type_="check"
+    )
+    op.create_check_constraint(
+        "notification_preferences_event_type_check",
+        "notification_preferences",
+        "event_type IN ('market_open','market_close','proposals','approval_requests',"
+        "'price_changes','execution_confirmations','daily_summary')",
+    )
     for name in (
         "stripe_events",
         "subscription_payments",

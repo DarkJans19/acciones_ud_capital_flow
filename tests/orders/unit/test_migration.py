@@ -42,3 +42,12 @@ def test_orders_migration_renders_and_reverses() -> None:
     assert "WHERE decision IS NULL" in sql
     assert "filled_avg_price NUMERIC," in sql
     assert "order_executions" in sql and "order_updates" in sql
+    upgrade, downgrade = sql.split("DELETE FROM notification_preferences", 1)
+    assert upgrade.index("ADD CONSTRAINT notification_preferences_event_type_check") < (
+        upgrade.index("INSERT INTO notification_preferences")
+    )
+    vocabulary = upgrade.split("ADD CONSTRAINT notification_preferences_event_type_check", 1)[1]
+    assert "'order_updates'" in vocabulary.split(";", 1)[0]
+    restored = downgrade.split("ADD CONSTRAINT notification_preferences_event_type_check", 1)[1]
+    assert "'balance_changes'" in restored.split(";", 1)[0]
+    assert "'order_updates'" not in restored.split(";", 1)[0]

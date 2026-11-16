@@ -179,7 +179,7 @@ def test_openapi_gap_endpoints_and_optional_logout(api_settings: Settings) -> No
         assert path in paths
 
     logout = paths["/api/v1/auth/logout"]["post"]
-    assert set(logout["responses"]) == {"204", "503"}
+    assert set(logout["responses"]) == {"204", "409", "500", "503"}
     assert logout["security"] == [
         {"AccessTokenCookie": []},
         {"RefreshTokenCookie": []},

@@ -2,6 +2,15 @@
 
 ## Overview
 
+### Estabilización solicitada (2026-11-15)
+
+- [x] S1. Corregir y probar migraciones de notificaciones sobre base poblada y bootstrap histórico.
+- [x] S2. Clasificar y registrar errores SQL sin secretos; probar desconexión y conflictos.
+- [x] S3. Ejecutar los casos E2E disponibles con investor existente y documentar persistencia y límites externos en orders-mod-03/e2e-validation.md; pendientes positivos en S5/S6.
+- [x] S4. Ejecutar Ruff, Mypy, suite completa y build tras la estabilización: 467 passed, 20 skipped; Ruff/Mypy/compileall/build correctos.
+- [ ] S5. Validar entrega automática de Stripe a un webhook público o listener configurado; actualmente no hay endpoints registrados.
+- [ ] S6. Confirmar liquidación ACH, retiro exitoso y aviso de saldo real; Alpaca mantiene el depósito en SENT_TO_CLEARING y saldo cero.
+
 Implementación incremental del módulo `wallet` (`src/acciones_ud/wallet/`) en Python 3.12 con FastAPI, SQLAlchemy 2.x async y Alembic, según `design.md`. El orden va de dentro hacia afuera: puntos abiertos y configuración, dominio puro, persistencia, adaptadores externos, casos de uso, HTTP, job de reconciliación y cableado en `main.py`.
 
 Política de pruebas (instrucción del usuario: "Importante, no hagas tests obligatorios para todo, solo las partes críticas"): solo son obligatorias las pruebas de las propiedades 1 a 10 de `design.md` y los ejemplos críticos de la estrategia de pruebas. El resto de sub-tareas de prueba se marca opcional con `*`.

@@ -1,5 +1,12 @@
 # Requirements Document
 
+## Estabilización de despliegue (2026-11-15)
+
+RF-29–35, RFP-10: aplicar 0007 sobre una base poblada debe ampliar previamente
+el CHECK de eventos para `order_executions`/`order_updates`. La validación E2E
+usa el inversionista existente, proveedores sandbox y persistencia real;
+distingue los casos ejecutados de los bloqueados por horario o precondiciones.
+
 ## Introduction
 
 Este spec cubre el módulo de desarrollo MOD-03 "Motor de Órdenes y Negociación Bursátil" del backend de Acciones UD (responsable: Juan José León Gómez). El módulo se implementa como el paquete `orders` dentro del monolito modular hexagonal (`src/acciones_ud/orders/`). Depende de MOD-01 (`identity`) y MOD-02 (`market_data`), ya implementados en `identity-market-backend`, y de MOD-04 (`wallet`, spec `wallet-mod-04`). Por eso se construye después de MOD-04 y antes de MOD-05, según el orden del catálogo (MOD-04 → MOD-03 → MOD-05 → MOD-06 → MOD-07).

@@ -1,5 +1,23 @@
 # Design Document: wallet-mod-04
 
+## Ajuste de estabilización (2026-11-15)
+
+Las revisiones 0006/0007 amplían `notification_preferences_event_type_check`
+antes de sus seeds y restauran el vocabulario anterior después de borrarlos en
+downgrade. 0002 usa un snapshot de sus siete eventos originales. 0006/0007
+estaban pendientes en la base intervenida; no se reescribe su revisión aplicada.
+La frontera compartida clasifica SQLSTATE 42 como esquema (500), 42501/28 como
+permisos (500), 23 como integridad (409) y 22 como datos (500). Los fallos de
+conexión conservan 503. No se exponen SQL, parámetros ni texto del driver.
+OpenAPI declara 409/500 donde ya declaraba 503. Logout borra las cookies ante
+cualquiera de esas categorías, preservando la seguridad del cierre de sesión.
+
+El E2E detectó eventos reales `2026-10-28.endive`: se admiten también períodos
+en `items.data[0].current_period_start/end` y la asociación de facturas en
+`parent.subscription_details.subscription` cuando `parent.type` lo identifica.
+Se conserva la compatibilidad con 2024-06-20 y la firma sobre el cuerpo completo.
+La cuenta tiene un solo ítem de suscripción por diseño (mensual o anual).
+
 ## Overview
 
 Este diseño implementa MOD-04 como el paquete `wallet` (`src/acciones_ud/wallet/`) del monolito modular hexagonal. Cubre consulta de saldos (RF-36), relaciones bancarias de prueba y transferencias ACH simuladas (RF-37, RF-39), reconciliación de confirmaciones externas y movimientos (RF-40), identificación de moneda (RF-38), suscripciones premium con Stripe sandbox (RF-10 a RF-12) y avisos de cambio de saldo (RFP-11).

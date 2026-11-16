@@ -1,6 +1,14 @@
 
 # Design Document: orders-mod-03
 
+## Diagnóstico y validación real (2026-11-15)
+
+Se adopta la clasificación SQLSTATE compartida descrita en wallet-mod-04:
+503 queda reservado a indisponibilidad, con errores separados para esquema,
+permisos, integridad y datos. 0007 extiende/restaura el vocabulario CHECK de
+notificaciones alrededor de su seed. El E2E no altera relojes, cotizaciones ni
+estados financieros para forzar ejecuciones fuera del horario real.
+
 ## Overview
 
 Este diseño implementa MOD-03 como el paquete `orders` (`src/acciones_ud/orders/`) del monolito modular hexagonal. Cubre creación y validación de órdenes (RF-29), validaciones previas, autorización adicional y revisión con el comisionista (RF-30), reserva de saldo y tenencia y cancelación (RF-34), nueva autorización por cambio de cotización (RF-31), envío idempotente a Alpaca y registro de ejecuciones (RF-32), seguimiento y aviso de ejecución (RF-33), programación fuera de horario (RF-35) y estados de orden con revisión por cambio de horario (RFP-10).
