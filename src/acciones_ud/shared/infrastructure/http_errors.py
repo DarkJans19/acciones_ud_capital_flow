@@ -29,6 +29,22 @@ ORDER_HTTP_STATUSES = {
 }
 
 
+BROKERS_HTTP_STATUSES = {
+    ErrorCode.BROKER_NOT_FOUND: 404,
+    ErrorCode.CONSENT_REQUIRED: 422,
+    ErrorCode.LINK_ALREADY_EXISTS: 409,
+    ErrorCode.INVALID_LINK_STATE: 409,
+    ErrorCode.LINK_NOT_FOUND: 404,
+    ErrorCode.PROPOSAL_NOT_FOUND: 404,
+    ErrorCode.PROPOSAL_VERSION_CONFLICT: 409,
+    ErrorCode.INVALID_PROPOSAL_STATE: 409,
+    ErrorCode.TRADING_AUTHORIZATION_REQUIRED: 409,
+    ErrorCode.RATING_NOT_ALLOWED: 409,
+    ErrorCode.CLIENT_NOT_FOUND: 404,
+    ErrorCode.CONFIRMATION_REQUIRED: 422,
+}
+
+
 class ErrorBody(BaseModel):
     code: str
     message: str
@@ -45,7 +61,9 @@ def error_responses(*statuses: int) -> dict[int | str, dict[str, Any]]:
 def error_body_response(exc: AppError) -> JSONResponse:
     """Shared Error_Body response used by the handler and by logout on 503 (4.14)."""
     return JSONResponse(
-        status_code=ORDER_HTTP_STATUSES.get(exc.code, exc.status),
+        status_code=BROKERS_HTTP_STATUSES.get(
+            exc.code, ORDER_HTTP_STATUSES.get(exc.code, exc.status)
+        ),
         content={
             "code": exc.code,
             "message": exc.message,

@@ -160,10 +160,12 @@ def test_openapi_errors_and_public_docs(api_settings: Settings) -> None:
                 "/api/v1/auth/mfa/verify",
                 "/api/v1/auth/logout",
                 "/api/v1/webhooks/stripe",
+                "/api/v1/brokers/{broker_id}",
             }:
                 assert "401" in responses
             if method in {"put", "post"} and operation.get("requestBody"):
                 assert "422" in responses
+    assert not document["paths"]["/api/v1/brokers/{broker_id}"]["get"].get("security")
     assert api_settings.jwt_secret.get_secret_value() not in str(document)
 
 

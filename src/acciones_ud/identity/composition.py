@@ -289,4 +289,5 @@ def account_info_service(request: Request) -> AccountInfoService:
         config.cache_ttl_seconds,
         SystemClock(),
         getattr(request.app.state, "contracted_plan_reader", None),
+        getattr(request.app.state, "associated_broker_reader", None),
     )

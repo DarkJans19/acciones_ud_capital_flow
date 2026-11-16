@@ -18,6 +18,8 @@ class PreferenceIn(BaseModel):
         "balance_changes",
         "order_executions",
         "order_updates",
+        "broker_link_updates",
+        "proposal_updates",
     ]
     channel: Literal["in_app", "email", "sms", "telegram"]
     enabled: StrictBool

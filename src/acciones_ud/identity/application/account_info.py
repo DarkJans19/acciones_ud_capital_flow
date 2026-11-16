@@ -1,6 +1,8 @@
 import logging
+from dataclasses import asdict
 
 from acciones_ud.identity.domain.account_ports import AccountWorkFactory
+from acciones_ud.identity.domain.associated_broker import AssociatedBrokerReader
 from acciones_ud.identity.domain.auth_ports import Record
 from acciones_ud.identity.domain.contracted_plan import ContractedPlanReader
 from acciones_ud.identity.domain.kyc_cache import serve_cached
@@ -22,11 +24,13 @@ class AccountInfoService:
         cache_ttl_seconds: int = 60,
         clock: Clock | None = None,
         plans: ContractedPlanReader | None = None,
+        brokers: AssociatedBrokerReader | None = None,
     ) -> None:
         self.accounts, self.kyc, self.alpaca = accounts, kyc, alpaca
         self.cache_ttl_seconds = cache_ttl_seconds
         self.clock = clock or SystemClock()
         self.plans = plans
+        self.brokers = brokers
 
     async def me(self, current: CurrentUser) -> Record:
         # Both reads happen before any Alpaca call, so a database failure is 503 (6.6).
@@ -74,11 +78,12 @@ class AccountInfoService:
                 "investor_level",
             )
         }
+        associated = await self.brokers.associated_broker(current.user_id) if self.brokers else None
         result.update(
             user_id=current.user_id,
             registered_at=user["created_at"],
             contracted_plan=await self.plans.get(current.user_id) if self.plans else None,
-            associated_broker=None,
+            associated_broker=asdict(associated) if associated else None,
             roles=sorted(current.roles),
             kyc_status=status,
             kyc_status_unavailable=unavailable,

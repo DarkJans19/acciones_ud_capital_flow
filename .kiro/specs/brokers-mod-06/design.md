@@ -105,13 +105,42 @@ src/acciones_ud/brokers/
 `main.py` registra los módulos en este orden:
 
 ```text
-register: identity → market_data → wallet → orders → portfolio → brokers
+register: identity → market_data → wallet → portfolio → orders → brokers
 startup:  identity → market_data → wallet → orders → portfolio → brokers
-shutdown: brokers → portfolio → orders → wallet → market_data → identity
+shutdown: brokers → orders → portfolio → wallet → market_data → identity
 ```
 
 - `brokers.register(app)` monta los routers, construye el `BrokerLinkAdapter` (solo necesita `session_factory`), lo asigna a `app.state.order_broker_link` y a `app.state.portfolio_broker_clients`, y asigna `app.state.associated_broker_reader`. `orders` y `portfolio` leen esos valores en su `startup` (contratos de sus diseños) y todos los `register` corren antes que cualquier `startup`, así que el adaptador ya está instalado cuando arrancan (Req. 16.3). Si la implementación de `orders` o `portfolio` resolviera el adaptador en `register`, `brokers.register` debe moverse antes del `register` de ese módulo; la tarea de cableado lo verifica con una prueba de humo.
 - `brokers.startup(app)` resuelve los puertos que publica `orders` (`app.state.order_proposal_creation` y `app.state.order_query_port`, asignados en `orders.register`) y arranca el Expiry_Job si `BROKERS_JOBS_ENABLED` es `true` (por defecto `true`; las pruebas lo apagan). Si `orders` no publicó sus puertos, `startup` falla con un error de configuración explícito.
+
+### Verificación de dependencias (tarea 1.1, 2026-11-16)
+
+- MOD-03 y MOD-05 están implementados. Existen `NullBrokerLink`,
+  `NullBrokerClient`, `BROKER_SIGNED`, `OrderSubmitter.submit`, `OrderScheduler`
+  y `ExecutionLedger`. La atribución del ledger lee eventos hacia
+  `BROKER_SIGNED` con `actor_type = 'broker'`.
+- `InstalledBrokerLink.port` e `InstalledBrokerClients.port` consultan
+  `app.state` en cada llamada; no capturan el adaptador nulo en `register`.
+  Todos los registros terminan antes de `startup`.
+- Se conserva `portfolio.register` antes de `orders.register`: instala
+  `order_position_port`, que `orders` captura al construir su contexto.
+  Se conserva también el cierre de `orders` antes de `portfolio` para detener
+  los productores de ejecuciones antes del servicio de reportes.
+- La próxima revisión libre es `0009_brokers_schema`, con
+  `down_revision = '0008_portfolio_schema'`.
+- `order_idempotency_keys` tiene PK `(user_id, idempotency_key)`.
+  `ACCOUNT_NOT_LINKED`, `EXTRA_AUTHORIZATION_INVALID`, `QUOTE_UNAVAILABLE` y
+  `ASSET_NOT_TRADABLE` ya existen; `CONFIRMATION_REQUIRED` debe agregarse.
+- Existen `RecipientDirectory.recipient(user_id, event_type)` y el puerto
+  `ContractedPlanReader`. Las preferencias se almacenan por fila en
+  `notification_preferences`; la migración incorporará los dos eventos nuevos
+  y sus cuatro canales para los usuarios existentes, sin alterar sus preferencias.
+
+Integración de esquema (tarea 4.1): `notification_preferences` restringe
+`event_type` mediante CHECK. La migración amplía ese CHECK y registra los dos
+eventos en `identity/domain/preferences.py` en este mismo paso para mantener
+coherencia entre el esquema, usuarios nuevos y existentes. La tarea 14.1 conserva
+la implementación del adaptador de notificación.
 
 ### Flujo de vinculación
 
@@ -197,7 +226,7 @@ stateDiagram-v2
     sent --> expired: TTL
 ```
 
-B8 define la transición de rechazo de negocio como `approved` → `conversion_failed`. Como `brokers` solo persiste `approved` cuando existe la Order (D1), el rechazo se registra en la misma transacción como `accepted` → `conversion_failed` y el evento guarda `attempted: approve`. El resultado observable es el de B13: la Proposal termina en `conversion_failed` con el código recibido y sin `order_id`.
+B24, confirmada por el usuario el 2026-11-16 (tarea 1.2), alinea B8 y el Req. 10.2 con D1 y D4: conversión en dos transacciones, TOTP con `>=` y rechazo de negocio desde `accepted`. Como `brokers` solo persiste `approved` cuando existe la Order (D1), el rechazo se registra como `accepted` → `conversion_failed` y el evento guarda `attempted: approve`. El resultado observable es el de B13: la Proposal termina en `conversion_failed` con el código recibido y sin `order_id`.
 
 ## Components and Interfaces
 
@@ -353,6 +382,12 @@ Nuevos códigos en `ErrorCode` (`shared/domain/errors.py`): `BROKER_NOT_FOUND`, 
 
 ### Expiry_Job
 
+Verificación adicional de D3 (tarea 14.2): la consulta idempotente admite un
+`ProposalOrderCommand` esperado opcional. `orders` compara su hash con el de la
+orden persistida antes de devolver el identificador. Esto evita reconciliar una
+versión aceptada nueva con una orden de contenido distinto creada durante una
+conversión anterior concurrente. El argumento es aditivo y no cambia endpoints.
+
 Tarea asyncio en `adapters/inbound/jobs/expiry_job.py` con intervalo `BROKERS_EXPIRY_INTERVAL_SECONDS` (por defecto 300). `ExpiryService.run_once(now)`:
 
 1. Links: `UPDATE broker_links SET status = 'expired' ... WHERE status = 'requested' AND expires_at <= now RETURNING id`, un `BrokerEvent` por fila y notificación `broker_link_updates` al Investor por fila devuelta (Req. 3.8).
@@ -490,7 +525,7 @@ Por la Política de pruebas del requisito, las propiedades cubren solo las parte
 
 | Situación | Error de dominio o aplicación | HTTP | `code` |
 |---|---|---|---|
-| Sin cookie o token inválido | dependencia de `identity` | 401 | `UNAUTHENTICATED` (existente) |
+| Sin cookie o token inválido | dependencia de `identity` | 401 | `NOT_AUTHENTICATED` (existente) |
 | Sin rol requerido (A1) | `ForbiddenError` | 403 | `FORBIDDEN` |
 | Broker inexistente o sin rol vigente | `BrokerNotFoundError` | 404 | `BROKER_NOT_FOUND` |
 | Link ajena, inexistente o de Broker sin Active_Link | `NotFoundError(LINK)` | 404 | `LINK_NOT_FOUND` |

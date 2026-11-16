@@ -30,7 +30,7 @@ from acciones_ud.orders.domain.model import (
     OrderStatus as S,
 )
 from acciones_ud.orders.domain.reservations import check_buy, check_sell
-from acciones_ud.orders.domain.state_machine import is_terminal
+from acciones_ud.orders.domain.state_machine import initial_status, is_terminal
 from acciones_ud.shared.domain.alpaca_errors import AlpacaError
 from acciones_ud.shared.domain.errors import ErrorCode
 
@@ -78,6 +78,18 @@ class OrderService:
         idempotency_key: str,
         totp_code: str | None = None,
     ) -> Order:
+        return await self._create(user_id, request, idempotency_key, totp_code)
+
+    async def _create(
+        self,
+        user_id: UUID,
+        request: OrderRequest,
+        idempotency_key: str,
+        totp_code: str | None = None,
+        *,
+        signature: UUID | None = None,
+        proposal_reason: str | None = None,
+    ) -> Order:
         if not re.fullmatch(r"[\x20-\x7e]{8,128}", idempotency_key):
             raise OrderDomainError(
                 422,
@@ -108,11 +120,11 @@ class OrderService:
         prepared = await self.ctx.prepare(
             user_id,
             replace(request, symbol=request.symbol.strip().upper()),
-            authorize=True,
+            authorize=signature is None,
             totp_code=totp_code,
         )
         request = prepared.request
-        broker_id = await self.ctx.brokers.reviewing_broker(user_id)
+        broker_id = await self.ctx.brokers.reviewing_broker(user_id) if signature is None else None
         now, ident = self.ctx.clock.now(), uuid4()
         order = Order(
             ident,
@@ -127,7 +139,7 @@ class OrderService:
             request.time_in_force,
             prepared.reference_price,
             prepared.amount,
-            S.PENDING,
+            initial_status(from_proposal=signature is not None),
             str(ident),
             now,
             now,
@@ -140,6 +152,8 @@ class OrderService:
             scheduled_for=prepared.session.opens_at if prepared.session else None,
             scheduled_session_end=prepared.session.closes_at if prepared.session else None,
             schedule_if_closed=request.schedule_if_closed,
+            broker_id=signature,
+            broker_signed_at=now if signature else None,
         )
         async with self.ctx.uow() as work:
             await work.lock_user(user_id)
@@ -181,15 +195,20 @@ class OrderService:
                     "authorized_at": now.isoformat(),
                 }
             )
+            if signature is not None:
+                authorization = {
+                    "authorization_method": "proposal_acceptance",
+                    "reason": proposal_reason,
+                }
             await work.events.insert(
                 OrderEvent(
                     uuid4(),
                     ident,
                     None,
-                    S.PENDING,
-                    "created",
-                    "investor",
-                    user_id,
+                    order.status,
+                    proposal_reason or "created",
+                    "broker" if signature else "investor",
+                    signature or user_id,
                     now,
                     authorization,
                 )
@@ -203,8 +222,10 @@ class OrderService:
             await work.keys.insert(IdempotencyEntry(user_id, idempotency_key, digest, ident, now))
             if broker_id is not None:
                 order = await self.reviews.route_new_order(work, order, broker_id)
-            elif prepared.market_open:
+            elif prepared.market_open and signature is None:
                 order = await self.submitter.stage(work, order)
+        if signature is not None and prepared.market_open:
+            return await self.submitter.submit(order.id, waited=False)
         if order.status == S.SUBMITTED:
             return await self.submitter._dispatch(order)
         return order

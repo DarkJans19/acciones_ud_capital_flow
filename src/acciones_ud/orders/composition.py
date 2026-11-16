@@ -32,6 +32,7 @@ from acciones_ud.orders.application.context import OrderContext
 from acciones_ud.orders.application.order_reconciler import OrderReconciler
 from acciones_ud.orders.application.order_scheduler import OrderScheduler
 from acciones_ud.orders.application.order_service import OrderService
+from acciones_ud.orders.application.proposal_orders import OrderQueries, ProposalOrders
 from acciones_ud.orders.application.schedule_change import ScheduleChangeService
 from acciones_ud.orders.domain.model import OrderConfig
 from acciones_ud.orders.domain.ports import BrokerLinkPort
@@ -123,6 +124,8 @@ def register(app: FastAPI) -> None:
     service = OrderService(context)
     app.state.order_context = context
     app.state.order_service = service
+    app.state.order_proposal_creation = ProposalOrders(service)
+    app.state.order_query_port = OrderQueries(service)
     app.state.order_review_service = service.reviews
     app.state.order_schedule_change_port = ScheduleChangeService(context)
     app.state.order_reconciler = OrderReconciler(context)

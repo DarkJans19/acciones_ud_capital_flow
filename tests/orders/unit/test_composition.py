@@ -8,6 +8,8 @@ from tests.orders.fakes import BrokerLinks
 
 async def test_registration_is_lazy_and_broker_port_can_be_installed_later(api_settings) -> None:
     app = create_app(api_settings)
+    # Exercise MOD-03 alone: the complete application now installs MOD-06.
+    del app.state.order_broker_link
     assert app.state.wallet_funding_port is not None
     assert app.state.order_schedule_change_port is not None
     user, broker = uuid4(), uuid4()

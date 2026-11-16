@@ -9,6 +9,8 @@ EVENT_TYPES = (
     "balance_changes",
     "order_executions",
     "order_updates",
+    "broker_link_updates",
+    "proposal_updates",
 )
 CHANNELS = ("in_app", "email", "sms", "telegram")
 

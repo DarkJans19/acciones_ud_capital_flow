@@ -10,6 +10,12 @@ from sqlalchemy.engine import make_url
 
 
 class Settings(BaseSettings):
+    broker_link_request_ttl_days: str = "7"
+    proposal_ttl_hours: str = "72"
+    broker_link_consent_version: str = "v1"
+    broker_trading_consent_version: str = "v1"
+    brokers_expiry_interval_seconds: str = "300"
+    brokers_jobs_enabled: str = "true"
     portfolio_risk_window_days: str = "90"
     portfolio_report_interval_seconds: str = "900"
     portfolio_jobs_enabled: str = "true"
@@ -207,6 +213,9 @@ def require_api_settings(settings: Settings) -> None:
     if settings.alpaca_data_feed not in {"iex", "sip", "delayed_sip"}:
         invalid.add("ALPACA_DATA_FEED")
     bounds = {
+        "broker_link_request_ttl_days": (1, 90),
+        "proposal_ttl_hours": (1, 720),
+        "brokers_expiry_interval_seconds": (10, 86400),
         "portfolio_risk_window_days": (7, 365),
         "portfolio_report_interval_seconds": (60, 86400),
         "order_reauth_window_minutes": (1, 1440),
@@ -234,6 +243,7 @@ def require_api_settings(settings: Settings) -> None:
         except (ValueError, TypeError):
             invalid.add(name.upper())
     for name in (
+        "brokers_jobs_enabled",
         "price_streaming_enabled",
         "alert_engine_enabled",
         "kyc_status_refresh_enabled",
@@ -242,6 +252,9 @@ def require_api_settings(settings: Settings) -> None:
         "portfolio_jobs_enabled",
     ):
         if getattr(settings, name).lower() not in {"true", "false"}:
+            invalid.add(name.upper())
+    for name in ("broker_link_consent_version", "broker_trading_consent_version"):
+        if not 1 <= len(getattr(settings, name)) <= 32:
             invalid.add(name.upper())
     if settings.totp_encryption_key:
         try:

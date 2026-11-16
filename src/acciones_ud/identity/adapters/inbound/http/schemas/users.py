@@ -5,6 +5,13 @@ from uuid import UUID
 from pydantic import BaseModel
 
 
+class AssociatedBrokerOut(BaseModel):
+    id: UUID
+    name: str
+    firm_name: str
+    since: datetime
+
+
 class UserMeOut(BaseModel):
     user_id: UUID
     first_names: str
@@ -17,7 +24,7 @@ class UserMeOut(BaseModel):
     contracted_plan: Literal["monthly", "annual"] | None = None
     is_premium: bool
     broker_requested: bool
-    associated_broker: None = None
+    associated_broker: AssociatedBrokerOut | None = None
     roles: list[str]
     kyc_status: str | None
     kyc_status_unavailable: bool

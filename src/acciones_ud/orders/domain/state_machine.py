@@ -30,6 +30,11 @@ ALLOWED: dict[S, frozenset[S]] = {
 }
 
 
+def initial_status(*, from_proposal: bool = False) -> S:
+    """RF-20: only the proposal application entry point requests a broker signature."""
+    return S.BROKER_SIGNED if from_proposal else S.PENDING
+
+
 def is_terminal(status: S, fully_filled: bool) -> bool:
     return status in {S.CANCELED, S.REJECTED, S.EXPIRED, S.FAILED} or (
         status == S.EXECUTING and fully_filled
