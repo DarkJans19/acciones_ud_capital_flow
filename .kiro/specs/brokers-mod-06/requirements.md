@@ -117,6 +117,8 @@ Por indicación del usuario, las pruebas no son obligatorias para todo el módul
 3. IF el texto de búsqueda tiene menos de 2 o más de 100 caracteres, THEN THE Backend_API SHALL responder 422 con el código `VALIDATION_ERROR`.
 4. THE Directory_Service SHALL excluir de las sugerencias y de la búsqueda al propio usuario que consulta.
 
+5. WHEN un Investor consulta el directorio sin el parametro `q`, THE Directory_Service SHALL listar todos los Brokers con rol vigente, paginados por cursor y excluyendo al propio usuario. La validacion de 2 a 100 caracteres se mantiene cuando `q` esta presente. Ampliacion autorizada en la revision funcional de RF-13/RFP-09 (2026-11-16).
+
 ### Requirement 3: Solicitar y responder la vinculación (RF-13)
 
 **User Story:** Como Investor, quiero solicitar la vinculación con un comisionista dejando mi consentimiento, para que pueda asesorarme; como Broker, quiero aceptar o declinar esa solicitud.

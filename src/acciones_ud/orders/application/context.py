@@ -2,7 +2,7 @@ import asyncio
 import logging
 from dataclasses import dataclass, replace
 from datetime import datetime
-from decimal import Decimal
+from decimal import Decimal, localcontext
 from typing import TypedDict, Unpack
 from uuid import UUID, uuid4
 
@@ -76,6 +76,15 @@ class Prepared:
     session: SessionWindow | None
 
 
+def restored_price(value: Decimal | None) -> Decimal | None:
+    """Remove SQL NUMERIC padding when reconstructing an already stored price."""
+    if value is None:
+        return None
+    with localcontext() as context:
+        context.prec = max(context.prec, len(value.as_tuple().digits))
+        return value.normalize()
+
+
 def request_from(order: Order) -> OrderRequest:
     return OrderRequest(
         order.symbol,
@@ -84,12 +93,12 @@ def request_from(order: Order) -> OrderRequest:
         order.type,
         order.order_class,
         order.time_in_force,
-        order.limit_price,
-        order.stop_price,
-        order.trail_price,
+        restored_price(order.limit_price),
+        restored_price(order.stop_price),
+        restored_price(order.trail_price),
         order.trail_percent,
-        order.take_profit_limit_price,
-        order.stop_loss_stop_price,
+        restored_price(order.take_profit_limit_price),
+        restored_price(order.stop_loss_stop_price),
         order.schedule_if_closed,
         True,
     )

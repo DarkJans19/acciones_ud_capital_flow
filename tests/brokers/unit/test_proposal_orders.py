@@ -71,3 +71,29 @@ async def test_proposal_order_unavailable_before_commit_propagates():
         await ProposalOrders(OrderService(ctx)).create(command)
     assert caught.value.code == "QUOTE_UNAVAILABLE"
     assert ctx.uow.work.orders.values == []
+
+
+@pytest.mark.parametrize(
+    ("price", "accepted"),
+    [("100.0000", True), ("100.0010", False), ("0.12340000", True), ("0.12345000", False)],
+)
+async def test_persisted_limit_prices_preserve_value_without_false_scale_errors(price, accepted):
+    ctx, investor = make_context()
+    ctx.sessions.open = False
+    command = ProposalOrderCommand(
+        uuid4(), investor, uuid4(), "AAPL", "buy", Decimal(1), "limit", Decimal(price)
+    )
+    result = await ProposalOrders(OrderService(ctx)).create(command)
+    if accepted:
+        assert isinstance(result, OrderCreated)
+        order = await ctx.uow.work.orders.get(id=result.order_id)
+        assert order.limit_price == Decimal(price)
+        # SQL hydration adds a fixed scale; opening later must revalidate the same value.
+        hydrated = replace(order, limit_price=Decimal(price))
+        await ctx.uow.work.orders.save(hydrated)
+        ctx.sessions.open = True
+        submitted = await OrderService(ctx).submitter.submit(order.id, waited=True)
+        assert submitted.status == "SUBMITTED"
+    else:
+        assert result == OrderRejected("VALIDATION_ERROR")
+        assert ctx.uow.work.orders.values == []

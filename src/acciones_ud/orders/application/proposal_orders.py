@@ -8,6 +8,7 @@ from acciones_ud.brokers.domain.ports import (
     OrderRejected,
     ProposalOrderCommand,
 )
+from acciones_ud.orders.application.context import restored_price
 from acciones_ud.orders.application.order_service import OrderService
 from acciones_ud.orders.domain.idempotency import request_hash
 from acciones_ud.orders.domain.model import OrderRequest, Raw
@@ -20,7 +21,7 @@ def request_from_proposal(command: ProposalOrderCommand) -> OrderRequest:
         command.side,
         command.qty,
         command.type,
-        limit_price=command.limit_price,
+        limit_price=restored_price(command.limit_price),
         order_class="simple",
         time_in_force="day",
         schedule_if_closed=True,

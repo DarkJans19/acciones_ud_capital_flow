@@ -30,7 +30,20 @@ async def suggestions(request: Request, user: Investor) -> object:
 async def search(
     request: Request,
     user: Investor,
-    q: Annotated[str, Query(min_length=2, max_length=100)],
+    q: Annotated[
+        str | None,
+        Query(
+            min_length=2,
+            max_length=100,
+            description=(
+                "Filtro opcional del nombre o firma (2 a 100 caracteres). "
+                "Sin filtro lista todos los brokers disponibles por paginas. "
+                "Devuelve items con id, nombre, firma, perfil y reputación; "
+                "next_cursor permite paginar."
+            ),
+            examples=["Capital"],
+        ),
+    ] = None,
     cursor: str | None = None,
     page_size: PageSize = 20,
 ) -> object:

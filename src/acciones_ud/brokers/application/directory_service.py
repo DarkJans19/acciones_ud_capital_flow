@@ -118,14 +118,19 @@ class DirectoryService:
         return values[:10]
 
     async def search(
-        self, investor_id: UUID, text: str, cursor: str | None = None, page_size: int = 20
+        self,
+        investor_id: UUID,
+        text: str | None = None,
+        cursor: str | None = None,
+        page_size: int = 20,
     ) -> Raw:
         await self.ctx.require_role(investor_id, "investor")
-        if not 2 <= len(text.strip()) <= 100:
+        if text is not None and not 2 <= len(text.strip()) <= 100:
             raise ValidationError("q")
         if not 1 <= page_size <= 100:
             raise ValidationError("page_size")
-        brokers = await self.ctx.directory.search(text.strip(), investor_id, cursor, page_size + 1)
+        query = text.strip() if text is not None else ""
+        brokers = await self.ctx.directory.search(query, investor_id, cursor, page_size + 1)
         selected = brokers[:page_size]
         token = (
             search_cursor(selected[-1].name, selected[-1].user_id)

@@ -1,8 +1,39 @@
+from uuid import uuid4
+
 from fastapi.testclient import TestClient
 
 from tests.brokers.api.support import app_for
 from tests.brokers.support import actors, context
 from tests.brokers.unit.test_proposals import proposal_fixture
+
+
+def test_directory_lists_every_broker_across_pages_without_a_search_filter():
+    ctx = context()
+    investor, broker = actors(ctx)
+    expected = {str(broker)}
+    for _ in range(12):
+        ident = uuid4()
+        ctx.directory.add(ident, "broker")
+        expected.add(str(ident))
+    ctx.directory.add(investor, "broker")
+    client = TestClient(app_for(ctx))
+    assert client.get("/api/v1/brokers").status_code == 401
+    client.cookies.set("access_token", str(investor))
+    cursor = None
+    found = []
+    while True:
+        params = {"page_size": 5}
+        if cursor:
+            params["cursor"] = cursor
+        response = client.get("/api/v1/brokers", params=params)
+        assert response.status_code == 200, response.text
+        found.extend(item["id"] for item in response.json()["items"])
+        cursor = response.json()["next_cursor"]
+        if cursor is None:
+            break
+    assert set(found) == expected and len(found) == len(expected)
+    for query in ["", "a", "  ", "x" * 101]:
+        assert client.get("/api/v1/brokers", params={"q": query}).status_code == 422
 
 
 def test_public_profile_and_investor_link_flow():

@@ -24,7 +24,20 @@ async def require_broker(user: Annotated[CurrentUser, Depends(get_current_user)]
     return user
 
 
-def period_query(from_: Annotated[date, Query(alias="from")], to: date) -> Period:
+def period_query(
+    from_: Annotated[
+        date,
+        Query(
+            alias="from",
+            description="Fecha inicial inclusiva, formato YYYY-MM-DD.",
+            examples=["2026-11-01"],
+        ),
+    ],
+    to: Annotated[
+        date,
+        Query(description="Fecha final inclusiva, formato YYYY-MM-DD.", examples=["2026-11-16"]),
+    ],
+) -> Period:
     return parse(from_, to)
 
 

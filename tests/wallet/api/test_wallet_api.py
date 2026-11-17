@@ -76,3 +76,101 @@ async def test_every_wallet_endpoint_requires_session_and_investor(api_settings)
                 assert response.status_code == expected, (path, response.text)
     if app.state.wallet_stripe_http is not None:
         await app.state.wallet_stripe_http.aclose()
+
+
+def test_checkout_payment_unlocks_a_premium_watchlist(api_settings) -> None:
+    from acciones_ud.wallet.application.subscription_service import SubscriptionService
+    from tests.market_data.test_watchlists_alerts_api import build
+    from tests.support.clock import FakeClock
+    from tests.wallet.fakes import MemoryFactory
+
+    user_id = uuid4()
+    client, *_ = build(api_settings, premium=False, user_id=user_id)
+    app = client.app
+    uow, stripe, clock = MemoryFactory(), FakeStripe(), FakeClock()
+    app.state.subscription_service = SubscriptionService(
+        uow, stripe, clock, "price_monthly", "price_annual"
+    )
+    app.state.stripe_webhook_service = StripeWebhookService(uow, "whsec_test", stripe)
+    app.state.wallet_clock = clock
+    session_id = uuid4()
+
+    def current():
+        return CurrentUser(
+            user_id,
+            session_id,
+            "investor@example.com",
+            "active",
+            uow.work.premium.values.get(user_id, False),
+            frozenset({"investor"}),
+            frozenset({"market:read", "watchlist:manage"}),
+        )
+
+    app.dependency_overrides[get_current_user] = current
+    denied = client.post("/api/v1/watchlists", json={"name": "Paid feature"})
+    assert denied.status_code == 403 and denied.json()["code"] == "PREMIUM_REQUIRED"
+    checkout = client.post("/api/v1/subscriptions/checkout", json={"plan": "monthly"})
+    assert checkout.status_code == 201, checkout.text
+    assert stripe.checkouts == 1 and not uow.work.premium.values
+    stripe.subscriptions["sub_paid"] = {
+        "id": "sub_paid",
+        "customer": "cus_paid",
+        "status": "active",
+        "current_period_start": int(clock.now().timestamp()),
+        "current_period_end": int(clock.now().timestamp()) + 2592000,
+    }
+    message = {
+        "id": "evt_paid_checkout",
+        "type": "checkout.session.completed",
+        "created": int(clock.now().timestamp()),
+        "data": {
+            "object": {"id": checkout.json()["checkout_session_id"], "subscription": "sub_paid"}
+        },
+    }
+    payload, signature = signed(message, clock)
+    for _ in range(2):
+        result = client.post(
+            "/api/v1/webhooks/stripe", content=payload, headers={"Stripe-Signature": signature}
+        )
+        assert result.status_code == 200
+    invoice = {
+        "id": "evt_paid_invoice",
+        "type": "invoice.paid",
+        "created": int(clock.now().timestamp()),
+        "data": {
+            "object": {
+                "id": "in_paid",
+                "subscription": "sub_paid",
+                "amount_paid": 1200,
+                "currency": "usd",
+            }
+        },
+    }
+    invoice_payload, invoice_signature = signed(invoice, clock)
+    for _ in range(2):
+        paid = client.post(
+            "/api/v1/webhooks/stripe",
+            content=invoice_payload,
+            headers={"Stripe-Signature": invoice_signature},
+        )
+        assert paid.status_code == 200
+    payments = client.get("/api/v1/subscriptions/me/payments")
+    assert payments.status_code == 200 and len(payments.json()["items"]) == 1
+    payment = payments.json()["items"][0]
+    assert payment["amount"] == "12" and payment["result"] == "paid"
+    assert client.get(f"/api/v1/subscriptions/me/payments/{payment['id']}").status_code == 200
+    assert client.get("/api/v1/subscriptions/plans").status_code == 200
+    assert uow.work.premium.values[user_id] is True
+    assert len(uow.work.events.values) == 2
+    assert client.get("/api/v1/subscriptions/me").json()["subscription"]["status"] == "active"
+    created = client.post("/api/v1/watchlists", json={"name": "Paid feature"})
+    assert created.status_code == 201, created.text
+    watchlist = created.json()["id"]
+    added = client.post(f"/api/v1/watchlists/{watchlist}/items", json={"symbol": "AAPL"})
+    assert added.status_code == 200 and added.json()["symbols"] == ["AAPL"]
+    duplicate_checkout = client.post("/api/v1/subscriptions/checkout", json={"plan": "monthly"})
+    assert duplicate_checkout.status_code == 409 and stripe.checkouts == 1
+
+    canceled = client.post("/api/v1/subscriptions/me/cancel", json={"reason": "At period end"})
+    assert canceled.status_code == 200 and canceled.json()["cancel_at_period_end"] is True
+    assert uow.work.premium.values[user_id] is True

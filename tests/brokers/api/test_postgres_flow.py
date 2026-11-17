@@ -25,7 +25,10 @@ from tests.orders.support import make_context
 pytestmark = pytest.mark.db
 
 
-async def test_complete_broker_http_flow_uses_postgres_and_real_order_application(db_session):
+@pytest.mark.parametrize("order_type", ["market", "limit"])
+async def test_complete_broker_http_flow_uses_postgres_and_real_order_application(
+    db_session, order_type
+):
     ctx = context()
     investor, broker = await parties(db_session)
     for actor, role in ((investor, "investor"), (broker, "broker")):
@@ -105,7 +108,8 @@ async def test_complete_broker_http_flow_uses_postgres_and_real_order_applicatio
                 "symbol": "AAPL",
                 "side": "buy",
                 "qty": "1",
-                "type": "market",
+                "type": order_type,
+                **({"limit_price": "100.00"} if order_type == "limit" else {}),
             },
         )
         assert response.status_code == 201, response.text
