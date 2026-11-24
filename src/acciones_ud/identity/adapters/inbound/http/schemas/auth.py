@@ -80,6 +80,11 @@ class RegistrationOut(BaseModel):
     account_status: Literal["active", "pending_broker_activation"]
 
 
+class InterestOptionsOut(BaseModel):
+    markets: list[str]
+    sectors: list[str]
+
+
 class LoginIn(BaseModel):
     email: str
     password: str = Field(repr=False, max_length=128)

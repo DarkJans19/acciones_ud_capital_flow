@@ -958,6 +958,16 @@ Tasks 22-30 implement the `readme_agregar.md` gaps: Requirements 2.12-2.17 (D5),
 - [x] 21. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
+## Frontend integration corrections — 2026-11-24
+
+- [x] 31.1 Validate KYC identifiers by explicit type and completed adult age before reservation/provider calls; preserve identifiers and mask errors. Reuse the injected clock. _RFP-01, Requirement 10.8._
+- [x] 31.2 Share catalog membership/canonicalization between registration and interests editing; expose public options and retain only the owner's historical values. No invented sector seed or migration. _RF-01, RFP-08, Requirements 11.8–11.9._
+- [x] 31.3 Add partial own-profile editing with a dedicated schema, domain allowlist, non-null/omission distinction, atomic writes and KYC lock; serialize against reservation/reconciliation insertion. _RF-06, RFP-01, Requirement 26._
+- [x] 31.4 Add unit, HTTP/OpenAPI and disposable PostgreSQL tests for document/age boundaries, catalog round trips, legacy isolation, profile protection, persistence, rollback and concurrent KYC/profile writes.
+- [x] 31.5 Update existing requirements/design and frontend integration notes; document unknown country-specific patterns, absent sector enrichment and the deferred verified-profile update workflow.
+
+Final evidence: PostgreSQL 17 disposable, `uv run --no-sync pytest -q --tb=short --disable-warnings`: 761 passed, zero skipped (186.89 s; 2766 warnings). Ruff, strict mypy (347 source files) and `git diff --check` passed. No live services or production data were used; see the integration correction in `design.md` for the file manifest and limitations.
+
 ## Notes
 
 - Tasks marked with `*` are optional and can be skipped for a faster MVP. Property tests for security-critical rules (Properties 4, 5, 6, 7, 9, 13, 31, 33, 34, 35, 36, 44, 48, 49, 50) are not marked optional. Property 5 is required because it also covers recovery-code attempts. Properties 44 (logout cookies), 48 (reconciliation decision table), 49 (audit payload whitelist) and 50 (audit atomicity) are required because they guard session revocation, account linking and the audit trail.

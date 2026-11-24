@@ -1,4 +1,16 @@
+from typing import Protocol, TypedDict
+
 from acciones_ud.shared.domain.errors import AppError, ErrorCode
+
+
+class InterestOptions(TypedDict):
+    markets: list[str]
+    sectors: list[str]
+
+
+class InterestCatalogPort(Protocol):
+    async def known_interests(self) -> list[str]: ...
+    async def interest_options(self) -> InterestOptions: ...
 
 
 def normalize_interests(values: list[str], known: list[str]) -> list[str]:

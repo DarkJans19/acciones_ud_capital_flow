@@ -90,6 +90,12 @@ class AccountFake:
     async def known_interests(self) -> list[str]:
         return ["NYSE", "NASDAQ", "Technology"]
 
+    async def interest_options(self) -> dict[str, list[str]]:
+        return {"markets": ["NASDAQ", "NYSE"], "sectors": ["Technology"]}
+
+    async def has_kyc(self, user_id: UUID) -> bool:
+        return False
+
     @asynccontextmanager
     async def work(self) -> AsyncIterator[AccountWork]:
         repository = self

@@ -23,7 +23,7 @@ def kyc_payload() -> dict:
             "given_name": "Identity",
             "family_name": "Test",
             "date_of_birth": "1990-01-01",
-            "tax_id": "123-45-6789",
+            "tax_id": "321-54-6789",
             "tax_id_type": "USA_SSN",
             "country_of_citizenship": "USA",
             "country_of_tax_residence": "USA",

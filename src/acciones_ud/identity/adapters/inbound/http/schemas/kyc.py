@@ -12,6 +12,7 @@ from acciones_ud.identity.domain.financial_profile import (
     FinancialRangeCode,
 )
 from acciones_ud.identity.domain.kyc_submission import AccountOpeningRequest
+from acciones_ud.identity.domain.kyc_validation import TaxIdType, validate_tax_id
 from acciones_ud.identity.domain.validation import valid_email, valid_phone
 
 
@@ -23,8 +24,8 @@ class KycIdentityIn(KycModel):
     given_name: str = Field(min_length=1, max_length=100)
     family_name: str = Field(min_length=1, max_length=100)
     date_of_birth: date
-    tax_id: str = Field(min_length=4, max_length=100, repr=False)
-    tax_id_type: str = Field(min_length=1, max_length=50)
+    tax_id: str = Field(min_length=2, max_length=40, repr=False)
+    tax_id_type: TaxIdType
     country_of_citizenship: str
     country_of_tax_residence: str
     funding_source: list[
@@ -81,6 +82,7 @@ class KycIdentityIn(KycModel):
 
     @model_validator(mode="after")
     def validate_profile(self) -> "KycIdentityIn":
+        validate_tax_id(self.tax_id, self.tax_id_type, self.country_of_tax_residence)
         self.financial_profile()
         return self
 

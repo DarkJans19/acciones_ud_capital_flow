@@ -6,6 +6,134 @@ Cubre las brechas de `readme_agregar.md` (tareas 22-30) más el cambio de logout
 Todo está bajo el prefijo `/api/v1`. El contrato completo y actualizado está en
 `/openapi.json` y `/docs`.
 
+## Corrección de integración — 2026-11-24
+
+Esta sección complementa el alcance histórico del documento. Detalles y
+decisiones: `.kiro/specs/identity-market-backend/design.md`, sección
+«Frontend integration correction».
+
+### KYC
+
+`POST /api/v1/kyc/account` mantiene su estructura y su respuesta 201
+`{"alpaca_account_id":"…","status":"SUBMITTED"}`. Ahora rechaza localmente con
+422 `VALIDATION_ERROR` fechas futuras, menores de 18 años cumplidos y documentos
+inválidos, sin reservar ni llamar a Alpaca. Se usa la fecha UTC del servidor;
+para nacidos el 29 de febrero, el aniversario no bisiesto es el 1 de marzo.
+
+Tipos locales: `USA_SSN`, `USA_ITIN`, `COL_NIT`, `PASSPORT`, `NATIONAL_ID`,
+`PERMANENT_RESIDENT`, `DRIVER_LICENSE`, `OTHER_GOV_ID`.
+Las reglas comunes verificadas de Alpaca exigen 2–40 caracteres ASCII de
+letras/dígitos/`-`/`.`/`+`, al menos un dígito y ausencia de placeholders.
+No se reescribe el número. No son reglas de longitud propias de cada pasaporte.
+
+Por ejemplo, dentro del body KYC completo existente:
+
+```json
+{
+  "given_name": "Ana",
+  "family_name": "Perez",
+  "date_of_birth": "1990-01-31",
+  "tax_id": "Ab829461",
+  "tax_id_type": "PASSPORT",
+  "country_of_citizenship": "COL",
+  "country_of_tax_residence": "COL"
+}
+```
+
+Este fragmento corresponde a `identity` y **omite** los campos financieros,
+contacto, acuerdos y disclosures requeridos. Un pasaporte numérico como
+`842617395` también supera la validación local. `COL_NIT` acepta base numérica
+y DV opcional, por ejemplo `900.123.456-7`, solo con residencia fiscal `COL`;
+las letras se rechazan. US SSN/ITIN exigen residencia fiscal `USA` y sus reglas
+específicas. La elegibilidad del pasaporte y patrones nacionales definitivos
+siguen sujetos a Alpaca; la validación local no garantiza su aprobación.
+
+### Intereses: usar el catálogo, no listas estáticas
+
+Nuevo endpoint **público**, utilizable antes del registro:
+
+```http
+GET /api/v1/auth/interest-options
+```
+
+Ejemplo 200 si esos datos están cargados:
+
+```json
+{"markets":["NASDAQ","NYSE"],"sectors":["Technology"]}
+```
+
+`sectors` puede estar vacío: Alpaca no proporciona sectores y el backend no
+inventa clasificaciones. Mostrar etiquetas traducidas está permitido, pero
+enviar el valor canónico devuelto por la API, no la traducción.
+
+Registro y edición validan contra esa misma fuente, ignoran diferencias de
+mayúsculas y eliminan duplicados. Registro sigue permitiendo `interests: []`;
+PUT sigue requiriendo 1–20 entradas y `level`.
+
+```http
+PUT /api/v1/users/me/interests
+Content-Type: application/json
+
+{"interests":["nyse","technology","NYSE"],"level":"beginner"}
+```
+
+200, si `Technology` existe en el catálogo:
+
+```json
+{"interests":["NYSE","Technology"],"level":"beginner"}
+```
+
+`GET /users/me` devuelve lo persistido. Al editar usuarios anteriores, conservar
+también sus selecciones actuales aunque ya no aparezcan entre las opciones:
+solo su propietario puede retenerlas o retirarlas. No son opciones nuevas
+para otros usuarios. Si se retiran, no pueden volver a seleccionarse mientras
+no existan en el catálogo. No se traducen/migran automáticamente.
+
+### Nuevo: edición parcial del perfil propio
+
+```http
+PATCH /api/v1/users/me
+Content-Type: application/json
+
+{"first_names":" Ana María ","phone":"+573001234567","country":"co"}
+```
+
+Requiere la cookie de acceso habitual. Ejemplo 200:
+
+```json
+{
+  "first_names":"Ana María",
+  "last_names":"Perez",
+  "phone":"+573001234567",
+  "country":"CO"
+}
+```
+
+La respuesta contiene los cuatro datos personales actuales, **no** todo
+`UserMeOut`. El GET completo no cambia. Los campos omitidos se conservan.
+Nombres/apellidos: 1–100 tras trim; teléfono E.164; país ISO alpha-2.
+`{}`, valores `null`, formatos inválidos y campos extra/protegidos devuelven
+422. No enviar email, roles, documentos, estado KYC, MFA ni IDs externos.
+
+**Limitación deliberada:** cualquier reserva o cuenta KYC, pendiente, aprobada,
+rechazada o cerrada, impide editar estos cuatro campos:
+
+```json
+{
+  "code":"PROFILE_KYC_LOCKED",
+  "message":"Personal data cannot be edited after KYC has started.",
+  "details":null
+}
+```
+
+HTTP 409. No hay sincronización con Alpaca ni flujo aprobado de reverificación;
+la UI debe explicar esta restricción, no reintentar cambiando estados. Sin
+autenticación: 401. Fallo de persistencia: 503, sin cambios parciales.
+
+**Acciones del frontend:** regenerar tipos de OpenAPI, cargar el catálogo en
+registro/perfil, enviar solo cambios en PATCH, conservar selecciones históricas
+propias y manejar 409 `PROFILE_KYC_LOCKED`. No se necesita migración nueva.
+
 ---
 
 ## TL;DR — lo que el frontend tiene que hacer

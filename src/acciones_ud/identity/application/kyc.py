@@ -7,6 +7,7 @@ from acciones_ud.identity.domain.kyc import can_trade
 from acciones_ud.identity.domain.kyc_cache import KycStatusState, apply_status_check
 from acciones_ud.identity.domain.kyc_ports import AlpacaAccountsPort, KycWorkFactory
 from acciones_ud.identity.domain.kyc_submission import AccountOpeningRequest
+from acciones_ud.identity.domain.kyc_validation import validate_adult, validate_tax_id
 from acciones_ud.identity.domain.redaction import last4, redact
 from acciones_ud.shared.domain.alpaca_errors import AlpacaError, AlpacaValidationError, to_app_error
 from acciones_ud.shared.domain.clock import Clock
@@ -26,8 +27,12 @@ class KycService:
             raise AppError(
                 422, ErrorCode.VALIDATION_ERROR, "Invalid field: date_of_birth"
             ) from None
-        if birthday >= now.date():
-            raise AppError(422, ErrorCode.VALIDATION_ERROR, "Invalid field: date_of_birth")
+        validate_adult(birthday, now.date())
+        validate_tax_id(
+            request.identity.get("tax_id"),
+            request.identity.get("tax_id_type"),
+            request.identity.get("country_of_tax_residence"),
+        )
         if request.agreements.get("customer_agreement") is not True:
             raise AppError(422, ErrorCode.VALIDATION_ERROR, "Invalid field: customer_agreement")
         async with self.uow() as work:

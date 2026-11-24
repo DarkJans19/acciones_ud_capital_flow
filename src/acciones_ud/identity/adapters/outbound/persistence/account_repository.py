@@ -10,6 +10,7 @@ from acciones_ud.identity.adapters.outbound.persistence.interest_catalog_reposit
 )
 from acciones_ud.identity.adapters.outbound.persistence.rbac_repository import missing
 from acciones_ud.identity.domain.auth_ports import Record
+from acciones_ud.identity.domain.interests import InterestOptions
 
 
 class AccountRepository:
@@ -85,3 +86,13 @@ class AccountRepository:
 
     async def known_interests(self) -> list[str]:
         return await InterestCatalogRepository(self.session).known_interests()
+
+    async def interest_options(self) -> InterestOptions:
+        return await InterestCatalogRepository(self.session).interest_options()
+
+    async def has_kyc(self, user_id: UUID) -> bool:
+        return bool(
+            await self.session.scalar(
+                sa.select(sa.exists().where(t.kyc_accounts.c.user_id == user_id))
+            )
+        )

@@ -4,7 +4,11 @@ from fastapi import APIRouter, Depends, Request
 
 from acciones_ud.identity.adapters.inbound.http.deps import get_current_user, require_permission
 from acciones_ud.identity.adapters.inbound.http.schemas.preferences import InterestsIn
-from acciones_ud.identity.adapters.inbound.http.schemas.users import UserMeOut
+from acciones_ud.identity.adapters.inbound.http.schemas.users import (
+    PersonalProfileOut,
+    ProfilePatchIn,
+    UserMeOut,
+)
 from acciones_ud.identity.domain.auth_ports import Record
 from acciones_ud.identity.domain.models import CurrentUser
 from acciones_ud.shared.infrastructure.http_errors import error_responses
@@ -17,6 +21,28 @@ async def me(request: Request, user: Annotated[CurrentUser, Depends(get_current_
     from acciones_ud.identity.composition import account_info_service
 
     return await account_info_service(request).me(user)
+
+
+@router.patch(
+    "",
+    response_model=PersonalProfileOut,
+    responses=error_responses(401, 409, 422, 503),
+    description=(
+        "Update only supplied personal fields. Null, empty and unknown fields are rejected. "
+        "Requires an authenticated user with no KYC reservation or account; otherwise "
+        "409 PROFILE_KYC_LOCKED. Does not update Alpaca."
+    ),
+)
+async def update_profile(
+    body: ProfilePatchIn,
+    request: Request,
+    user: Annotated[CurrentUser, Depends(get_current_user)],
+) -> Record:
+    from acciones_ud.identity.composition import account_service
+
+    return await account_service(request).update_profile(
+        user.user_id, body.model_dump(exclude_unset=True)
+    )
 
 
 @router.post("/mfa/recovery-codes", responses=error_responses(401, 409, 503))

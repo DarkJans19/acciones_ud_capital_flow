@@ -3,6 +3,7 @@ from typing import Protocol
 from uuid import UUID
 
 from acciones_ud.identity.domain.audit import AuditEntry
+from acciones_ud.identity.domain.interests import InterestCatalogPort
 from acciones_ud.identity.domain.models import AccessClaims, CurrentUser
 
 
@@ -39,6 +40,9 @@ class AuditRepository(Protocol):
 
 
 class IdentityUnitOfWork(Protocol):
+    @property
+    def interests(self) -> InterestCatalogPort: ...
+
     @property
     def users(self) -> UserRepository: ...
 

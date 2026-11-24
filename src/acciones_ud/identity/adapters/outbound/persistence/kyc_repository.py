@@ -90,6 +90,7 @@ class KycRepository:
     async def link_new(
         self, user_id: UUID, account_id: str, status: str, retrieved_at: datetime
     ) -> bool:
+        await self._lock_user(user_id)
         result = await self.session.execute(
             insert(kyc_accounts)
             .values(
@@ -137,6 +138,8 @@ class KycRepository:
         return result.first() is not None
 
     async def reserve(self, user_id: UUID, now: datetime) -> bool:
+        # Shared lock order with personal profile edits and reconciliation.
+        await self._lock_user(user_id)
         result = await self.session.execute(
             insert(kyc_accounts)
             .values(user_id=user_id, reserved_at=now)
@@ -151,6 +154,11 @@ class KycRepository:
             .returning(kyc_accounts.c.user_id)
         )
         return result.first() is not None
+
+    async def _lock_user(self, user_id: UUID) -> None:
+        await self.session.execute(
+            sa.select(users.c.id).where(users.c.id == user_id).with_for_update()
+        )
 
     async def complete(
         self, user_id: UUID, reservation: datetime, account: AlpacaAccount, tax_last4: str

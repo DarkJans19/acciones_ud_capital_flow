@@ -1,6 +1,8 @@
+from typing import cast
 from uuid import UUID
 
 from acciones_ud.identity.domain.audit import AuditAction, build_entry
+from acciones_ud.identity.domain.interests import normalize_interests
 from acciones_ud.identity.domain.ports import PasswordHasher, UnitOfWorkFactory
 from acciones_ud.identity.domain.registration import build_new_user
 from acciones_ud.shared.domain.clock import Clock
@@ -22,6 +24,10 @@ class RegistrationService:
         user["password_hash"] = self.hasher.hash(str(payload["password"]))
         user["terms_accepted_at"] = self.clock.now()
         async with self.uow() as work:
+            if user["interests"]:
+                user["interests"] = normalize_interests(
+                    cast(list[str], user["interests"]), await work.interests.known_interests()
+                )
             user_id = await work.users.insert(user, role)
             if kind == "administrator" and actor_id is not None:
                 await work.audit.append(

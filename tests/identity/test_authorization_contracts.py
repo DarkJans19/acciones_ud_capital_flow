@@ -156,6 +156,7 @@ def test_openapi_errors_and_public_docs(api_settings: Settings) -> None:
             if path not in {
                 "/api/v1/auth/register",
                 "/api/v1/auth/register/broker",
+                "/api/v1/auth/interest-options",
                 "/api/v1/auth/login",
                 "/api/v1/auth/mfa/verify",
                 "/api/v1/auth/logout",

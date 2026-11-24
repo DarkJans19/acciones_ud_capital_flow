@@ -19,6 +19,9 @@ from acciones_ud.identity.adapters.outbound.persistence.auth_context_repository 
     AuthContextRepository,
 )
 from acciones_ud.identity.adapters.outbound.persistence.auth_repository import AuthRepository
+from acciones_ud.identity.adapters.outbound.persistence.interest_catalog_repository import (
+    InterestCatalogRepository,
+)
 from acciones_ud.identity.adapters.outbound.persistence.kyc_repository import KycRepository
 from acciones_ud.identity.adapters.outbound.persistence.rbac_repository import RbacRepository
 from acciones_ud.identity.adapters.outbound.persistence.user_directory_repository import (
@@ -81,6 +84,7 @@ async def identity_uow() -> AsyncIterator[IdentityUnitOfWork]:
         class Work:
             users = UserRepository(session)
             audit = AuditLogRepository(session)
+            interests = InterestCatalogRepository(session)
 
         yield Work()
 

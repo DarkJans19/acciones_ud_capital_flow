@@ -2,13 +2,15 @@ from uuid import UUID
 
 from acciones_ud.identity.domain.account_ports import AccountWorkFactory
 from acciones_ud.identity.domain.auth_ports import Record
-from acciones_ud.identity.domain.interests import normalize_interests
+from acciones_ud.identity.domain.interests import InterestOptions, normalize_interests
 from acciones_ud.identity.domain.preferences import merge, validate_patch
+from acciones_ud.identity.domain.profile import PROFILE_FIELDS, normalize_profile_patch
 from acciones_ud.identity.domain.settings import (
     ORDER_DEFAULTS,
     PORTFOLIO_DEFAULTS,
     validate_settings,
 )
+from acciones_ud.shared.domain.errors import AppError, ErrorCode
 
 
 class AccountService:
@@ -54,8 +56,30 @@ class AccountService:
 
             raise AppError(422, ErrorCode.VALIDATION_ERROR, "Invalid field: level")
         async with self.uow() as work:
-            normalized = normalize_interests(values, await work.account.known_interests())
+            user = await work.account.user(user_id, lock=True)
+            known = await work.account.known_interests()
+            # Grandfather only this user's values; current catalog spelling wins.
+            canonical = {v.lower() for v in known}
+            retained = [v for v in user["interests"] if v.lower() not in canonical]
+            normalized = normalize_interests(values, known + retained)
             await work.account.update_user(
                 user_id, {"interests": normalized, "investor_level": level}
             )
         return {"interests": normalized, "level": level}
+
+    async def interest_options(self) -> InterestOptions:
+        async with self.uow() as work:
+            return await work.account.interest_options()
+
+    async def update_profile(self, user_id: UUID, values: dict[str, object]) -> Record:
+        patch = normalize_profile_patch(values)
+        async with self.uow() as work:
+            user = await work.account.user(user_id, lock=True)
+            if await work.account.has_kyc(user_id):
+                raise AppError(
+                    409,
+                    ErrorCode.PROFILE_KYC_LOCKED,
+                    "Personal data cannot be edited after KYC has started.",
+                )
+            await work.account.update_user(user_id, patch)
+            return {field: patch.get(field, user[field]) for field in PROFILE_FIELDS}

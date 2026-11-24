@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Request, Response
 
 from acciones_ud.identity.adapters.inbound.http.schemas.auth import (
+    InterestOptionsOut,
     LoginIn,
     LoginOut,
     MfaVerifyIn,
@@ -9,10 +10,18 @@ from acciones_ud.identity.adapters.inbound.http.schemas.auth import (
     RegisterInvestorIn,
     RegistrationOut,
 )
+from acciones_ud.identity.domain.interests import InterestOptions
 from acciones_ud.shared.infrastructure.cookies import set_auth_cookies
 from acciones_ud.shared.infrastructure.http_errors import error_responses
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
+
+
+@router.get("/interest-options", response_model=InterestOptionsOut, responses=error_responses(503))
+async def interest_options(request: Request) -> InterestOptions:
+    from acciones_ud.identity.composition import account_service
+
+    return await account_service(request).interest_options()
 
 
 @router.post(

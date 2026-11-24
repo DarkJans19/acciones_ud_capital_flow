@@ -728,6 +728,8 @@ All REST paths are prefixed with `/api/v1`; the WebSocket path is `/ws/v1/market
 | Method | Path | Auth | Permission | Request | Success response | Errors | Req |
 |--------|------|------|------------|---------|------------------|--------|-----|
 | GET | `/users/me` | user | – | – | 200 `UserMeOut` (see below) | – | 3.8, 6 |
+| PATCH | `/users/me` | user | – | `ProfilePatchIn` (only supplied personal fields) | 200 `PersonalProfileOut {first_names, last_names, phone, country}` | 409 `PROFILE_KYC_LOCKED`, 422 | 26 |
+| GET | `/auth/interest-options` | public | – | – | 200 `{markets: string[], sectors: string[]}` | 503 | 11.8 |
 | GET | `/users/preferences/channels` | user | `account:manage` | – | 200 `{preferences: [{event_type, channel, enabled}] × 28}` | – | 7.8 |
 | PUT | `/users/preferences/channels` | user | `account:manage` | `{preferences: [{event_type, channel, enabled: bool}]}` (1..28 items; pairs not listed keep their value) | 200 same as GET | 422 `CHANNEL_NOT_AVAILABLE` | 7.4-7.7 |
 | GET | `/users/preferences/portfolio` | user | `account:manage` | – | 200 `PortfolioViewOut {view_type, sort_by, sort_direction, hide_threshold}` | – | 8.3, 8.4 |
@@ -780,12 +782,13 @@ An `assignment_id` that belongs to a different `user_id` is 404 `NOT_FOUND`. The
 
 ```json
 {
-  "identity": {"given_name": "", "family_name": "", "date_of_birth": "1990-01-31",
-               "tax_id": "", "tax_id_type": "USA_SSN", "country_of_citizenship": "COL",
+  "identity": {"given_name": "Ana", "family_name": "Perez", "date_of_birth": "1990-01-31",
+               "tax_id": "321-54-6789", "tax_id_type": "USA_SSN", "country_of_citizenship": "COL",
                "country_of_tax_residence": "USA", "funding_source": ["employment_income"],
-               "annual_income_range": "50000-100000", "liquid_net_worth_range": "20000-49999"},
-  "contact": {"email_address": "", "phone_number": "+15555550100",
-              "street_address": ["123 Main St"], "city": "", "state": "", "postal_code": "", "country": "USA"},
+               "annual_income_range": "RANGE_3", "liquid_net_worth_range": "RANGE_2",
+               "total_net_worth_range": "RANGE_4"},
+  "contact": {"email_address": "ana@example.com", "phone_number": "+15555550100",
+              "street_address": ["123 Main St"], "city": "New York", "state": "NY", "postal_code": "10001", "country": "USA"},
   "employment_status": "employed",
   "disclosures": {"is_control_person": false, "is_affiliated_exchange_or_finra": false,
                   "is_politically_exposed": false, "immediate_family_exposed": false},
@@ -794,6 +797,137 @@ An `assignment_id` that belongs to a different `user_id` is 404 `NOT_FOUND`. The
 ```
 
 Income and net worth ranges are enums the service translates to Alpaca `*_min`/`*_max` fields. Agreement `signed_at` is the server time and `ip_address` is the client IP. `customer_agreement` must be `true` (10.8).
+
+#### Frontend integration correction — 2026-11-24 (RF-01, RF-06, RFP-01, RFP-08)
+
+**Confirmed diagnosis.** `KycIdentityIn` previously accepted any document type
+and any 4–100-character number; `KycService.submit` only rejected a birth date
+on/after today. Registration checked interest bounds but never membership,
+whereas profile editing queried `markets.code UNION instruments.sector`.
+Revision 0003 seeds seven markets, not instruments or sectors; Alpaca catalog
+merge intentionally initializes new sectors to null and preserves existing ones.
+There is no frontend source in this repository; `readme_cambios_frontend.md`
+and the generated OpenAPI are the available integration contracts. Production
+data and the frontend's exact descriptive labels were not inspected.
+
+**Document policy.** The local type set is explicitly `USA_SSN`, `USA_ITIN`,
+`COL_NIT`, `PASSPORT`, `NATIONAL_ID`, `PERMANENT_RESIDENT`, `DRIVER_LICENSE`,
+`OTHER_GOV_ID`. Previously accepting arbitrary type strings was not a guarantee
+that Alpaca supported them. Unsupported types now fail locally with 422.
+The common 2–40-character limit, ASCII letters/digits/`-`/`.`/`+`, required digit,
+and placeholder rejection come from
+[Alpaca Data Validations](https://docs.alpaca.markets/docs/data-validations)
+(consulted 2026-11-24), not from an invented universal passport standard.
+No trimming, uppercasing or removal of check digits is applied to identifiers.
+Passports can be numeric or alphanumeric; country-specific eligibility is
+still Alpaca's decision. US types require USA tax residence, nine digits
+(compact or XXX-XX-XXXX), and the documented invalid area/group/serial checks.
+COL_NIT requires COL tax residence, a numeric base, optional correctly grouped
+thousands periods and optional `-` followed by one verification digit.
+This is **lexical validation**, not verification of a DIAN registration or its
+checksum. Alpaca's exact per-country patterns are obtained through authenticated
+`GET /v1/country-info`; those were not queried with real credentials. Do not claim
+that passing local checks guarantees Alpaca acceptance or add further countries
+without confirming their rules.
+
+The application repeats document checks (not only the Pydantic adapter) and
+uses its injected clock for age before any reservation or external call.
+February 29 uses the strict completed-year comparison: March 1 in a non-leap
+anniversary year. This explicit conservative policy should be revisited if a
+different legal jurisdiction policy is approved.
+
+**Single interest source.** Both registration and edit use `normalize_interests`
+and the existing `InterestCatalogRepository`. Public options are separated into
+market codes and distinct nonblank sectors of 1–50 characters, deterministically
+deduplicated case-insensitively (market spelling wins collisions). No static
+sector vocabulary, instrument classification, new table or migration is added.
+An empty sector catalog is an honest result, not an excuse to accept arbitrary
+sectors. Existing arrays remain unchanged; an owner may retain/remove a legacy
+value, but once removed cannot reintroduce it unless it exists in the catalog.
+Legacy values never enter public options or another user's allowed set.
+No referential constraints are removed: interests remain the existing validated
+text array; catalog ownership and instrument classification remain MOD-02.
+
+**Profile safety.** `ProfilePatchIn` forbids extras, rejects explicit nulls and
+requires a nonempty patch. `normalize_profile_patch` enforces the same allowlist
+inside the use case, preventing mass assignment through non-HTTP callers too.
+The identity is always the authenticated user, never a request field.
+`AccountService.update_profile` locks the user, checks for **any** KYC row,
+updates only supplied fields and returns the four resulting personal fields
+inside the existing unit of work. This avoids a second read or Alpaca refresh
+after committing a write. The response is intentionally narrower than `UserMeOut`;
+GET remains the full account view.
+
+KYC `reserve` and reconciliation `link_new` take the same user lock before
+inserting KYC state, so an uncommitted reservation cannot be missed by a
+concurrent profile edit. Existing KYC rows, including expired/unlinked reservations
+requiring reconciliation, block edits regardless of status. Pending brokers
+without KYC can edit with an authenticated session.
+
+**Open business decisions / limitations.** The project has no approved flow to
+change verified names, residence or phone in Alpaca, obtain new evidence or
+revalidate KYC. Until that exists, these four fields cannot be changed through
+this endpoint after KYC starts (409), even if values would be unchanged.
+No automatic synchronization is pretended. Real country patterns, additional
+document types, approved sector enrichment/translations and remediation of
+previously inconsistent financial identities require separately validated data
+or business decisions. No production database or financial service was used.
+
+**Changed-file manifest.** Paths below are relative to the repository root.
+
+New files:
+
+- `src/acciones_ud/identity/domain/kyc_validation.py`
+- `src/acciones_ud/identity/domain/profile.py`
+- `tests/identity/test_kyc_identity_validation.py`
+- `tests/identity/test_interest_consistency.py`
+- `tests/identity/test_profile_update.py`
+- `tests/identity/test_profile_interests_postgres.py`
+
+Modified files:
+
+- `src/acciones_ud/identity/domain/account_ports.py`
+- `src/acciones_ud/identity/domain/interests.py`
+- `src/acciones_ud/identity/domain/ports.py`
+- `src/acciones_ud/identity/application/kyc.py`
+- `src/acciones_ud/identity/application/register.py`
+- `src/acciones_ud/identity/application/account.py`
+- `src/acciones_ud/identity/composition.py`
+- `src/acciones_ud/identity/adapters/inbound/http/routers/auth.py`
+- `src/acciones_ud/identity/adapters/inbound/http/routers/users.py`
+- `src/acciones_ud/identity/adapters/inbound/http/schemas/auth.py`
+- `src/acciones_ud/identity/adapters/inbound/http/schemas/kyc.py`
+- `src/acciones_ud/identity/adapters/inbound/http/schemas/users.py`
+- `src/acciones_ud/identity/adapters/outbound/persistence/account_repository.py`
+- `src/acciones_ud/identity/adapters/outbound/persistence/interest_catalog_repository.py`
+- `src/acciones_ud/identity/adapters/outbound/persistence/kyc_repository.py`
+- `src/acciones_ud/shared/domain/errors.py`
+- `tests/identity/test_account_kyc.py`
+- `tests/identity/test_authorization_contracts.py`
+- `tests/identity/test_financial_profile.py`
+- `tests/identity/test_postgres_api.py`
+- `.kiro/specs/identity-market-backend/requirements.md`
+- `.kiro/specs/identity-market-backend/design.md`
+- `.kiro/specs/identity-market-backend/tasks.md`
+- `readme_cambios_frontend.md`
+
+No new dependencies, migrations, sector backfills or production data changes.
+The test database is PostgreSQL 17 in a disposable localhost-only container;
+all provider requests use fakes or HTTP mock transports. The existing SSN
+fixture changed from the documented sequential placeholder to `321-54-6789`;
+redaction assertions now derive the identifier from that fixture.
+
+**Verification evidence (2026-11-24).** Final execution against the disposable
+PostgreSQL 17 database: `uv run --no-sync pytest -q --tb=short --disable-warnings`
+with an explicitly local `TEST_DATABASE_URL`: **761 passed, zero skipped,
+2766 warnings, 186.89 seconds**. `uv run --no-sync ruff check .` passed;
+`uv run --no-sync mypy src` passed for 347 source files; `git diff --check`
+passed. Since `uv` was absent from PATH, a standalone binary in `/tmp/opencode`
+ran against the existing virtual environment without dependency/lock changes.
+One intermediate background full-suite run was stopped by the 120-second
+execution limit; the final full run used a 300-second limit and completed.
+No live Alpaca eligibility, DIAN checksum, production sector data or frontend
+execution was verified. The test container was removed after verification.
 
 #### Market explorer (MOD-02)
 
@@ -893,7 +1027,7 @@ All request models use `model_config = ConfigDict(extra="ignore", str_strip_whit
 | monthly_report | StrictBool, required | 1.1, 1.6 |
 | broker_requested, premium_requested | StrictBool, optional (default false) | 1.2 |
 | investor_level | `Literal["beginner", "experienced"]`, optional | 1.2 |
-| interests (registration) | 0-20 items, each 1-50 chars | 1.2 |
+| interests (registration) | 0-20 items, each 1-50 chars; catalog membership, case-insensitive canonical spelling and deduplication shared with PUT | 1.2, 11.8 |
 | role (registration) | ignored (`extra="ignore"`) | 1.1 |
 | firm_name / license_number | trimmed, 1-200 / 1-50 chars | 2.1, 2.4 |
 | valid_from / valid_to | `AwareDatetime` (offset required), `valid_to > valid_from` | 5.3 |
@@ -904,7 +1038,10 @@ All request models use `model_config = ConfigDict(extra="ignore", str_strip_whit
 | hide_threshold | 0.00-999,999,999.99, ≤2 decimals | 8.2 |
 | daily_order_limit | StrictInt 1-1000 | 9.2 |
 | high_order_threshold_usd | >0, ≤999,999,999.99, ≤2 decimals | 9.2 |
-| interests (PUT) | 1-20 items, each 1-50 chars, each a known Market code or sector (case-insensitive), duplicates removed | 11.1, 11.2 |
+| interests (PUT) | 1-20 items, each 1-50 chars, known code/sector or value already stored for this user only (case-insensitive), duplicates removed | 11.1, 11.2, 11.9 |
+| personal profile (PATCH) | nonempty partial body, allowlisted fields only, explicit null rejected; registration name/phone/country rules; no KYC row | 26 |
+| KYC birth date | completed age ≥18 on server UTC date; Feb 29 anniversary on March 1 in non-leap years | 10.8 |
+| KYC identifier | eight explicitly supported types; common Alpaca character/length rules, US SSN/ITIN and Colombian NIT lexical checks; see integration correction below | 10.8 |
 | search q | trimmed 1-50 | 12.6 |
 | symbol (path) | 1-20 chars, `^[A-Za-z0-9./-]+$`, uppercased | 16.4 |
 | candles timeframe | `1Min`, `5Min`, `15Min`, `1Hour`, `1Day` | 13.4 |

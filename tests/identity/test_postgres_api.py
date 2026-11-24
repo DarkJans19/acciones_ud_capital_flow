@@ -183,12 +183,15 @@ async def test_kyc_failure_cleans_reservation(postgres_app: object, status: int,
     async with client(app) as http:
         verified = await register_and_login(http, app.state.test_tag + "-kyc@example.com")
         uid = UUID(verified["user"]["user_id"])
+        body = kyc_payload()
+        tax_id = body["identity"]["tax_id"]
+        compact_tax_id = tax_id.replace("-", "")
         app.state.provider_outcomes.append(
-            (status, {"message": "Invalid tax 123-45-6789 123456789"})
+            (status, {"message": f"Invalid tax {tax_id} {compact_tax_id}"})
         )
-        result = await http.post("/api/v1/kyc/account", json=kyc_payload())
+        result = await http.post("/api/v1/kyc/account", json=body)
         assert result.json()["code"] == code
-        assert "123-45-6789" not in result.text and "123456789" not in result.text
+        assert tax_id not in result.text and compact_tax_id not in result.text
         async with app.state.sql_factory() as session:
             assert not (
                 await session.execute(

@@ -3,10 +3,7 @@ from typing import Protocol
 from uuid import UUID
 
 from acciones_ud.identity.domain.auth_ports import Record
-
-
-class InterestCatalogPort(Protocol):
-    async def known_interests(self) -> list[str]: ...
+from acciones_ud.identity.domain.interests import InterestCatalogPort
 
 
 class AccountRepository(InterestCatalogPort, Protocol):
@@ -16,6 +13,7 @@ class AccountRepository(InterestCatalogPort, Protocol):
     async def settings(self, user_id: UUID, kind: str) -> Record | None: ...
     async def save_settings(self, user_id: UUID, kind: str, values: Record) -> None: ...
     async def update_user(self, user_id: UUID, values: Record) -> None: ...
+    async def has_kyc(self, user_id: UUID) -> bool: ...
 
 
 class AccountWork(Protocol):
