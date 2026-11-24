@@ -1,5 +1,12 @@
 # Requirements Document
 
+> Integración MOD-07 (RF-43/45/46): el costo de nuevas versiones de propuesta
+> resuelve la tasa vigente por símbolo mediante un puerto; las versiones
+> guardadas no se reescriben. La conversión respeta Trading_Gate: un interruptor
+> devuelve 503 y conserva la propuesta aceptada; una restricción de cuenta es
+> rechazo de negocio. Consultar comisiones exige Active_Link y firma del broker.
+> Véase [admin-mod-07](../admin-mod-07/implementation-decisions.md).
+
 ## Introduction
 
 Este spec cubre el módulo de desarrollo MOD-06 "Red y Portal de Comisionistas Financieros" del backend de Acciones UD (responsable: María Fernanda Vélez Benítez). El módulo se implementa como el paquete `brokers` dentro del monolito modular hexagonal (`src/acciones_ud/brokers/`). Depende de MOD-01 (`identity`) y MOD-02 (`market_data`), ya implementados en `identity-market-backend`, de MOD-03 (`orders`, spec `orders-mod-03`) y de MOD-05 (`portfolio`, spec `portfolio-mod-05`). Por eso se construye después de MOD-05, según el orden del catálogo (MOD-04 → MOD-03 → MOD-05 → MOD-06 y MOD-07).

@@ -83,9 +83,18 @@ async def test_concurrent_creations_cannot_overreserve(migrated_database) -> Non
                 .scalars()
                 .all()
             )
+            # Owner-only fixture cleanup, never an application operation.
+            for table in ("order_events", "order_executions"):
+                await session.execute(
+                    sa.text(f"ALTER TABLE {table} DISABLE TRIGGER {table}_admin_immutable")
+                )
             for table in reversed(TABLES):
                 if "order_id" in table.c:
                     await session.execute(sa.delete(table).where(table.c.order_id.in_(owned)))
                 elif table.name == "orders":
                     await session.execute(sa.delete(table).where(table.c.id.in_(owned)))
+            for table in ("order_events", "order_executions"):
+                await session.execute(
+                    sa.text(f"ALTER TABLE {table} ENABLE TRIGGER {table}_admin_immutable")
+                )
         await engine.dispose()

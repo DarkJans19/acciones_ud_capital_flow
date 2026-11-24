@@ -4,6 +4,26 @@ from datetime import datetime
 from acciones_ud.identity.domain.models import RoleAssignment
 from acciones_ud.shared.domain.errors import AppError, ErrorCode
 
+# RF-03, MOD-07 H1: read capabilities have a closed role allowlist.
+ADMIN_READ_ROLES = {
+    "admin:audit": frozenset({"administrator", "auditor"}),
+    "admin:compliance:read": frozenset({"administrator", "auditor"}),
+    "admin:bi": frozenset({"administrator", "analyst"}),
+}
+
+
+def protect_permission(role: str, permission: str, remove: bool) -> None:
+    allowed = ADMIN_READ_ROLES.get(permission, frozenset({"administrator"}))
+    if (not remove and permission.startswith("admin:") and role not in allowed) or (
+        remove and role == "administrator" and permission == "admin:rbac"
+    ):
+        raise AppError(
+            409,
+            ErrorCode.PROTECTED_PERMISSION,
+            "Protected administrative permission.",
+            {"permission_code": permission, "role": role},
+        )
+
 
 def effective_roles(
     assignments: Iterable[RoleAssignment],

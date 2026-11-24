@@ -8,9 +8,7 @@ from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 metadata = sa.MetaData()
 
 
-def effective_assignment(
-    ra: sa.Table, users: sa.Table, now: datetime
-) -> sa.ColumnElement[bool]:
+def effective_assignment(ra: sa.Table, users: sa.Table, now: datetime) -> sa.ColumnElement[bool]:
     """Shared predicate: an assignment counts only for an active account (DD17)."""
     return sa.and_(
         users.c.account_status == "active",
@@ -172,4 +170,6 @@ admin_audit_log = sa.Table(
     sa.Column("target_id", sa.Text()),
     sa.Column("payload", JSONB()),
     sa.Column("occurred_at", sa.DateTime(timezone=True)),
+    sa.Column("ip_address", sa.Text()),
+    sa.Column("request_id", sa.Text()),
 )

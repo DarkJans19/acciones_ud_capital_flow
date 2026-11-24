@@ -28,6 +28,9 @@ from acciones_ud.market_data.adapters.outbound.persistence.notification_reposito
 from acciones_ud.market_data.adapters.outbound.persistence.recipient_directory import (
     RecipientDirectory,
 )
+from acciones_ud.market_data.adapters.outbound.persistence.schedule_audit_writer import (
+    ScheduleAuditWriter,
+)
 from acciones_ud.market_data.adapters.outbound.persistence.snapshot_repository import (
     SnapshotRepository,
 )
@@ -74,6 +77,7 @@ from acciones_ud.market_data.domain.ports import (
     QuoteWork,
     WatchlistWork,
 )
+from acciones_ud.market_data.domain.schedule_audit import AuditActor
 from acciones_ud.market_data.domain.streaming import SubscriptionRegistry
 from acciones_ud.shared.domain.clock import Clock, SystemClock
 
@@ -117,9 +121,7 @@ def build_senders(settings: Any) -> list[ChannelSender]:
             port=int(settings.smtp_port or 587),
             user=settings.smtp_user,
             password=(
-                settings.smtp_password.get_secret_value()
-                if settings.smtp_password
-                else None
+                settings.smtp_password.get_secret_value() if settings.smtp_password else None
             ),
             from_addr=settings.smtp_from or settings.smtp_user or "no-reply@acciones-ud",
         )
@@ -180,6 +182,7 @@ async def market_uow() -> AsyncIterator[MarketWork]:
 
         class Work:
             markets = MarketRepository(session)
+            schedule_audit = ScheduleAuditWriter(session)
 
         yield Work()
 
@@ -342,11 +345,14 @@ def clock_service(request: Request) -> ClockService:
     return ClockService(broker_market(request))
 
 
-def schedule_admin_service(request: Request) -> ScheduleAdminService:
+def schedule_admin_service(
+    request: Request, actor: AuditActor | None = None
+) -> ScheduleAdminService:
     override = _override(request, "schedule_admin_service")
     if isinstance(override, ScheduleAdminService):
         return override
-    return ScheduleAdminService(market_uow)
+    listener = _override(request, "market_schedule_change_listener")
+    return ScheduleAdminService(market_uow, actor if listener else None, listener, clock(request))
 
 
 def watchlist_service(request: Request) -> WatchlistService:
@@ -367,9 +373,7 @@ def notifier(request: Request) -> Notifier:
     override = _override(request, "notifier")
     if isinstance(override, Notifier):
         return override
-    return Notifier(
-        notification_uow, build_senders(request.app.state.settings), clock(request)
-    )
+    return Notifier(notification_uow, build_senders(request.app.state.settings), clock(request))
 
 
 def dashboard_service(request: Request) -> DashboardService:
@@ -378,13 +382,9 @@ def dashboard_service(request: Request) -> DashboardService:
         return override
     settings = request.app.state.settings
     defaults = [
-        item.strip()
-        for item in settings.dashboard_default_symbols.split(",")
-        if item.strip()
+        item.strip() for item in settings.dashboard_default_symbols.split(",") if item.strip()
     ]
-    return DashboardService(
-        dashboard_uow, data_client(request), broker_market(request), defaults
-    )
+    return DashboardService(dashboard_uow, data_client(request), broker_market(request), defaults)
 
 
 async def startup(app: FastAPI) -> None:
@@ -403,8 +403,7 @@ async def startup(app: FastAPI) -> None:
             else ""
         )
         upstream = AlpacaStreamClient(
-            f"{(settings.alpaca_stream_base_url or '').rstrip('/')}"
-            f"/v2/{settings.alpaca_data_feed}",
+            f"{(settings.alpaca_stream_base_url or '').rstrip('/')}/v2/{settings.alpaca_data_feed}",
             key,
             secret,
         )
@@ -418,9 +417,7 @@ async def startup(app: FastAPI) -> None:
         hub.start()
 
     if settings.alert_engine_enabled.lower() == "true":
-        notifier_instance = Notifier(
-            notification_uow, build_senders(settings), SystemClock()
-        )
+        notifier_instance = Notifier(notification_uow, build_senders(settings), SystemClock())
         alert_loop = PriceAlertLoop(
             alert_uow,
             AlpacaDataClient(app.state.alpaca_data, settings.alpaca_data_feed),

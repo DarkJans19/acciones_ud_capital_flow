@@ -6,7 +6,11 @@ from acciones_ud.identity.domain.admin_ports import AdminWorkFactory
 from acciones_ud.identity.domain.audit import AuditAction, build_entry
 from acciones_ud.identity.domain.auth_ports import Record
 from acciones_ud.identity.domain.models import AssignmentStatus, RoleAssignment
-from acciones_ud.identity.domain.rbac import guard_last_administrator, validate_validity
+from acciones_ud.identity.domain.rbac import (
+    guard_last_administrator,
+    protect_permission,
+    validate_validity,
+)
 from acciones_ud.shared.domain.clock import Clock
 from acciones_ud.shared.domain.errors import AppError, ErrorCode
 
@@ -180,6 +184,7 @@ class RbacService:
     async def change_permission(
         self, role: str, permission: str, remove: bool, actor_id: UUID | None = None
     ) -> Record:
+        protect_permission(role, permission, remove)
         now = self.clock.now()
         async with self.uow() as work:
             result = await work.admin.change_permission(role, permission, remove)
@@ -201,9 +206,7 @@ class RbacService:
                 )
             return result
 
-    async def premium(
-        self, user_id: UUID, value: bool, actor_id: UUID | None = None
-    ) -> Record:
+    async def premium(self, user_id: UUID, value: bool, actor_id: UUID | None = None) -> Record:
         now = self.clock.now()
         async with self.uow() as work:
             result = await work.admin.set_premium(user_id, value)

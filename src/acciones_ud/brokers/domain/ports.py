@@ -10,6 +10,10 @@ from acciones_ud.brokers.domain import entities as e
 from acciones_ud.orders.domain.model import Raw
 
 
+class CommissionTermsBySymbolPort(Protocol):
+    async def rate_pct(self, symbol: str, at: datetime) -> Decimal: ...
+
+
 @dataclass(frozen=True)
 class ProposalOrderCommand:
     proposal_id: UUID
@@ -91,10 +95,13 @@ class BrokersNotifierPort(Protocol):
     ) -> None: ...
 
 
-class Repository[T](Protocol):
+class EvidenceRepository[T](Protocol):
     async def get(self, *, for_update: bool = False, **filters: object) -> T | None: ...
     async def list(self, **filters: object) -> list[T]: ...
     async def insert(self, value: T) -> bool: ...
+
+
+class Repository[T](EvidenceRepository[T], Protocol):
     async def save(self, value: T, **expected: object) -> bool: ...
 
 
@@ -154,7 +161,7 @@ class BrokerWork(Protocol):
     messages: MessageRepository
     ratings: RatingRepository
     profiles: ProfileRepository
-    events: Repository[e.BrokerEvent]
+    events: EvidenceRepository[e.BrokerEvent]
 
     async def lock_investor(self, investor_id: UUID) -> None: ...
 

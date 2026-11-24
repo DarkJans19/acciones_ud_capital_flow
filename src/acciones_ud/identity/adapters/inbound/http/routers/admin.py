@@ -48,9 +48,7 @@ async def create_administrator(
 
     if "administrator" not in user.roles:
         raise AppError(403, ErrorCode.FORBIDDEN, "Administrator role required.")
-    return await registration_service(request).create_administrator(
-        body.model_dump(), user.user_id
-    )
+    return await registration_service(request).create_administrator(body.model_dump(), user.user_id)
 
 
 @router.post(
@@ -112,9 +110,7 @@ async def reconcile_kyc(
     from acciones_ud.identity.composition import kyc_reconcile_service
 
     alpaca_account_id = body.alpaca_account_id if body is not None else None
-    return await kyc_reconcile_service(request).reconcile(
-        user.user_id, user_id, alpaca_account_id
-    )
+    return await kyc_reconcile_service(request).reconcile(user.user_id, user_id, alpaca_account_id)
 
 
 @router.put(
@@ -150,7 +146,10 @@ async def create_assignment(
 ) -> Record:
     from acciones_ud.identity.composition import rbac_service
 
-    if body.role in {"broker", "administrator"} and "administrator" not in user.roles:
+    if (
+        body.role in {"broker", "administrator", "auditor", "analyst"}
+        and "administrator" not in user.roles
+    ):
         raise AppError(403, ErrorCode.FORBIDDEN, "Administrator role required.")
     return await rbac_service(request).save(
         user_id, body.role, body.valid_from, body.valid_to, None, actor_id=user.user_id
@@ -206,7 +205,7 @@ async def permissions(request: Request, user: RbacUser) -> list[Record]:
 @router.post(
     "/roles/{role}/permissions",
     response_model=RoleOut,
-    responses=error_responses(401, 403, 404, 422, 503),
+    responses=error_responses(401, 403, 404, 409, 422, 503),
 )
 async def add_permission(role: str, body: PermissionIn, request: Request, user: RbacUser) -> Record:
     from acciones_ud.identity.composition import rbac_service
@@ -219,16 +218,14 @@ async def add_permission(role: str, body: PermissionIn, request: Request, user: 
 @router.delete(
     "/roles/{role}/permissions/{permission_code}",
     response_model=RoleOut,
-    responses=error_responses(401, 403, 404, 422, 503),
+    responses=error_responses(401, 403, 404, 409, 422, 503),
 )
 async def remove_permission(
     role: str, permission_code: str, request: Request, user: RbacUser
 ) -> Record:
     from acciones_ud.identity.composition import rbac_service
 
-    return await rbac_service(request).change_permission(
-        role, permission_code, True, user.user_id
-    )
+    return await rbac_service(request).change_permission(role, permission_code, True, user.user_id)
 
 
 @router.get(

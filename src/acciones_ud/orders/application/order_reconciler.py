@@ -225,7 +225,13 @@ class OrderReconciler:
         if notification:
             order, execution = notification
             commission = (
-                execution.qty * execution.price * self.ctx.config.commission_rate
+                execution.qty
+                * execution.price
+                * (
+                    order.commission_rate_pct / 100
+                    if order.commission_rate_pct is not None
+                    else self.ctx.config.commission_rate
+                )
             ).quantize(Decimal("0.01"), rounding=ROUND_UP)
             try:
                 await self.ctx.notifier.notify(

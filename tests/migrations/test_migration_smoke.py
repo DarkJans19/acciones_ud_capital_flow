@@ -77,6 +77,30 @@ def test_cancellation_upgrade_preserves_existing_assignments(migrated_database: 
     assert scalar(migrated_database, "SELECT status FROM role_assignments LIMIT 1") == "ACTIVE"
 
 
+def test_admin_downgrade_removes_additional_read_role_grants(migrated_database: str) -> None:
+    async def grant() -> None:
+        from acciones_ud.shared.infrastructure.db import build_engine
+
+        engine = build_engine(migrated_database)
+        try:
+            async with engine.begin() as connection:
+                await connection.execute(
+                    sa.text(
+                        "INSERT INTO role_permissions(role_code,permission_code) "
+                        "VALUES ('auditor','market:read') ON CONFLICT DO NOTHING"
+                    )
+                )
+        finally:
+            await engine.dispose()
+
+    asyncio.run(grant())
+    config = Config("alembic.ini")
+    command.downgrade(config, "0009_brokers_schema")
+    assert scalar(migrated_database, "SELECT count(*) FROM roles") == 3
+    command.upgrade(config, "head")
+    assert scalar(migrated_database, "SELECT count(*) FROM roles") == 5
+
+
 def test_failing_ddl_revision_rolls_back_only_that_revision(
     migrated_database: str, tmp_path: Path
 ) -> None:

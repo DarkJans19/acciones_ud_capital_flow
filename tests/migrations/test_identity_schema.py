@@ -8,7 +8,7 @@ from acciones_ud.identity.domain.preferences import CHANNELS, EVENT_TYPES
 @pytest.mark.db
 async def test_identity_seed_and_rls(db_session: AsyncSession) -> None:
     roles = (await db_session.execute(text("SELECT code FROM roles"))).scalars().all()
-    assert set(roles) == {"investor", "broker", "administrator"}
+    assert set(roles) == {"investor", "broker", "administrator", "auditor", "analyst"}
     assert (
         await db_session.execute(text("SELECT count(*) FROM notification_preferences"))
     ).scalar() == len(CHANNELS) * len(EVENT_TYPES)

@@ -11,12 +11,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from acciones_ud.orders.adapters.outbound.persistence.tables import events, executions, orders
 from acciones_ud.orders.adapters.outbound.persistence.tables import reservations as r
-from acciones_ud.orders.application.execution_ledger import LedgerExecution
+from acciones_ud.orders.application.execution_ledger import LedgerExecution, LedgerFilters
 from acciones_ud.shared.domain.errors import AppError, ErrorCode
 
 
 def query(
-    user_id: UUID, until: datetime | None, since: datetime | None, symbol: str | None
+    user_id: UUID | None, until: datetime | None, since: datetime | None, symbol: str | None
 ) -> sa.Select[tuple[object, ...]]:
     signer = (
         sa.select(events.c.actor_id)
@@ -30,26 +30,25 @@ def query(
         .correlate(orders)
         .lateral("signer")
     )
-    statement = (
-        sa.select(
-            executions.c.alpaca_execution_id.label("execution_id"),
-            executions.c.order_id,
-            orders.c.user_id,
-            orders.c.symbol,
-            orders.c.exchange,
-            orders.c.side,
-            executions.c.qty,
-            executions.c.price,
-            executions.c.executed_at,
-            signer.c.actor_id.label("signed_by_broker_id"),
-        )
-        .select_from(
-            executions.join(orders, executions.c.order_id == orders.c.id).outerjoin(
-                signer, sa.true()
-            )
-        )
-        .where(orders.c.user_id == user_id)
+    statement = sa.select(
+        executions.c.alpaca_execution_id.label("execution_id"),
+        executions.c.order_id,
+        orders.c.user_id,
+        orders.c.symbol,
+        orders.c.exchange,
+        orders.c.side,
+        executions.c.qty,
+        executions.c.price,
+        executions.c.executed_at,
+        signer.c.actor_id.label("signed_by_broker_id"),
+        orders.c.fee_version_id,
+        orders.c.commission_rate_pct,
+        orders.c.platform_share_pct,
+    ).select_from(
+        executions.join(orders, executions.c.order_id == orders.c.id).outerjoin(signer, sa.true())
     )
+    if user_id is not None:
+        statement = statement.where(orders.c.user_id == user_id)
     if until is not None:
         statement = statement.where(executions.c.executed_at < until)
     if since is not None:
@@ -64,6 +63,36 @@ def query(
 class ExecutionRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
+
+    async def list_platform_page(
+        self,
+        since: datetime,
+        until: datetime,
+        cursor: str | None,
+        size: int,
+        filters: LedgerFilters | None = None,
+    ) -> tuple[builtins.list[LedgerExecution], str | None]:
+        filters = filters or LedgerFilters()
+        return await self._page(
+            filters.user_id, since, until, filters.symbol, cursor, size, 1000, filters
+        )
+
+    async def volume(self, since: datetime, until: datetime) -> builtins.list[dict[str, object]]:
+        result = await self.session.execute(
+            sa.select(
+                orders.c.exchange,
+                orders.c.side,
+                sa.func.sum(executions.c.qty * executions.c.price).label("gross_amount"),
+                sa.func.count().label("executions_count"),
+            )
+            .select_from(executions.join(orders, orders.c.id == executions.c.order_id))
+            .where(
+                executions.c.executed_at >= since,
+                executions.c.executed_at < until,
+            )
+            .group_by(orders.c.exchange, orders.c.side)
+        )
+        return [dict(row) for row in result.mappings()]
 
     async def list(
         self,
@@ -84,9 +113,31 @@ class ExecutionRepository:
         cursor: str | None,
         size: int,
     ) -> tuple[builtins.list[LedgerExecution], str | None]:
-        if not 1 <= size <= 100:
+        return await self._page(user_id, since, until, symbol, cursor, size, 100)
+
+    async def _page(
+        self,
+        user_id: UUID | None,
+        since: datetime,
+        until: datetime,
+        symbol: str | None,
+        cursor: str | None,
+        size: int,
+        maximum: int,
+        filters: LedgerFilters | None = None,
+    ) -> tuple[builtins.list[LedgerExecution], str | None]:
+        if not 1 <= size <= maximum:
             raise AppError(422, ErrorCode.VALIDATION_ERROR, "Invalid field: page_size")
         statement = query(user_id, until, since, symbol)
+        if filters:
+            if filters.broker_id is not None:
+                statement = statement.where(
+                    statement.selected_columns.signed_by_broker_id == filters.broker_id
+                )
+            if filters.market is not None:
+                statement = statement.where(orders.c.exchange == filters.market)
+            if filters.investor_ids is not None:
+                statement = statement.where(orders.c.user_id.in_(filters.investor_ids))
         if cursor:
             try:
                 raw = base64.b64decode(cursor.encode(), altchars=b"-_", validate=True).decode()

@@ -1,5 +1,6 @@
 """MOD-06 wiring; all I/O stays lazy until an authorized request or job."""
 
+from datetime import datetime
 from decimal import Decimal
 from typing import cast
 from uuid import UUID
@@ -42,6 +43,20 @@ from acciones_ud.identity.application.order_authorization import OrderTotpServic
 from acciones_ud.market_data import composition as market_data
 from acciones_ud.orders.domain.model import Raw
 from acciones_ud.shared.domain.clock import SystemClock
+
+
+class InstalledProposalTerms:
+    def __init__(self, app: FastAPI) -> None:
+        self.app = app
+
+    async def rate_pct(self, symbol: str, at: datetime) -> Decimal:
+        port = cast(
+            p.CommissionTermsBySymbolPort | None,
+            getattr(self.app.state, "brokers_commission_terms", None),
+        )
+        if port:
+            return await port.rate_pct(symbol, at)
+        return Decimal(self.app.state.settings.order_reference_commission_rate) * 100
 
 
 class InstalledOrderPorts:
@@ -114,6 +129,7 @@ def register(app: FastAPI) -> None:
         BrokersNotifier(market_data.directory_uow, market_data.notifier(scope)),
         clock,
         config(settings),
+        InstalledProposalTerms(app),
     )
     membership = BrokerLinkAdapter(clock=clock)
     app.state.order_broker_link = membership

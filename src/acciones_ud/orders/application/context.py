@@ -30,6 +30,7 @@ from acciones_ud.orders.domain.validation import validate
 from acciones_ud.shared.domain.alpaca_errors import AlpacaError, AlpacaRateLimited
 from acciones_ud.shared.domain.clock import Clock
 from acciones_ud.shared.domain.errors import ErrorCode
+from acciones_ud.shared.domain.trading import CommissionTerms
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +75,7 @@ class Prepared:
     qty_available: Decimal
     market_open: bool
     session: SessionWindow | None
+    terms: CommissionTerms
 
 
 def restored_price(value: Decimal | None) -> Decimal | None:
@@ -142,6 +144,20 @@ class OrderContext:
     notifier: p.OrderNotifierPort
     clock: Clock
     config: OrderConfig
+    commission_terms: p.CommissionTermsPort | None = None
+    trading_gate: p.TradingGatePort | None = None
+
+    async def check_gate(self, user_id: UUID, exchange: str) -> None:
+        if self.trading_gate is not None:
+            decision = await self.trading_gate.check(user_id, exchange, self.clock.now())
+            if not decision.allowed:
+                assert decision.code is not None
+                raise OrderDomainError(
+                    503 if decision.code == "TRADING_HALTED" else 403,
+                    ErrorCode(decision.code),
+                    "Trading is currently restricted.",
+                    decision.details,
+                )
 
     async def prepare(
         self,
@@ -152,6 +168,8 @@ class OrderContext:
         totp_code: str | None = None,
         preview: bool = False,
         check_session: bool = True,
+        at: datetime | None = None,
+        terms: CommissionTerms | None = None,
     ) -> Prepared:
         account = await self.accounts.get(user_id)
         if account is None or account.status != "ACTIVE":
@@ -161,6 +179,13 @@ class OrderContext:
         asset = await self.assets.get(request.symbol)
         if asset is None or not asset.active or not asset.tradable:
             raise OrderDomainError(422, ErrorCode.ASSET_NOT_TRADABLE, "Asset is not tradable.")
+        await self.check_gate(user_id, asset.exchange)
+        if terms is None:
+            terms = (
+                await self.commission_terms.terms(asset.exchange, at or self.clock.now())
+                if self.commission_terms
+                else CommissionTerms(None, self.config.commission_rate * 100, Decimal("60.00"))
+            )
         # Independent reads use separate ports/transactions. Run them together
         # without sharing an AsyncSession or weakening the investor lock below.
         reference, controls = await asyncio.gather(
@@ -188,7 +213,7 @@ class OrderContext:
             request.side,
             request.qty,
             base_price(request.type or "", request.limit_price, request.stop_price, reference),
-            self.config.commission_rate,
+            terms.commission_rate_pct / 100,
         )
         method = requires_extra_authorization(amount, controls)
         if authorize and method == "totp":
@@ -252,6 +277,7 @@ class OrderContext:
             position,
             open_now,
             session,
+            terms,
         )
 
     async def notify(self, order: Order, cause: str, **payload: object) -> None:

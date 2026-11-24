@@ -223,6 +223,9 @@ class ReviewCommentOut(Output):
 
 
 class OrderOut(OrderSummary):
+    fee_version_id: UUID | None = None
+    commission_rate_pct: Decimal | None = None
+    platform_share_pct: Decimal | None = None
     reference_commission: Money
     reference_commission_estimated: Literal[True] = True
     legs: list[LegOut]

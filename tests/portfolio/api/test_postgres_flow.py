@@ -268,8 +268,17 @@ async def test_authenticated_portfolio_reports_and_scheduler_on_postgres(postgre
         finally:
             async with app.state.sql_factory() as session, session.begin():
                 await session.execute(reports.delete().where(reports.c.owner_id == owner))
+                # Owner-only cleanup of UUID-tagged test evidence in the disposable DB.
+                for table in ("order_executions", "order_events"):
+                    await session.execute(
+                        sa.text(f"ALTER TABLE {table} DISABLE TRIGGER {table}_admin_immutable")
+                    )
                 for table in (orders.executions, orders.reservations, orders.events):
                     await session.execute(table.delete().where(table.c.order_id.in_(order_ids)))
+                for table in ("order_executions", "order_events"):
+                    await session.execute(
+                        sa.text(f"ALTER TABLE {table} ENABLE TRIGGER {table}_admin_immutable")
+                    )
                 await session.execute(
                     orders.orders.delete().where(orders.orders.c.id.in_(order_ids))
                 )

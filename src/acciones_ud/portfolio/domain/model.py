@@ -59,6 +59,9 @@ class ExecutionRecord:
     price: Decimal
     executed_at: datetime
     signed_by_broker_id: UUID | None = None
+    fee_version_id: UUID | None = None
+    commission_rate_pct: Decimal | None = None
+    platform_share_pct: Decimal | None = None
 
 
 @dataclass(frozen=True)

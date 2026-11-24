@@ -14,8 +14,10 @@ from acciones_ud.market_data.adapters.inbound.http.schemas.markets import (
     ScheduleOverrideOut,
     ScheduleOverrideUpdateIn,
 )
+from acciones_ud.market_data.domain.schedule_audit import AuditActor
 from acciones_ud.shared.domain.errors import AppError, ErrorCode
 from acciones_ud.shared.infrastructure.http_errors import error_responses
+from acciones_ud.shared.infrastructure.request_meta import request_meta
 
 router = APIRouter(prefix="/admin/markets", tags=["Markets administration"])
 
@@ -34,16 +36,16 @@ def parse_override_id(raw: str) -> UUID:
 @router.put(
     "/{market_code}/default-schedule",
     response_model=DefaultScheduleOut,
-    responses=error_responses(401, 403, 404, 422),
+    responses=error_responses(401, 403, 404, 422, 503),
 )
 async def set_default_schedule(
     request: Request, user: MarketAdmin, market_code: str, body: DefaultScheduleIn
 ) -> DefaultScheduleOut:
     from acciones_ud.market_data.composition import schedule_admin_service
 
-    market = await schedule_admin_service(request).set_default(
-        market_code, body.open_time, body.close_time
-    )
+    market = await schedule_admin_service(
+        request, AuditActor(user.user_id, request_meta(request))
+    ).set_default(market_code, body.open_time, body.close_time)
     return DefaultScheduleOut(
         market=market.code,
         open_time=body.open_time,
@@ -54,21 +56,21 @@ async def set_default_schedule(
 @router.delete(
     "/{market_code}/default-schedule",
     status_code=http_status.HTTP_204_NO_CONTENT,
-    responses=error_responses(401, 403, 404, 422),
+    responses=error_responses(401, 403, 404, 422, 503),
 )
-async def clear_default_schedule(
-    request: Request, user: MarketAdmin, market_code: str
-) -> Response:
+async def clear_default_schedule(request: Request, user: MarketAdmin, market_code: str) -> Response:
     from acciones_ud.market_data.composition import schedule_admin_service
 
-    await schedule_admin_service(request).clear_default(market_code)
+    await schedule_admin_service(
+        request, AuditActor(user.user_id, request_meta(request))
+    ).clear_default(market_code)
     return Response(status_code=http_status.HTTP_204_NO_CONTENT)
 
 
 @router.get(
     "/{market_code}/schedule-overrides",
     response_model=list[ScheduleOverrideOut],
-    responses=error_responses(401, 403, 404, 422),
+    responses=error_responses(401, 403, 404, 422, 503),
 )
 async def list_overrides(
     request: Request,
@@ -79,9 +81,7 @@ async def list_overrides(
 ) -> list[ScheduleOverrideOut]:
     from acciones_ud.market_data.composition import schedule_admin_service
 
-    overrides = await schedule_admin_service(request).list_overrides(
-        market_code, start, end
-    )
+    overrides = await schedule_admin_service(request).list_overrides(market_code, start, end)
     return [ScheduleOverrideOut.of(override) for override in overrides]
 
 
@@ -89,14 +89,16 @@ async def list_overrides(
     "/{market_code}/schedule-overrides",
     status_code=http_status.HTTP_201_CREATED,
     response_model=ScheduleOverrideOut,
-    responses=error_responses(401, 403, 404, 409, 422),
+    responses=error_responses(401, 403, 404, 409, 422, 503),
 )
 async def create_override(
     request: Request, user: MarketAdmin, market_code: str, body: ScheduleOverrideIn
 ) -> ScheduleOverrideOut:
     from acciones_ud.market_data.composition import schedule_admin_service
 
-    override = await schedule_admin_service(request).create_override(
+    override = await schedule_admin_service(
+        request, AuditActor(user.user_id, request_meta(request))
+    ).create_override(
         market_code,
         uuid4(),
         body.date,
@@ -110,7 +112,7 @@ async def create_override(
 @router.put(
     "/{market_code}/schedule-overrides/{override_id}",
     response_model=ScheduleOverrideOut,
-    responses=error_responses(401, 403, 404, 422),
+    responses=error_responses(401, 403, 404, 422, 503),
 )
 async def update_override(
     request: Request,
@@ -121,7 +123,9 @@ async def update_override(
 ) -> ScheduleOverrideOut:
     from acciones_ud.market_data.composition import schedule_admin_service
 
-    override = await schedule_admin_service(request).update_override(
+    override = await schedule_admin_service(
+        request, AuditActor(user.user_id, request_meta(request))
+    ).update_override(
         market_code,
         parse_override_id(override_id),
         body.closed,
@@ -134,14 +138,14 @@ async def update_override(
 @router.delete(
     "/{market_code}/schedule-overrides/{override_id}",
     status_code=http_status.HTTP_204_NO_CONTENT,
-    responses=error_responses(401, 403, 404, 422),
+    responses=error_responses(401, 403, 404, 422, 503),
 )
 async def delete_override(
     request: Request, user: MarketAdmin, market_code: str, override_id: str
 ) -> Response:
     from acciones_ud.market_data.composition import schedule_admin_service
 
-    await schedule_admin_service(request).delete_override(
-        market_code, parse_override_id(override_id)
-    )
+    await schedule_admin_service(
+        request, AuditActor(user.user_id, request_meta(request))
+    ).delete_override(market_code, parse_override_id(override_id))
     return Response(status_code=http_status.HTTP_204_NO_CONTENT)

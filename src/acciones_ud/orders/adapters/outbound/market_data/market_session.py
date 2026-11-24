@@ -30,3 +30,15 @@ class MarketSessionAdapter:
         raise AppError(
             409, ErrorCode.MARKET_CLOSED, "No eligible session is available.", {"next_open": None}
         )
+
+    async def current_window(self, exchange: str, at: datetime) -> SessionWindow | None:
+        day = at.astimezone(ZoneInfo("America/New_York")).date()
+        view = await self.calendar().calendar(exchange, day, day, None)
+        for entry in view.days:
+            if (
+                entry.open_at is not None
+                and entry.close_at is not None
+                and entry.open_at <= at < entry.close_at
+            ):
+                return SessionWindow(entry.open_at, entry.close_at)
+        return None

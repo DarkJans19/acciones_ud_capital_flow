@@ -79,6 +79,9 @@ class Order:
     broker_id: UUID | None = None
     broker_signed_at: datetime | None = None
     schedule_if_closed: bool = False
+    fee_version_id: UUID | None = None
+    commission_rate_pct: Decimal | None = None
+    platform_share_pct: Decimal | None = None
 
 
 @dataclass(frozen=True)

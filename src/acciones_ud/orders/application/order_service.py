@@ -33,6 +33,7 @@ from acciones_ud.orders.domain.reservations import check_buy, check_sell
 from acciones_ud.orders.domain.state_machine import initial_status, is_terminal
 from acciones_ud.shared.domain.alpaca_errors import AlpacaError
 from acciones_ud.shared.domain.errors import ErrorCode
+from acciones_ud.shared.domain.trading import CommissionTerms
 
 
 class OrderService:
@@ -56,7 +57,7 @@ class OrderService:
             request.stop_price,
             prepared.reference_price,
         )
-        commission = (request.qty * price * self.ctx.config.commission_rate).quantize(
+        commission = (request.qty * price * prepared.terms.commission_rate_pct / 100).quantize(
             Decimal("0.01"), rounding=ROUND_UP
         )
         return {
@@ -117,15 +118,17 @@ class OrderService:
                 "Explicit confirmation required.",
                 {"fields": ["confirmed"]},
             )
+        now = self.ctx.clock.now()
         prepared = await self.ctx.prepare(
             user_id,
             replace(request, symbol=request.symbol.strip().upper()),
             authorize=signature is None,
             totp_code=totp_code,
+            at=now,
         )
         request = prepared.request
         broker_id = await self.ctx.brokers.reviewing_broker(user_id) if signature is None else None
-        now, ident = self.ctx.clock.now(), uuid4()
+        ident = uuid4()
         order = Order(
             ident,
             user_id,
@@ -154,6 +157,9 @@ class OrderService:
             schedule_if_closed=request.schedule_if_closed,
             broker_id=signature,
             broker_signed_at=now if signature else None,
+            fee_version_id=prepared.terms.fee_version_id,
+            commission_rate_pct=prepared.terms.commission_rate_pct,
+            platform_share_pct=prepared.terms.platform_share_pct,
         )
         async with self.ctx.uow() as work:
             await work.lock_user(user_id)
@@ -243,7 +249,13 @@ class OrderService:
             detail["review_comments"] = await work.comments.list(order_id=order_id)
         price = base_price(order.type, order.limit_price, order.stop_price, order.reference_price)
         detail["reference_commission"] = (
-            order.qty * price * self.ctx.config.commission_rate
+            order.qty
+            * price
+            * (
+                order.commission_rate_pct / 100
+                if order.commission_rate_pct is not None
+                else self.ctx.config.commission_rate
+            )
         ).quantize(Decimal("0.01"), rounding=ROUND_UP)
         detail["reference_commission_estimated"] = True
         return detail
@@ -385,7 +397,19 @@ class OrderService:
         prepared, session, open_now = None, None, False
         if decision == "accept" and self.ctx.clock.now() < initial.deadline:
             prepared = await self.ctx.prepare(
-                user_id, request_from(order), authorize=False, check_session=False
+                user_id,
+                request_from(order),
+                authorize=False,
+                check_session=False,
+                terms=CommissionTerms(
+                    order.fee_version_id,
+                    order.commission_rate_pct
+                    if order.commission_rate_pct is not None
+                    else self.ctx.config.commission_rate * 100,
+                    order.platform_share_pct
+                    if order.platform_share_pct is not None
+                    else Decimal("60.00"),
+                ),
             )
             open_now = await self.ctx.sessions.is_open(order.exchange, self.ctx.clock.now())
             if not open_now:
@@ -429,7 +453,9 @@ class OrderService:
                     base_price(
                         current.type, current.limit_price, current.stop_price, pending.updated_price
                     ),
-                    self.ctx.config.commission_rate,
+                    current.commission_rate_pct / 100
+                    if current.commission_rate_pct is not None
+                    else self.ctx.config.commission_rate,
                 )
                 candidate = replace(
                     current,
@@ -542,6 +568,15 @@ class OrderService:
             authorize=True,
             totp_code=totp_code,
             check_session=False,
+            terms=CommissionTerms(
+                order.fee_version_id,
+                order.commission_rate_pct
+                if order.commission_rate_pct is not None
+                else self.ctx.config.commission_rate * 100,
+                order.platform_share_pct
+                if order.platform_share_pct is not None
+                else Decimal("60.00"),
+            ),
         )
         broker_id = await self.ctx.brokers.reviewing_broker(user_id)
         if broker_id is None:

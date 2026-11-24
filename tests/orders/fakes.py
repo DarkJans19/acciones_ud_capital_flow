@@ -137,6 +137,11 @@ class Sessions:
     async def next_open(self, exchange, at):
         return m.SessionWindow(at + timedelta(hours=1), at + timedelta(hours=7))
 
+    async def current_window(self, exchange, at):
+        return (
+            m.SessionWindow(at - timedelta(hours=1), at + timedelta(hours=5)) if self.open else None
+        )
+
 
 class BuyingPower:
     def __init__(self):

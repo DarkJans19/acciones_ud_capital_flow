@@ -10,6 +10,8 @@ from starlette.exceptions import HTTPException
 from acciones_ud.shared.domain.errors import AppError, ErrorCode
 
 ORDER_HTTP_STATUSES = {
+    ErrorCode.TRADING_HALTED: 503,
+    ErrorCode.ACCOUNT_TRADING_RESTRICTED: 403,
     ErrorCode.INVALID_PERIOD: 422,
     ErrorCode.ACCOUNT_NOT_LINKED: 409,
     ErrorCode.ORDER_ACCOUNT_NOT_ACTIVE: 409,
@@ -26,6 +28,16 @@ ORDER_HTTP_STATUSES = {
     ErrorCode.ORDER_NOT_CANCELLABLE: 409,
     ErrorCode.MARKET_CLOSED: 409,
     ErrorCode.MFA_ENROLLMENT_REQUIRED: 409,
+}
+
+ADMIN_HTTP_STATUSES = {
+    ErrorCode.FEE_VERSION_CONFLICT: 409,
+    ErrorCode.FEE_VERSION_NOT_CANCELABLE: 409,
+    ErrorCode.TRADING_HALT_OVERLAP: 409,
+    ErrorCode.TRADING_HALT_NOT_RELEASABLE: 409,
+    ErrorCode.RESTRICTION_ALREADY_ACTIVE: 409,
+    ErrorCode.RESTRICTION_NOT_ACTIVE: 409,
+    ErrorCode.PROTECTED_PERMISSION: 409,
 }
 
 
@@ -62,7 +74,8 @@ def error_body_response(exc: AppError) -> JSONResponse:
     """Shared Error_Body response used by the handler and by logout on 503 (4.14)."""
     return JSONResponse(
         status_code=BROKERS_HTTP_STATUSES.get(
-            exc.code, ORDER_HTTP_STATUSES.get(exc.code, exc.status)
+            exc.code,
+            ADMIN_HTTP_STATUSES.get(exc.code, ORDER_HTTP_STATUSES.get(exc.code, exc.status)),
         ),
         content={
             "code": exc.code,

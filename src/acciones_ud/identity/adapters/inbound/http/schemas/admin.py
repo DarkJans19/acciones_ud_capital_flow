@@ -97,7 +97,7 @@ KycStatus = Literal[
 
 class UserDirectoryQueryIn(BaseModel):
     account_status: Literal["active", "pending_broker_activation"] | None = None
-    role: Literal["investor", "broker", "administrator"] | None = None
+    role: Literal["investor", "broker", "administrator", "auditor", "analyst"] | None = None
     q: str | None = None
     # A plain bool would also accept 1, 0, yes, no, on and off (20.9).
     broker_requested: Literal["true", "false"] | None = None

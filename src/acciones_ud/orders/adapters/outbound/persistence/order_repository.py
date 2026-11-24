@@ -9,6 +9,7 @@ from acciones_ud.orders.adapters.outbound.persistence.tables import events, orde
 from acciones_ud.orders.domain.model import Order, OrderEvent
 from acciones_ud.orders.domain.pagination import decode, encode
 from acciones_ud.shared.infrastructure.entity_repository import EntityRepository
+from acciones_ud.shared.infrastructure.evidence_repository import EvidenceRepository
 
 
 class OrderRepository(EntityRepository[Order]):
@@ -18,7 +19,7 @@ class OrderRepository(EntityRepository[Order]):
     async def change(self, value: Order, previous: Order, event: OrderEvent) -> bool:
         if not await self.save(value, status=previous.status, fully_filled=previous.fully_filled):
             return False
-        await EntityRepository(self.session, events, OrderEvent).insert(event)
+        await EvidenceRepository(self.session, events, OrderEvent).insert(event)
         return True
 
     async def daily_count(self, user_id: UUID, now: datetime) -> int:
