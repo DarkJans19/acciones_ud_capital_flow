@@ -1,0 +1,306 @@
+{
+  "local": {
+    "revision": [
+      {
+        "version_num": "0012_admin_compliance_bi"
+      }
+    ],
+    "scheduled_uncanceled_test_fees": [],
+    "unreleased_test_halts": [],
+    "active_test_restrictions": [],
+    "unrestored_roles": [],
+    "test_order": [
+      {
+        "id": "be2036d3-f849-44af-9acf-9714dbc89bca",
+        "status": "CANCELED",
+        "alpaca_order_id": null,
+        "fee_version_id": "00000000-0000-0000-0000-000000000701",
+        "commission_rate_pct": "2.0000",
+        "platform_share_pct": "60.00"
+      }
+    ],
+    "duplicate_schedule_notifications": [],
+    "latest_dispatches": [
+      {
+        "market_code": "OTC",
+        "affected_orders": 0,
+        "notified_users": 5,
+        "dispatched_at": "2026-11-24 14:05:53.254028+00:00"
+      },
+      {
+        "market_code": "OTC",
+        "affected_orders": 0,
+        "notified_users": 5,
+        "dispatched_at": "2026-11-24 14:05:53.229925+00:00"
+      },
+      {
+        "market_code": "OTC",
+        "affected_orders": 0,
+        "notified_users": 5,
+        "dispatched_at": "2026-11-24 14:05:22.951509+00:00"
+      },
+      {
+        "market_code": "OTC",
+        "affected_orders": 0,
+        "notified_users": 5,
+        "dispatched_at": "2026-11-24 14:05:22.925643+00:00"
+      },
+      {
+        "market_code": "OTC",
+        "affected_orders": 0,
+        "notified_users": 5,
+        "dispatched_at": "2026-11-24 14:02:30.519047+00:00"
+      },
+      {
+        "market_code": "OTC",
+        "affected_orders": 0,
+        "notified_users": 5,
+        "dispatched_at": "2026-11-24 14:02:30.507502+00:00"
+      },
+      {
+        "market_code": "OTC",
+        "affected_orders": 0,
+        "notified_users": 5,
+        "dispatched_at": "2026-11-24 14:02:30.499774+00:00"
+      }
+    ],
+    "triggers_including_truncate": [
+      {
+        "table_name": "admin_account_restrictions",
+        "tgname": "admin_restrictions_guard",
+        "definition": "CREATE TRIGGER admin_restrictions_guard BEFORE DELETE OR UPDATE ON public.admin_account_restrictions FOR EACH ROW EXECUTE FUNCTION admin_restrictions_guard()"
+      },
+      {
+        "table_name": "admin_account_restrictions",
+        "tgname": "admin_restrictions_no_truncate",
+        "definition": "CREATE TRIGGER admin_restrictions_no_truncate BEFORE TRUNCATE ON public.admin_account_restrictions FOR EACH STATEMENT EXECUTE FUNCTION admin_evidence_immutable()"
+      },
+      {
+        "table_name": "admin_audit_log",
+        "tgname": "admin_audit_no_truncate",
+        "definition": "CREATE TRIGGER admin_audit_no_truncate BEFORE TRUNCATE ON public.admin_audit_log FOR EACH STATEMENT EXECUTE FUNCTION admin_evidence_immutable()"
+      },
+      {
+        "table_name": "admin_audit_log",
+        "tgname": "trg_admin_audit_log_immutable",
+        "definition": "CREATE TRIGGER trg_admin_audit_log_immutable BEFORE DELETE OR UPDATE ON public.admin_audit_log FOR EACH ROW EXECUTE FUNCTION admin_audit_log_immutable()"
+      },
+      {
+        "table_name": "admin_compliance_reports",
+        "tgname": "admin_reports_immutable",
+        "definition": "CREATE TRIGGER admin_reports_immutable BEFORE DELETE OR UPDATE ON public.admin_compliance_reports FOR EACH ROW EXECUTE FUNCTION admin_evidence_immutable()"
+      },
+      {
+        "table_name": "admin_compliance_reports",
+        "tgname": "admin_reports_no_truncate",
+        "definition": "CREATE TRIGGER admin_reports_no_truncate BEFORE TRUNCATE ON public.admin_compliance_reports FOR EACH STATEMENT EXECUTE FUNCTION admin_evidence_immutable()"
+      },
+      {
+        "table_name": "admin_fee_versions",
+        "tgname": "admin_fee_versions_guard",
+        "definition": "CREATE TRIGGER admin_fee_versions_guard BEFORE DELETE OR UPDATE ON public.admin_fee_versions FOR EACH ROW EXECUTE FUNCTION admin_fee_versions_guard()"
+      },
+      {
+        "table_name": "admin_fee_versions",
+        "tgname": "admin_fees_no_truncate",
+        "definition": "CREATE TRIGGER admin_fees_no_truncate BEFORE TRUNCATE ON public.admin_fee_versions FOR EACH STATEMENT EXECUTE FUNCTION admin_evidence_immutable()"
+      },
+      {
+        "table_name": "admin_trading_halts",
+        "tgname": "admin_halts_no_truncate",
+        "definition": "CREATE TRIGGER admin_halts_no_truncate BEFORE TRUNCATE ON public.admin_trading_halts FOR EACH STATEMENT EXECUTE FUNCTION admin_evidence_immutable()"
+      },
+      {
+        "table_name": "admin_trading_halts",
+        "tgname": "admin_trading_halts_guard",
+        "definition": "CREATE TRIGGER admin_trading_halts_guard BEFORE DELETE OR UPDATE ON public.admin_trading_halts FOR EACH ROW EXECUTE FUNCTION admin_trading_halts_guard()"
+      },
+      {
+        "table_name": "auth_events",
+        "tgname": "auth_events_admin_immutable",
+        "definition": "CREATE TRIGGER auth_events_admin_immutable BEFORE DELETE OR UPDATE ON public.auth_events FOR EACH ROW EXECUTE FUNCTION admin_evidence_immutable()"
+      },
+      {
+        "table_name": "auth_events",
+        "tgname": "auth_events_admin_no_truncate",
+        "definition": "CREATE TRIGGER auth_events_admin_no_truncate BEFORE TRUNCATE ON public.auth_events FOR EACH STATEMENT EXECUTE FUNCTION admin_evidence_immutable()"
+      },
+      {
+        "table_name": "broker_events",
+        "tgname": "broker_events_admin_no_truncate",
+        "definition": "CREATE TRIGGER broker_events_admin_no_truncate BEFORE TRUNCATE ON public.broker_events FOR EACH STATEMENT EXECUTE FUNCTION admin_evidence_immutable()"
+      },
+      {
+        "table_name": "order_events",
+        "tgname": "order_events_admin_immutable",
+        "definition": "CREATE TRIGGER order_events_admin_immutable BEFORE DELETE OR UPDATE ON public.order_events FOR EACH ROW EXECUTE FUNCTION admin_evidence_immutable()"
+      },
+      {
+        "table_name": "order_events",
+        "tgname": "order_events_admin_no_truncate",
+        "definition": "CREATE TRIGGER order_events_admin_no_truncate BEFORE TRUNCATE ON public.order_events FOR EACH STATEMENT EXECUTE FUNCTION admin_evidence_immutable()"
+      },
+      {
+        "table_name": "order_executions",
+        "tgname": "order_executions_admin_immutable",
+        "definition": "CREATE TRIGGER order_executions_admin_immutable BEFORE DELETE OR UPDATE ON public.order_executions FOR EACH ROW EXECUTE FUNCTION admin_evidence_immutable()"
+      },
+      {
+        "table_name": "order_executions",
+        "tgname": "order_executions_admin_no_truncate",
+        "definition": "CREATE TRIGGER order_executions_admin_no_truncate BEFORE TRUNCATE ON public.order_executions FOR EACH STATEMENT EXECUTE FUNCTION admin_evidence_immutable()"
+      },
+      {
+        "table_name": "orders",
+        "tgname": "order_commission_terms_guard",
+        "definition": "CREATE TRIGGER order_commission_terms_guard BEFORE UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION order_commission_terms_guard()"
+      }
+    ]
+  },
+  "supabase": {
+    "revision": [
+      {
+        "version_num": "0012_admin_compliance_bi"
+      }
+    ],
+    "scheduled_uncanceled_test_fees": [],
+    "unreleased_test_halts": [],
+    "active_test_restrictions": [],
+    "unrestored_roles": [],
+    "test_order": [
+      {
+        "id": "6a4c5af7-10aa-4b6f-9f7d-15f48798ee54",
+        "status": "CANCELED",
+        "alpaca_order_id": null,
+        "fee_version_id": "00000000-0000-0000-0000-000000000701",
+        "commission_rate_pct": "2.0000",
+        "platform_share_pct": "60.00"
+      }
+    ],
+    "duplicate_schedule_notifications": [],
+    "latest_dispatches": [
+      {
+        "market_code": "OTC",
+        "affected_orders": 0,
+        "notified_users": 20,
+        "dispatched_at": "2026-11-24 14:08:56.229272+00:00"
+      },
+      {
+        "market_code": "OTC",
+        "affected_orders": 0,
+        "notified_users": 20,
+        "dispatched_at": "2026-11-24 14:08:53.173042+00:00"
+      },
+      {
+        "market_code": "OTC",
+        "affected_orders": 0,
+        "notified_users": 20,
+        "dispatched_at": "2026-11-24 14:06:57.761057+00:00"
+      },
+      {
+        "market_code": "OTC",
+        "affected_orders": 0,
+        "notified_users": 20,
+        "dispatched_at": "2026-11-24 14:06:55.346568+00:00"
+      },
+      {
+        "market_code": "OTC",
+        "affected_orders": 0,
+        "notified_users": 20,
+        "dispatched_at": "2026-11-24 14:06:52.793469+00:00"
+      }
+    ],
+    "triggers_including_truncate": [
+      {
+        "table_name": "admin_account_restrictions",
+        "tgname": "admin_restrictions_guard",
+        "definition": "CREATE TRIGGER admin_restrictions_guard BEFORE DELETE OR UPDATE ON public.admin_account_restrictions FOR EACH ROW EXECUTE FUNCTION admin_restrictions_guard()"
+      },
+      {
+        "table_name": "admin_account_restrictions",
+        "tgname": "admin_restrictions_no_truncate",
+        "definition": "CREATE TRIGGER admin_restrictions_no_truncate BEFORE TRUNCATE ON public.admin_account_restrictions FOR EACH STATEMENT EXECUTE FUNCTION admin_evidence_immutable()"
+      },
+      {
+        "table_name": "admin_audit_log",
+        "tgname": "admin_audit_no_truncate",
+        "definition": "CREATE TRIGGER admin_audit_no_truncate BEFORE TRUNCATE ON public.admin_audit_log FOR EACH STATEMENT EXECUTE FUNCTION admin_evidence_immutable()"
+      },
+      {
+        "table_name": "admin_audit_log",
+        "tgname": "trg_admin_audit_log_immutable",
+        "definition": "CREATE TRIGGER trg_admin_audit_log_immutable BEFORE DELETE OR UPDATE ON public.admin_audit_log FOR EACH ROW EXECUTE FUNCTION admin_audit_log_immutable()"
+      },
+      {
+        "table_name": "admin_compliance_reports",
+        "tgname": "admin_reports_immutable",
+        "definition": "CREATE TRIGGER admin_reports_immutable BEFORE DELETE OR UPDATE ON public.admin_compliance_reports FOR EACH ROW EXECUTE FUNCTION admin_evidence_immutable()"
+      },
+      {
+        "table_name": "admin_compliance_reports",
+        "tgname": "admin_reports_no_truncate",
+        "definition": "CREATE TRIGGER admin_reports_no_truncate BEFORE TRUNCATE ON public.admin_compliance_reports FOR EACH STATEMENT EXECUTE FUNCTION admin_evidence_immutable()"
+      },
+      {
+        "table_name": "admin_fee_versions",
+        "tgname": "admin_fee_versions_guard",
+        "definition": "CREATE TRIGGER admin_fee_versions_guard BEFORE DELETE OR UPDATE ON public.admin_fee_versions FOR EACH ROW EXECUTE FUNCTION admin_fee_versions_guard()"
+      },
+      {
+        "table_name": "admin_fee_versions",
+        "tgname": "admin_fees_no_truncate",
+        "definition": "CREATE TRIGGER admin_fees_no_truncate BEFORE TRUNCATE ON public.admin_fee_versions FOR EACH STATEMENT EXECUTE FUNCTION admin_evidence_immutable()"
+      },
+      {
+        "table_name": "admin_trading_halts",
+        "tgname": "admin_halts_no_truncate",
+        "definition": "CREATE TRIGGER admin_halts_no_truncate BEFORE TRUNCATE ON public.admin_trading_halts FOR EACH STATEMENT EXECUTE FUNCTION admin_evidence_immutable()"
+      },
+      {
+        "table_name": "admin_trading_halts",
+        "tgname": "admin_trading_halts_guard",
+        "definition": "CREATE TRIGGER admin_trading_halts_guard BEFORE DELETE OR UPDATE ON public.admin_trading_halts FOR EACH ROW EXECUTE FUNCTION admin_trading_halts_guard()"
+      },
+      {
+        "table_name": "auth_events",
+        "tgname": "auth_events_admin_immutable",
+        "definition": "CREATE TRIGGER auth_events_admin_immutable BEFORE DELETE OR UPDATE ON public.auth_events FOR EACH ROW EXECUTE FUNCTION admin_evidence_immutable()"
+      },
+      {
+        "table_name": "auth_events",
+        "tgname": "auth_events_admin_no_truncate",
+        "definition": "CREATE TRIGGER auth_events_admin_no_truncate BEFORE TRUNCATE ON public.auth_events FOR EACH STATEMENT EXECUTE FUNCTION admin_evidence_immutable()"
+      },
+      {
+        "table_name": "broker_events",
+        "tgname": "broker_events_admin_no_truncate",
+        "definition": "CREATE TRIGGER broker_events_admin_no_truncate BEFORE TRUNCATE ON public.broker_events FOR EACH STATEMENT EXECUTE FUNCTION admin_evidence_immutable()"
+      },
+      {
+        "table_name": "order_events",
+        "tgname": "order_events_admin_immutable",
+        "definition": "CREATE TRIGGER order_events_admin_immutable BEFORE DELETE OR UPDATE ON public.order_events FOR EACH ROW EXECUTE FUNCTION admin_evidence_immutable()"
+      },
+      {
+        "table_name": "order_events",
+        "tgname": "order_events_admin_no_truncate",
+        "definition": "CREATE TRIGGER order_events_admin_no_truncate BEFORE TRUNCATE ON public.order_events FOR EACH STATEMENT EXECUTE FUNCTION admin_evidence_immutable()"
+      },
+      {
+        "table_name": "order_executions",
+        "tgname": "order_executions_admin_immutable",
+        "definition": "CREATE TRIGGER order_executions_admin_immutable BEFORE DELETE OR UPDATE ON public.order_executions FOR EACH ROW EXECUTE FUNCTION admin_evidence_immutable()"
+      },
+      {
+        "table_name": "order_executions",
+        "tgname": "order_executions_admin_no_truncate",
+        "definition": "CREATE TRIGGER order_executions_admin_no_truncate BEFORE TRUNCATE ON public.order_executions FOR EACH STATEMENT EXECUTE FUNCTION admin_evidence_immutable()"
+      },
+      {
+        "table_name": "orders",
+        "tgname": "order_commission_terms_guard",
+        "definition": "CREATE TRIGGER order_commission_terms_guard BEFORE UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION order_commission_terms_guard()"
+      }
+    ]
+  }
+}
