@@ -1,0 +1,717 @@
+{
+  "mode": "ASGI + real PostgreSQL; fake Alpaca/Stripe; real authentication",
+  "requests": [
+    {
+      "actor": "admin",
+      "method": "POST",
+      "path": "/auth/login",
+      "expected": 200,
+      "actual": 200,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "admin",
+      "method": "POST",
+      "path": "/auth/mfa/verify",
+      "expected": 200,
+      "actual": 200,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "investor",
+      "method": "POST",
+      "path": "/auth/register",
+      "expected": 201,
+      "actual": 201,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "investor",
+      "method": "POST",
+      "path": "/auth/login",
+      "expected": 200,
+      "actual": 200,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "investor",
+      "method": "POST",
+      "path": "/auth/mfa/verify",
+      "expected": 200,
+      "actual": 200,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "other",
+      "method": "POST",
+      "path": "/auth/register",
+      "expected": 201,
+      "actual": 201,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "other",
+      "method": "POST",
+      "path": "/auth/login",
+      "expected": 200,
+      "actual": 200,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "other",
+      "method": "POST",
+      "path": "/auth/mfa/verify",
+      "expected": 200,
+      "actual": 200,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "broker",
+      "method": "POST",
+      "path": "/auth/register/broker",
+      "expected": 201,
+      "actual": 201,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "broker",
+      "method": "POST",
+      "path": "/auth/login",
+      "expected": 200,
+      "actual": 200,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "broker",
+      "method": "POST",
+      "path": "/auth/mfa/verify",
+      "expected": 200,
+      "actual": 200,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "auditor",
+      "method": "POST",
+      "path": "/auth/register",
+      "expected": 201,
+      "actual": 201,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "auditor",
+      "method": "POST",
+      "path": "/auth/login",
+      "expected": 200,
+      "actual": 200,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "auditor",
+      "method": "POST",
+      "path": "/auth/mfa/verify",
+      "expected": 200,
+      "actual": 200,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "analyst",
+      "method": "POST",
+      "path": "/auth/register",
+      "expected": 201,
+      "actual": 201,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "analyst",
+      "method": "POST",
+      "path": "/auth/login",
+      "expected": 200,
+      "actual": 200,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "analyst",
+      "method": "POST",
+      "path": "/auth/mfa/verify",
+      "expected": 200,
+      "actual": 200,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "admin",
+      "method": "POST",
+      "path": "/admin/users/93b8ad1a-97c8-4182-bbe7-6a80373c4a38/roles",
+      "expected": 201,
+      "actual": 201,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "admin",
+      "method": "POST",
+      "path": "/admin/users/336cac7b-e80a-4824-974a-33987e202a6f/roles",
+      "expected": 201,
+      "actual": 201,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "broker",
+      "method": "GET",
+      "path": "/wallet/balances",
+      "expected": 403,
+      "actual": 403,
+      "passed": true,
+      "code": "FORBIDDEN"
+    },
+    {
+      "actor": "admin",
+      "method": "POST",
+      "path": "/admin/users/1b7ed0b2-325c-487a-be07-95d17e24ff11/broker-activation",
+      "expected": 200,
+      "actual": 200,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "investor",
+      "method": "GET",
+      "path": "/admin/fee-schedules",
+      "expected": 403,
+      "actual": 403,
+      "passed": true,
+      "code": "FORBIDDEN"
+    },
+    {
+      "actor": "broker",
+      "method": "GET",
+      "path": "/wallet/balances",
+      "expected": 409,
+      "actual": 409,
+      "passed": true,
+      "code": "WALLET_ACCOUNT_REQUIRED"
+    },
+    {
+      "actor": "investor",
+      "method": "POST",
+      "path": "/kyc/account",
+      "expected": 201,
+      "actual": 201,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "investor",
+      "method": "GET",
+      "path": "/kyc/status",
+      "expected": 200,
+      "actual": 200,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "investor",
+      "method": "GET",
+      "path": "/wallet/balances",
+      "expected": 200,
+      "actual": 200,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "investor",
+      "method": "GET",
+      "path": "/watchlists",
+      "expected": 403,
+      "actual": 403,
+      "passed": true,
+      "code": "PREMIUM_REQUIRED"
+    },
+    {
+      "actor": "investor",
+      "method": "POST",
+      "path": "/subscriptions/checkout",
+      "expected": 201,
+      "actual": 201,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "anonymous",
+      "method": "POST",
+      "path": "/webhooks/stripe",
+      "expected": 400,
+      "actual": 400,
+      "passed": true,
+      "code": "WEBHOOK_SIGNATURE_INVALID"
+    },
+    {
+      "actor": "anonymous",
+      "method": "POST",
+      "path": "/webhooks/stripe",
+      "expected": 200,
+      "actual": 200,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "anonymous",
+      "method": "POST",
+      "path": "/webhooks/stripe",
+      "expected": 200,
+      "actual": 200,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "investor",
+      "method": "GET",
+      "path": "/users/me",
+      "expected": 200,
+      "actual": 200,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "investor",
+      "method": "GET",
+      "path": "/instruments/search",
+      "expected": 200,
+      "actual": 200,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "investor",
+      "method": "GET",
+      "path": "/instruments/TD2303F3/quote",
+      "expected": 200,
+      "actual": 200,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "investor",
+      "method": "POST",
+      "path": "/watchlists",
+      "expected": 201,
+      "actual": 201,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "investor",
+      "method": "POST",
+      "path": "/watchlists/34035eb2-bf93-48e3-b43c-27d5df3da81e/items",
+      "expected": 200,
+      "actual": 200,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "investor",
+      "method": "POST",
+      "path": "/watchlists/34035eb2-bf93-48e3-b43c-27d5df3da81e/items",
+      "expected": 409,
+      "actual": 409,
+      "passed": true,
+      "code": "SYMBOL_ALREADY_IN_WATCHLIST"
+    },
+    {
+      "actor": "investor",
+      "method": "POST",
+      "path": "/wallet/bank-relationships",
+      "expected": 201,
+      "actual": 201,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "other",
+      "method": "GET",
+      "path": "/wallet/bank-relationships/565d95f6-c643-4b41-adf8-9d3e852cb66b",
+      "expected": 404,
+      "actual": 404,
+      "passed": true,
+      "code": "NOT_FOUND"
+    },
+    {
+      "actor": "investor",
+      "method": "POST",
+      "path": "/wallet/deposits",
+      "expected": 201,
+      "actual": 201,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "investor",
+      "method": "POST",
+      "path": "/wallet/deposits",
+      "expected": 201,
+      "actual": 201,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "investor",
+      "method": "POST",
+      "path": "/wallet/deposits",
+      "expected": 409,
+      "actual": 409,
+      "passed": true,
+      "code": "IDEMPOTENCY_CONFLICT"
+    },
+    {
+      "actor": "other",
+      "method": "GET",
+      "path": "/wallet/transfers/750c7215-4f6d-49b7-9ca6-248283301500",
+      "expected": 404,
+      "actual": 404,
+      "passed": true,
+      "code": "NOT_FOUND"
+    },
+    {
+      "actor": "admin",
+      "method": "GET",
+      "path": "/admin/fee-schedules",
+      "expected": 200,
+      "actual": 200,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "investor",
+      "method": "GET",
+      "path": "/commissions/quote",
+      "expected": 200,
+      "actual": 200,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "investor",
+      "method": "POST",
+      "path": "/orders/preview",
+      "expected": 200,
+      "actual": 200,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "investor",
+      "method": "POST",
+      "path": "/orders",
+      "expected": 201,
+      "actual": 201,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "investor",
+      "method": "POST",
+      "path": "/orders",
+      "expected": 201,
+      "actual": 201,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "other",
+      "method": "GET",
+      "path": "/orders/7a9088a7-00f0-495f-83e8-00c7acc36bbf",
+      "expected": 404,
+      "actual": 404,
+      "passed": true,
+      "code": "ORDER_NOT_FOUND"
+    },
+    {
+      "actor": "investor",
+      "method": "GET",
+      "path": "/portfolio/positions",
+      "expected": 200,
+      "actual": 200,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "investor",
+      "method": "POST",
+      "path": "/portfolio/reports",
+      "expected": 201,
+      "actual": 201,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "other",
+      "method": "GET",
+      "path": "/portfolio/reports/bf4ca8f2-fe1f-4bbc-9a58-2bec7161b9d9",
+      "expected": 404,
+      "actual": 404,
+      "passed": true,
+      "code": "NOT_FOUND"
+    },
+    {
+      "actor": "investor",
+      "method": "POST",
+      "path": "/broker-links",
+      "expected": 201,
+      "actual": 201,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "other",
+      "method": "POST",
+      "path": "/broker-links/2e54426d-373c-46e1-98d9-c197e13d4c25/end",
+      "expected": 404,
+      "actual": 404,
+      "passed": true,
+      "code": "LINK_NOT_FOUND"
+    },
+    {
+      "actor": "broker",
+      "method": "POST",
+      "path": "/broker/link-requests/2e54426d-373c-46e1-98d9-c197e13d4c25/accept",
+      "expected": 200,
+      "actual": 200,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "broker",
+      "method": "POST",
+      "path": "/broker/proposals",
+      "expected": 201,
+      "actual": 201,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "other",
+      "method": "GET",
+      "path": "/proposals/8ba40332-79a0-458f-8b11-05f5b9799c6b",
+      "expected": 404,
+      "actual": 404,
+      "passed": true,
+      "code": "PROPOSAL_NOT_FOUND"
+    },
+    {
+      "actor": "investor",
+      "method": "POST",
+      "path": "/proposals/8ba40332-79a0-458f-8b11-05f5b9799c6b/decision",
+      "expected": 200,
+      "actual": 200,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "investor",
+      "method": "POST",
+      "path": "/broker-links/2e54426d-373c-46e1-98d9-c197e13d4c25/end",
+      "expected": 200,
+      "actual": 200,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "broker",
+      "method": "GET",
+      "path": "/broker/clients/94ff0fa9-2184-44e7-be88-5dff4902354e/orders",
+      "expected": 404,
+      "actual": 404,
+      "passed": true,
+      "code": "CLIENT_NOT_FOUND"
+    },
+    {
+      "actor": "admin",
+      "method": "GET",
+      "path": "/admin/audit-trail",
+      "expected": 200,
+      "actual": 200,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "auditor",
+      "method": "GET",
+      "path": "/admin/audit-trail",
+      "expected": 200,
+      "actual": 200,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "analyst",
+      "method": "GET",
+      "path": "/admin/kpis",
+      "expected": 200,
+      "actual": 200,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "analyst",
+      "method": "GET",
+      "path": "/admin/audit-trail",
+      "expected": 403,
+      "actual": 403,
+      "passed": true,
+      "code": "FORBIDDEN"
+    },
+    {
+      "actor": "auditor",
+      "method": "GET",
+      "path": "/admin/kpis",
+      "expected": 403,
+      "actual": 403,
+      "passed": true,
+      "code": "FORBIDDEN"
+    },
+    {
+      "actor": "auditor",
+      "method": "POST",
+      "path": "/admin/trading-halts",
+      "expected": 403,
+      "actual": 403,
+      "passed": true,
+      "code": "FORBIDDEN"
+    },
+    {
+      "actor": "analyst",
+      "method": "POST",
+      "path": "/admin/trading-halts",
+      "expected": 403,
+      "actual": 403,
+      "passed": true,
+      "code": "FORBIDDEN"
+    },
+    {
+      "actor": "investor",
+      "method": "POST",
+      "path": "/auth/logout",
+      "expected": 204,
+      "actual": 204,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "investor",
+      "method": "GET",
+      "path": "/users/me",
+      "expected": 401,
+      "actual": 401,
+      "passed": true,
+      "code": "NOT_AUTHENTICATED"
+    },
+    {
+      "actor": "other",
+      "method": "POST",
+      "path": "/auth/logout",
+      "expected": 204,
+      "actual": 204,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "other",
+      "method": "GET",
+      "path": "/users/me",
+      "expected": 401,
+      "actual": 401,
+      "passed": true,
+      "code": "NOT_AUTHENTICATED"
+    },
+    {
+      "actor": "broker",
+      "method": "POST",
+      "path": "/auth/logout",
+      "expected": 204,
+      "actual": 204,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "broker",
+      "method": "GET",
+      "path": "/users/me",
+      "expected": 401,
+      "actual": 401,
+      "passed": true,
+      "code": "NOT_AUTHENTICATED"
+    },
+    {
+      "actor": "admin",
+      "method": "POST",
+      "path": "/auth/logout",
+      "expected": 204,
+      "actual": 204,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "admin",
+      "method": "GET",
+      "path": "/users/me",
+      "expected": 401,
+      "actual": 401,
+      "passed": true,
+      "code": "NOT_AUTHENTICATED"
+    },
+    {
+      "actor": "auditor",
+      "method": "POST",
+      "path": "/auth/logout",
+      "expected": 204,
+      "actual": 204,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "auditor",
+      "method": "GET",
+      "path": "/users/me",
+      "expected": 401,
+      "actual": 401,
+      "passed": true,
+      "code": "NOT_AUTHENTICATED"
+    },
+    {
+      "actor": "analyst",
+      "method": "POST",
+      "path": "/auth/logout",
+      "expected": 204,
+      "actual": 204,
+      "passed": true,
+      "code": null
+    },
+    {
+      "actor": "analyst",
+      "method": "GET",
+      "path": "/users/me",
+      "expected": 401,
+      "actual": 401,
+      "passed": true,
+      "code": "NOT_AUTHENTICATED"
+    }
+  ],
+  "provider_request_count": 10
+}

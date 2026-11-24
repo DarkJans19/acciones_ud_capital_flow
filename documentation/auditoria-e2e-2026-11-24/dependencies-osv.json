@@ -1,0 +1,1207 @@
+{
+  "source": "OSV querybatch",
+  "packages": 57,
+  "scope": "installed Python environment, including dev",
+  "vulnerabilities": [
+    {
+      "package": "aiosmtplib",
+      "version": "4.0.2",
+      "id": "GHSA-v3q9-hj7j-63hq",
+      "modified": "2026-09-10T03:50:53.029848Z"
+    },
+    {
+      "package": "aiosmtplib",
+      "version": "4.0.2",
+      "id": "GHSA-vxj7-4xrp-5vr4",
+      "modified": "2026-09-10T12:25:32.035695Z"
+    },
+    {
+      "package": "aiosmtplib",
+      "version": "4.0.2",
+      "id": "PYSEC-2026-2338",
+      "modified": "2026-07-13T16:31:35.503143Z"
+    },
+    {
+      "package": "aiosmtplib",
+      "version": "4.0.2",
+      "id": "PYSEC-2026-3805",
+      "modified": "2026-09-10T12:15:06.298327Z"
+    },
+    {
+      "package": "pytest",
+      "version": "8.4.2",
+      "id": "GHSA-6w46-j5rx-g56g",
+      "modified": "2026-09-10T03:50:32.768043Z"
+    },
+    {
+      "package": "pytest",
+      "version": "8.4.2",
+      "id": "PYSEC-2026-1845",
+      "modified": "2026-07-07T17:47:51.848748Z"
+    }
+  ],
+  "status": "completed",
+  "advisories": [
+    {
+      "id": "GHSA-v3q9-hj7j-63hq",
+      "aliases": [
+        "CVE-2026-53533",
+        "PYSEC-2026-2338"
+      ],
+      "summary": "aiosmtplib vulnerable to SMTP command injection via CR/LF in sender/recipient address",
+      "details": "### Summary\n\n`aiosmtplib`'s `SMTP.mail()`, `SMTP.rcpt()`, `SMTP.vrfy()` and `SMTP.expn()` send the caller-supplied email address to the server without rejecting embedded CR/LF (`\\r\\n`) bytes. An address that contains a CR/LF is written verbatim onto the SMTP control connection, so the bytes after the CRLF are framed by the server as one or more **additional, standalone SMTP command lines**. A caller that passes an attacker-influenced sender or recipient address into `mail()`/`rcpt()` (or `vrfy()`/`expn()`) therefore allows **SMTP command injection** (CWE-93 / CWE-77): the attacker can smuggle arbitrary SMTP verbs such as `MAIL FROM`, `RCPT TO`, `RSET`, `DATA`, or `AUTH` into the session. Injected commands will cause the `SMTP` instance to hang, but all commands required to complete the envelope could be sent in one address string.\n\nThe `SMTP.sendmail()` command will pass sender and recipient addresses verbatim through to `SMTP.mail()` & `SMTP.rcpt()`, and so is also vulnerable. `SMTP.send_message()` is not affected.\n\n### Impact\n\nSeverity: medium. Type: SMTP protocol command injection (CWE-93 \u2014 Improper Neutralization of CRLF Sequences; CWE-77 \u2014 Command Injection).\n\nWhen an application built on `aiosmtplib` derives the envelope sender or any recipient from data an attacker can influence (a web form etc.) and passes it to `mail()`/`rcpt()` (directly, or via `sendmail()`/`send()` without a `Message` object), the attacker can:\n\n- desynchronize the command/response pipeline and cause the aiosmtplib client to hang, resulting in a possible denial of service\n- inject multiple commands in one address to send an arbitrary message\n\nThe address only needs to reach `mail()`/`rcpt()`/`vrfy()`/`expn()`; no attacker control over the SMTP server is required.\n\n### Vulnerable versions\n\nAffected version: `aiosmtplib` 5.1.0 (latest at time of report) and all earlier releases.\n\n### Credit\n\nReported by tonghuaroot.",
+      "affected": [
+        {
+          "package": {
+            "name": "aiosmtplib",
+            "ecosystem": "PyPI",
+            "purl": "pkg:pypi/aiosmtplib"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "5.1.1"
+                }
+              ]
+            }
+          ],
+          "versions": [
+            "0.1",
+            "0.1.2",
+            "0.1.3",
+            "0.1.4",
+            "0.1.5rc2",
+            "0.1.6",
+            "0.1.7",
+            "1.0.0",
+            "1.0.1",
+            "1.0.2",
+            "1.0.3",
+            "1.0.4",
+            "1.0.5",
+            "1.0.6",
+            "1.1.0",
+            "1.1.1",
+            "1.1.2",
+            "1.1.3",
+            "1.1.4",
+            "1.1.5",
+            "1.1.6",
+            "1.1.7",
+            "1.1b0",
+            "2.0.0",
+            "2.0.0b0",
+            "2.0.0b1",
+            "2.0.1",
+            "2.0.2",
+            "3.0.0",
+            "3.0.1",
+            "3.0.2",
+            "4.0.0",
+            "4.0.1",
+            "4.0.2",
+            "5.0.0",
+            "5.1.0"
+          ],
+          "database_specific": {
+            "last_known_affected_version_range": "<= 5.1.0",
+            "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2026/07/GHSA-v3q9-hj7j-63hq/GHSA-v3q9-hj7j-63hq.json"
+          }
+        }
+      ],
+      "severity": [
+        {
+          "type": "CVSS_V4",
+          "score": "CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:N/VI:L/VA:L/SC:N/SI:H/SA:N"
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/cole/aiosmtplib/security/advisories/GHSA-v3q9-hj7j-63hq"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/cole/aiosmtplib"
+        }
+      ]
+    },
+    {
+      "id": "GHSA-vxj7-4xrp-5vr4",
+      "aliases": [
+        "CVE-2026-55558",
+        "PYSEC-2026-3805"
+      ],
+      "summary": "aiosmtplib: STARTTLS response injection",
+      "details": "## Impact\n\nWhen a connection is upgraded with STARTTLS, aiosmtplib reads the server's 220 go-ahead reply and immediately performs the TLS handshake without discarding any data still sitting in the receive buffer. Bytes the protocol read off the plaintext socket before the handshake survive across the plaintext\u2192TLS boundary (the asyncio transport is swapped in place, so the protocol object and its buffer are reused), and are then parsed as though they had arrived inside the TLS session.\n\nWho is affected: Any caller that uses STARTTLS by passing `start_tls=True` or `start_tls=None` when the server advertises STARTTLS, and whose traffic can be intercepted by an active network attacker on the plaintext leg of the connection.\n\nA man in the middle can send, in a single segment immediately after the client's STARTTLS command, the 220 reply followed by attacker-chosen response lines (e.g. 220 Go ahead\\r\\n250-mx.evil\\r\\n250 AUTH LOGIN\\r\\n). aiosmtplib\n  consumes only the 220, leaves the injected lines buffered, completes the handshake, and then parses the attacker's pre-staged plaintext as the first post-TLS server response. This also desynchronizes every\n  subsequent command/response pair inside the \"encrypted\" session.\n\nNot affected: Connections using implicit/direct TLS (`use_tls=True`) have no plaintext phase and are not vulnerable. The attack requires an active man in the middle via network compromise; a passive eavesdropper cannot exploit it.\n\n\n# Patches\n\n  A fix is available in aiosmtplib 5.1.2. All earlier versions that support STARTTLS are affected; upgrade to 5.1.2 or\n  later.\n\n  The fix treats any data buffered after the 220 STARTTLS reply and before the handshake as a protocol violation, per RFC 3207 \u00a74.2 (\"the client MUST discard any knowledge obtained from the server \u2026 which was not\n  obtained from the TLS negotiation itself\").\n\n# Workarounds\n\n  If you cannot upgrade immediately:\n\n  - Use implicit TLS instead of STARTTLS. Connect with `use_tls=True`. This removes the plaintext phase entirely.\n  - If STARTTLS is unavoidable, restrict connections to servers reached over a trusted network path.",
+      "affected": [
+        {
+          "package": {
+            "name": "aiosmtplib",
+            "ecosystem": "PyPI",
+            "purl": "pkg:pypi/aiosmtplib"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "5.1.2"
+                }
+              ]
+            }
+          ],
+          "versions": [
+            "0.1",
+            "0.1.2",
+            "0.1.3",
+            "0.1.4",
+            "0.1.5rc2",
+            "0.1.6",
+            "0.1.7",
+            "1.0.0",
+            "1.0.1",
+            "1.0.2",
+            "1.0.3",
+            "1.0.4",
+            "1.0.5",
+            "1.0.6",
+            "1.1.0",
+            "1.1.1",
+            "1.1.2",
+            "1.1.3",
+            "1.1.4",
+            "1.1.5",
+            "1.1.6",
+            "1.1.7",
+            "1.1b0",
+            "2.0.0",
+            "2.0.0b0",
+            "2.0.0b1",
+            "2.0.1",
+            "2.0.2",
+            "3.0.0",
+            "3.0.1",
+            "3.0.2",
+            "4.0.0",
+            "4.0.1",
+            "4.0.2",
+            "5.0.0",
+            "5.1.0",
+            "5.1.1"
+          ],
+          "database_specific": {
+            "last_known_affected_version_range": "<= 5.1.1",
+            "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2026/08/GHSA-vxj7-4xrp-5vr4/GHSA-vxj7-4xrp-5vr4.json"
+          }
+        }
+      ],
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:N"
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/cole/aiosmtplib/security/advisories/GHSA-vxj7-4xrp-5vr4"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-55558"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/cole/aiosmtplib/commit/9fab7ba1361dbf7622ede1315a24be805cff09c9"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/cole/aiosmtplib"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/cole/aiosmtplib/releases/tag/v5.1.2"
+        }
+      ]
+    },
+    {
+      "id": "PYSEC-2026-2338",
+      "aliases": [
+        "CVE-2026-53533",
+        "GHSA-v3q9-hj7j-63hq"
+      ],
+      "summary": "aiosmtplib vulnerable to SMTP command injection via CR/LF in sender/recipient address",
+      "details": "### Summary\n\n`aiosmtplib`'s `SMTP.mail()`, `SMTP.rcpt()`, `SMTP.vrfy()` and `SMTP.expn()` send the caller-supplied email address to the server without rejecting embedded CR/LF (`\\r\\n`) bytes. An address that contains a CR/LF is written verbatim onto the SMTP control connection, so the bytes after the CRLF are framed by the server as one or more **additional, standalone SMTP command lines**. A caller that passes an attacker-influenced sender or recipient address into `mail()`/`rcpt()` (or `vrfy()`/`expn()`) therefore allows **SMTP command injection** (CWE-93 / CWE-77): the attacker can smuggle arbitrary SMTP verbs such as `MAIL FROM`, `RCPT TO`, `RSET`, `DATA`, or `AUTH` into the session. Injected commands will cause the `SMTP` instance to hang, but all commands required to complete the envelope could be sent in one address string.\n\nThe `SMTP.sendmail()` command will pass sender and recipient addresses verbatim through to `SMTP.mail()` & `SMTP.rcpt()`, and so is also vulnerable. `SMTP.send_message()` is not affected.\n\n### Impact\n\nSeverity: medium. Type: SMTP protocol command injection (CWE-93 \u2014 Improper Neutralization of CRLF Sequences; CWE-77 \u2014 Command Injection).\n\nWhen an application built on `aiosmtplib` derives the envelope sender or any recipient from data an attacker can influence (a web form etc.) and passes it to `mail()`/`rcpt()` (directly, or via `sendmail()`/`send()` without a `Message` object), the attacker can:\n\n- desynchronize the command/response pipeline and cause the aiosmtplib client to hang, resulting in a possible denial of service\n- inject multiple commands in one address to send an arbitrary message\n\nThe address only needs to reach `mail()`/`rcpt()`/`vrfy()`/`expn()`; no attacker control over the SMTP server is required.\n\n### Vulnerable versions\n\nAffected version: `aiosmtplib` 5.1.0 (latest at time of report) and all earlier releases.\n\n### Credit\n\nReported by tonghuaroot.",
+      "affected": [
+        {
+          "package": {
+            "name": "aiosmtplib",
+            "ecosystem": "PyPI",
+            "purl": "pkg:pypi/aiosmtplib"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "5.1.1"
+                }
+              ]
+            }
+          ],
+          "versions": [
+            "0.1",
+            "0.1.2",
+            "0.1.3",
+            "0.1.4",
+            "0.1.5rc2",
+            "0.1.6",
+            "0.1.7",
+            "1.0.0",
+            "1.0.1",
+            "1.0.2",
+            "1.0.3",
+            "1.0.4",
+            "1.0.5",
+            "1.0.6",
+            "1.1.0",
+            "1.1.1",
+            "1.1.2",
+            "1.1.3",
+            "1.1.4",
+            "1.1.5",
+            "1.1.6",
+            "1.1.7",
+            "1.1b0",
+            "2.0.0",
+            "2.0.0b0",
+            "2.0.0b1",
+            "2.0.1",
+            "2.0.2",
+            "3.0.0",
+            "3.0.1",
+            "3.0.2",
+            "4.0.0",
+            "4.0.1",
+            "4.0.2",
+            "5.0.0",
+            "5.1.0"
+          ],
+          "database_specific": {
+            "source": "https://github.com/pypa/advisory-database/blob/main/vulns/aiosmtplib/PYSEC-2026-2338.yaml"
+          }
+        }
+      ],
+      "severity": [
+        {
+          "type": "CVSS_V4",
+          "score": "CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:N/VI:L/VA:L/SC:N/SI:H/SA:N"
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/cole/aiosmtplib/security/advisories/GHSA-v3q9-hj7j-63hq"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/cole/aiosmtplib"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://pypi.org/project/aiosmtplib"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/advisories/GHSA-v3q9-hj7j-63hq"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-53533"
+        }
+      ]
+    },
+    {
+      "id": "PYSEC-2026-3805",
+      "aliases": [
+        "CVE-2026-55558",
+        "GHSA-vxj7-4xrp-5vr4"
+      ],
+      "summary": "aiosmtplib: STARTTLS response injection",
+      "details": "## Impact\n\nWhen a connection is upgraded with STARTTLS, aiosmtplib reads the server's 220 go-ahead reply and immediately performs the TLS handshake without discarding any data still sitting in the receive buffer. Bytes the protocol read off the plaintext socket before the handshake survive across the plaintext\u2192TLS boundary (the asyncio transport is swapped in place, so the protocol object and its buffer are reused), and are then parsed as though they had arrived inside the TLS session.\n\nWho is affected: Any caller that uses STARTTLS by passing `start_tls=True` or `start_tls=None` when the server advertises STARTTLS, and whose traffic can be intercepted by an active network attacker on the plaintext leg of the connection.\n\nA man in the middle can send, in a single segment immediately after the client's STARTTLS command, the 220 reply followed by attacker-chosen response lines (e.g. 220 Go ahead\\r\\n250-mx.evil\\r\\n250 AUTH LOGIN\\r\\n). aiosmtplib\n  consumes only the 220, leaves the injected lines buffered, completes the handshake, and then parses the attacker's pre-staged plaintext as the first post-TLS server response. This also desynchronizes every\n  subsequent command/response pair inside the \"encrypted\" session.\n\nNot affected: Connections using implicit/direct TLS (`use_tls=True`) have no plaintext phase and are not vulnerable. The attack requires an active man in the middle via network compromise; a passive eavesdropper cannot exploit it.\n\n\n# Patches\n\n  A fix is available in aiosmtplib 5.1.2. All earlier versions that support STARTTLS are affected; upgrade to 5.1.2 or\n  later.\n\n  The fix treats any data buffered after the 220 STARTTLS reply and before the handshake as a protocol violation, per RFC 3207 \u00a74.2 (\"the client MUST discard any knowledge obtained from the server \u2026 which was not\n  obtained from the TLS negotiation itself\").\n\n# Workarounds\n\n  If you cannot upgrade immediately:\n\n  - Use implicit TLS instead of STARTTLS. Connect with `use_tls=True`. This removes the plaintext phase entirely.\n  - If STARTTLS is unavoidable, restrict connections to servers reached over a trusted network path.",
+      "affected": [
+        {
+          "package": {
+            "name": "aiosmtplib",
+            "ecosystem": "PyPI",
+            "purl": "pkg:pypi/aiosmtplib"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "5.1.2"
+                }
+              ]
+            }
+          ],
+          "versions": [
+            "0.1",
+            "0.1.2",
+            "0.1.3",
+            "0.1.4",
+            "0.1.5rc2",
+            "0.1.6",
+            "0.1.7",
+            "1.0.0",
+            "1.0.1",
+            "1.0.2",
+            "1.0.3",
+            "1.0.4",
+            "1.0.5",
+            "1.0.6",
+            "1.1.0",
+            "1.1.1",
+            "1.1.2",
+            "1.1.3",
+            "1.1.4",
+            "1.1.5",
+            "1.1.6",
+            "1.1.7",
+            "1.1b0",
+            "2.0.0",
+            "2.0.0b0",
+            "2.0.0b1",
+            "2.0.1",
+            "2.0.2",
+            "3.0.0",
+            "3.0.1",
+            "3.0.2",
+            "4.0.0",
+            "4.0.1",
+            "4.0.2",
+            "5.0.0",
+            "5.1.0",
+            "5.1.1"
+          ],
+          "database_specific": {
+            "source": "https://github.com/pypa/advisory-database/blob/main/vulns/aiosmtplib/PYSEC-2026-3805.yaml"
+          }
+        }
+      ],
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:N"
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/cole/aiosmtplib/security/advisories/GHSA-vxj7-4xrp-5vr4"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-55558"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/cole/aiosmtplib/commit/9fab7ba1361dbf7622ede1315a24be805cff09c9"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/cole/aiosmtplib"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/cole/aiosmtplib/releases/tag/v5.1.2"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://pypi.org/project/aiosmtplib"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/advisories/GHSA-vxj7-4xrp-5vr4"
+        }
+      ]
+    },
+    {
+      "id": "GHSA-6w46-j5rx-g56g",
+      "aliases": [
+        "CVE-2025-71176",
+        "PYSEC-2026-1845"
+      ],
+      "summary": "pytest has vulnerable tmpdir handling",
+      "details": "pytest through 9.0.2 on UNIX relies on directories with the `/tmp/pytest-of-{user}` name pattern, which allows local users to cause a denial of service or possibly gain privileges.",
+      "affected": [
+        {
+          "package": {
+            "name": "pytest",
+            "ecosystem": "PyPI",
+            "purl": "pkg:pypi/pytest"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "9.0.3"
+                }
+              ]
+            }
+          ],
+          "versions": [
+            "2.0.0",
+            "2.0.1",
+            "2.0.2",
+            "2.0.3",
+            "2.1.0",
+            "2.1.1",
+            "2.1.2",
+            "2.1.3",
+            "2.2.0",
+            "2.2.1",
+            "2.2.2",
+            "2.2.3",
+            "2.2.4",
+            "2.3.0",
+            "2.3.1",
+            "2.3.2",
+            "2.3.3",
+            "2.3.4",
+            "2.3.5",
+            "2.4.0",
+            "2.4.1",
+            "2.4.2",
+            "2.5.0",
+            "2.5.1",
+            "2.5.2",
+            "2.6.0",
+            "2.6.1",
+            "2.6.2",
+            "2.6.3",
+            "2.6.4",
+            "2.7.0",
+            "2.7.1",
+            "2.7.2",
+            "2.7.3",
+            "2.8.0",
+            "2.8.1",
+            "2.8.2",
+            "2.8.3",
+            "2.8.4",
+            "2.8.5",
+            "2.8.6",
+            "2.8.7",
+            "2.9.0",
+            "2.9.1",
+            "2.9.2",
+            "3.0.0",
+            "3.0.1",
+            "3.0.2",
+            "3.0.3",
+            "3.0.4",
+            "3.0.5",
+            "3.0.6",
+            "3.0.7",
+            "3.1.0",
+            "3.1.1",
+            "3.1.2",
+            "3.1.3",
+            "3.10.0",
+            "3.10.1",
+            "3.2.0",
+            "3.2.1",
+            "3.2.2",
+            "3.2.3",
+            "3.2.4",
+            "3.2.5",
+            "3.3.0",
+            "3.3.1",
+            "3.3.2",
+            "3.4.0",
+            "3.4.1",
+            "3.4.2",
+            "3.5.0",
+            "3.5.1",
+            "3.6.0",
+            "3.6.1",
+            "3.6.2",
+            "3.6.3",
+            "3.6.4",
+            "3.7.0",
+            "3.7.1",
+            "3.7.2",
+            "3.7.3",
+            "3.7.4",
+            "3.8.0",
+            "3.8.1",
+            "3.8.2",
+            "3.9.1",
+            "3.9.2",
+            "3.9.3",
+            "4.0.0",
+            "4.0.1",
+            "4.0.2",
+            "4.1.0",
+            "4.1.1",
+            "4.2.0",
+            "4.2.1",
+            "4.3.0",
+            "4.3.1",
+            "4.4.0",
+            "4.4.1",
+            "4.4.2",
+            "4.5.0",
+            "4.6.0",
+            "4.6.1",
+            "4.6.10",
+            "4.6.11",
+            "4.6.2",
+            "4.6.3",
+            "4.6.4",
+            "4.6.5",
+            "4.6.6",
+            "4.6.7",
+            "4.6.8",
+            "4.6.9",
+            "5.0.0",
+            "5.0.1",
+            "5.1.0",
+            "5.1.1",
+            "5.1.2",
+            "5.1.3",
+            "5.2.0",
+            "5.2.1",
+            "5.2.2",
+            "5.2.3",
+            "5.2.4",
+            "5.3.0",
+            "5.3.1",
+            "5.3.2",
+            "5.3.3",
+            "5.3.4",
+            "5.3.5",
+            "5.4.0",
+            "5.4.1",
+            "5.4.2",
+            "5.4.3",
+            "6.0.0",
+            "6.0.0rc1",
+            "6.0.1",
+            "6.0.2",
+            "6.1.0",
+            "6.1.1",
+            "6.1.2",
+            "6.2.0",
+            "6.2.1",
+            "6.2.2",
+            "6.2.3",
+            "6.2.4",
+            "6.2.5",
+            "7.0.0",
+            "7.0.0rc1",
+            "7.0.1",
+            "7.1.0",
+            "7.1.1",
+            "7.1.2",
+            "7.1.3",
+            "7.2.0",
+            "7.2.1",
+            "7.2.2",
+            "7.3.0",
+            "7.3.1",
+            "7.3.2",
+            "7.4.0",
+            "7.4.1",
+            "7.4.2",
+            "7.4.3",
+            "7.4.4",
+            "8.0.0",
+            "8.0.0rc1",
+            "8.0.0rc2",
+            "8.0.1",
+            "8.0.2",
+            "8.1.0",
+            "8.1.1",
+            "8.1.2",
+            "8.2.0",
+            "8.2.1",
+            "8.2.2",
+            "8.3.0",
+            "8.3.1",
+            "8.3.2",
+            "8.3.3",
+            "8.3.4",
+            "8.3.5",
+            "8.4.0",
+            "8.4.1",
+            "8.4.2",
+            "9.0.0",
+            "9.0.1",
+            "9.0.2"
+          ],
+          "database_specific": {
+            "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2026/01/GHSA-6w46-j5rx-g56g/GHSA-6w46-j5rx-g56g.json"
+          }
+        }
+      ],
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:C/C:L/I:L/A:L"
+        }
+      ],
+      "references": [
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-71176"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/pytest-dev/pytest/issues/13669"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/pytest-dev/pytest/pull/14343"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/pytest-dev/pytest/commit/95d8423bd24992deea5b9df32555fa1741679e2c"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/pytest-dev/pytes"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/pytest-dev/pytest/releases/tag/9.0.3"
+        },
+        {
+          "type": "WEB",
+          "url": "https://www.openwall.com/lists/oss-security/2026/01/21/5"
+        }
+      ]
+    },
+    {
+      "id": "PYSEC-2026-1845",
+      "aliases": [
+        "CVE-2025-71176",
+        "GHSA-6w46-j5rx-g56g"
+      ],
+      "summary": "pytest has vulnerable tmpdir handling",
+      "details": "pytest through 9.0.2 on UNIX relies on directories with the `/tmp/pytest-of-{user}` name pattern, which allows local users to cause a denial of service or possibly gain privileges.",
+      "affected": [
+        {
+          "package": {
+            "name": "pytest",
+            "ecosystem": "PyPI",
+            "purl": "pkg:pypi/pytest"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "9.0.3"
+                }
+              ]
+            }
+          ],
+          "versions": [
+            "2.0.0",
+            "2.0.1",
+            "2.0.2",
+            "2.0.3",
+            "2.1.0",
+            "2.1.1",
+            "2.1.2",
+            "2.1.3",
+            "2.2.0",
+            "2.2.1",
+            "2.2.2",
+            "2.2.3",
+            "2.2.4",
+            "2.3.0",
+            "2.3.1",
+            "2.3.2",
+            "2.3.3",
+            "2.3.4",
+            "2.3.5",
+            "2.4.0",
+            "2.4.1",
+            "2.4.2",
+            "2.5.0",
+            "2.5.1",
+            "2.5.2",
+            "2.6.0",
+            "2.6.1",
+            "2.6.2",
+            "2.6.3",
+            "2.6.4",
+            "2.7.0",
+            "2.7.1",
+            "2.7.2",
+            "2.7.3",
+            "2.8.0",
+            "2.8.1",
+            "2.8.2",
+            "2.8.3",
+            "2.8.4",
+            "2.8.5",
+            "2.8.6",
+            "2.8.7",
+            "2.9.0",
+            "2.9.1",
+            "2.9.2",
+            "3.0.0",
+            "3.0.1",
+            "3.0.2",
+            "3.0.3",
+            "3.0.4",
+            "3.0.5",
+            "3.0.6",
+            "3.0.7",
+            "3.1.0",
+            "3.1.1",
+            "3.1.2",
+            "3.1.3",
+            "3.10.0",
+            "3.10.1",
+            "3.2.0",
+            "3.2.1",
+            "3.2.2",
+            "3.2.3",
+            "3.2.4",
+            "3.2.5",
+            "3.3.0",
+            "3.3.1",
+            "3.3.2",
+            "3.4.0",
+            "3.4.1",
+            "3.4.2",
+            "3.5.0",
+            "3.5.1",
+            "3.6.0",
+            "3.6.1",
+            "3.6.2",
+            "3.6.3",
+            "3.6.4",
+            "3.7.0",
+            "3.7.1",
+            "3.7.2",
+            "3.7.3",
+            "3.7.4",
+            "3.8.0",
+            "3.8.1",
+            "3.8.2",
+            "3.9.1",
+            "3.9.2",
+            "3.9.3",
+            "4.0.0",
+            "4.0.1",
+            "4.0.2",
+            "4.1.0",
+            "4.1.1",
+            "4.2.0",
+            "4.2.1",
+            "4.3.0",
+            "4.3.1",
+            "4.4.0",
+            "4.4.1",
+            "4.4.2",
+            "4.5.0",
+            "4.6.0",
+            "4.6.1",
+            "4.6.10",
+            "4.6.11",
+            "4.6.2",
+            "4.6.3",
+            "4.6.4",
+            "4.6.5",
+            "4.6.6",
+            "4.6.7",
+            "4.6.8",
+            "4.6.9",
+            "5.0.0",
+            "5.0.1",
+            "5.1.0",
+            "5.1.1",
+            "5.1.2",
+            "5.1.3",
+            "5.2.0",
+            "5.2.1",
+            "5.2.2",
+            "5.2.3",
+            "5.2.4",
+            "5.3.0",
+            "5.3.1",
+            "5.3.2",
+            "5.3.3",
+            "5.3.4",
+            "5.3.5",
+            "5.4.0",
+            "5.4.1",
+            "5.4.2",
+            "5.4.3",
+            "6.0.0",
+            "6.0.0rc1",
+            "6.0.1",
+            "6.0.2",
+            "6.1.0",
+            "6.1.1",
+            "6.1.2",
+            "6.2.0",
+            "6.2.1",
+            "6.2.2",
+            "6.2.3",
+            "6.2.4",
+            "6.2.5",
+            "7.0.0",
+            "7.0.0rc1",
+            "7.0.1",
+            "7.1.0",
+            "7.1.1",
+            "7.1.2",
+            "7.1.3",
+            "7.2.0",
+            "7.2.1",
+            "7.2.2",
+            "7.3.0",
+            "7.3.1",
+            "7.3.2",
+            "7.4.0",
+            "7.4.1",
+            "7.4.2",
+            "7.4.3",
+            "7.4.4",
+            "8.0.0",
+            "8.0.0rc1",
+            "8.0.0rc2",
+            "8.0.1",
+            "8.0.2",
+            "8.1.0",
+            "8.1.1",
+            "8.1.2",
+            "8.2.0",
+            "8.2.1",
+            "8.2.2",
+            "8.3.0",
+            "8.3.1",
+            "8.3.2",
+            "8.3.3",
+            "8.3.4",
+            "8.3.5",
+            "8.4.0",
+            "8.4.1",
+            "8.4.2",
+            "9.0.0",
+            "9.0.1",
+            "9.0.2"
+          ],
+          "database_specific": {
+            "source": "https://github.com/pypa/advisory-database/blob/main/vulns/pytest/PYSEC-2026-1845.yaml"
+          }
+        }
+      ],
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:C/C:L/I:L/A:L"
+        }
+      ],
+      "references": [
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-71176"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/pytest-dev/pytest/issues/13669"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/pytest-dev/pytest/pull/14343"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/pytest-dev/pytest/commit/95d8423bd24992deea5b9df32555fa1741679e2c"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/pytest-dev/pytes"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/pytest-dev/pytest/releases/tag/9.0.3"
+        },
+        {
+          "type": "WEB",
+          "url": "https://www.openwall.com/lists/oss-security/2026/01/21/5"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://pypi.org/project/pytest"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/advisories/GHSA-6w46-j5rx-g56g"
+        }
+      ]
+    }
+  ],
+  "collected_utc": "2026-11-24T15:46:24.524223+00:00",
+  "installed_packages": [
+    {
+      "name": "aiosmtplib",
+      "version": "4.0.2"
+    },
+    {
+      "name": "alembic",
+      "version": "1.20.1"
+    },
+    {
+      "name": "annotated-doc",
+      "version": "0.0.5"
+    },
+    {
+      "name": "annotated-types",
+      "version": "0.8.0"
+    },
+    {
+      "name": "anyio",
+      "version": "4.16.0"
+    },
+    {
+      "name": "argon2-cffi",
+      "version": "25.1.0"
+    },
+    {
+      "name": "argon2-cffi-bindings",
+      "version": "26.1.0"
+    },
+    {
+      "name": "asgi-lifespan",
+      "version": "2.1.0"
+    },
+    {
+      "name": "asyncpg",
+      "version": "0.32.0"
+    },
+    {
+      "name": "certifi",
+      "version": "2026.10.23"
+    },
+    {
+      "name": "cffi",
+      "version": "2.1.1"
+    },
+    {
+      "name": "click",
+      "version": "8.5.1"
+    },
+    {
+      "name": "cryptography",
+      "version": "50.0.2"
+    },
+    {
+      "name": "dnspython",
+      "version": "2.9.2"
+    },
+    {
+      "name": "email-validator",
+      "version": "2.3.0"
+    },
+    {
+      "name": "fastapi",
+      "version": "0.162.2"
+    },
+    {
+      "name": "greenlet",
+      "version": "3.5.6"
+    },
+    {
+      "name": "h11",
+      "version": "0.16.0"
+    },
+    {
+      "name": "httpcore",
+      "version": "1.0.9"
+    },
+    {
+      "name": "httptools",
+      "version": "0.9.0"
+    },
+    {
+      "name": "httpx",
+      "version": "0.28.1"
+    },
+    {
+      "name": "hypothesis",
+      "version": "6.170.15"
+    },
+    {
+      "name": "idna",
+      "version": "3.20"
+    },
+    {
+      "name": "iniconfig",
+      "version": "2.3.1"
+    },
+    {
+      "name": "librt",
+      "version": "0.16.0"
+    },
+    {
+      "name": "Mako",
+      "version": "1.4.3"
+    },
+    {
+      "name": "MarkupSafe",
+      "version": "3.0.4"
+    },
+    {
+      "name": "mypy",
+      "version": "1.20.2"
+    },
+    {
+      "name": "mypy_extensions",
+      "version": "1.2.0"
+    },
+    {
+      "name": "opentelemetry-api",
+      "version": "1.45.2"
+    },
+    {
+      "name": "packaging",
+      "version": "26.3"
+    },
+    {
+      "name": "pathspec",
+      "version": "1.1.1"
+    },
+    {
+      "name": "pluggy",
+      "version": "1.7.0"
+    },
+    {
+      "name": "pycountry",
+      "version": "26.2.16"
+    },
+    {
+      "name": "pycparser",
+      "version": "3.12"
+    },
+    {
+      "name": "pydantic",
+      "version": "2.14.3"
+    },
+    {
+      "name": "pydantic-settings",
+      "version": "2.16.2"
+    },
+    {
+      "name": "pydantic_core",
+      "version": "2.50.4"
+    },
+    {
+      "name": "Pygments",
+      "version": "2.21.0"
+    },
+    {
+      "name": "PyJWT",
+      "version": "2.15.1"
+    },
+    {
+      "name": "PyOTP",
+      "version": "2.10.0"
+    },
+    {
+      "name": "pytest",
+      "version": "8.4.2"
+    },
+    {
+      "name": "pytest-asyncio",
+      "version": "0.26.0"
+    },
+    {
+      "name": "python-dotenv",
+      "version": "1.2.4"
+    },
+    {
+      "name": "PyYAML",
+      "version": "6.0.3"
+    },
+    {
+      "name": "ruff",
+      "version": "0.17.4"
+    },
+    {
+      "name": "sniffio",
+      "version": "1.3.1"
+    },
+    {
+      "name": "sortedcontainers",
+      "version": "2.4.0"
+    },
+    {
+      "name": "SQLAlchemy",
+      "version": "2.1.8"
+    },
+    {
+      "name": "starlette",
+      "version": "1.10.0"
+    },
+    {
+      "name": "typing-inspection",
+      "version": "0.4.5"
+    },
+    {
+      "name": "typing_extensions",
+      "version": "4.16.0"
+    },
+    {
+      "name": "tzdata",
+      "version": "2026.6"
+    },
+    {
+      "name": "uvicorn",
+      "version": "0.54.0"
+    },
+    {
+      "name": "uvloop",
+      "version": "0.23.0"
+    },
+    {
+      "name": "watchfiles",
+      "version": "1.3.0"
+    },
+    {
+      "name": "websockets",
+      "version": "17.4"
+    }
+  ]
+}

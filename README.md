@@ -1,11 +1,19 @@
 # Acciones UD - Backend
 
+## Documentación del sistema
+
+Consulta [el índice de documentación](documentation/README.md) y la
+[guía completa del backend](.kiro/specs/guia-del-sistema/README.md): arquitectura,
+tecnologías, funcionamiento e implementación de los siete módulos, decisiones,
+API, operación, pruebas y límites conocidos.
+
 Backend de Acciones UD construido con FastAPI, Supabase PostgreSQL y arquitectura
 hexagonal dentro de un monolito modular.
 
-El alcance activo comprende ÃƒÂºnicamente los mÃƒÂ³dulos `identity` y `market_data`.
-Las capacidades restantes del catÃƒÂ¡logo funcional y del SAD se agregarÃƒÂ¡n cuando
-cuenten con un spec aprobado.
+El código actual incluye `identity`, `market_data`, `orders`, `wallet`,
+`portfolio`, `brokers` y `admin`, con sus specs en `.kiro/specs/`.
+La guía distingue implementación, decisiones vigentes y asuntos pendientes;
+no declara el sistema certificado para producción.
 
 ## Inicio rÃƒÂ¡pido
 

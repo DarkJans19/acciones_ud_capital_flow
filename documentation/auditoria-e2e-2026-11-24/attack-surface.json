@@ -1,0 +1,1630 @@
+{
+  "http_operations": 164,
+  "paths": 141,
+  "protected_operations": 154,
+  "public_operations": 10,
+  "negative_checks": 308,
+  "negative_failures": 0,
+  "operations": [
+    {
+      "method": "GET",
+      "path": "/api/v1/auth/interest-options",
+      "tags": [
+        "authentication"
+      ],
+      "public": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/register",
+      "tags": [
+        "authentication"
+      ],
+      "public": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/register/broker",
+      "tags": [
+        "authentication"
+      ],
+      "public": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "tags": [
+        "authentication"
+      ],
+      "public": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/mfa/verify",
+      "tags": [
+        "authentication"
+      ],
+      "public": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/users/administrators",
+      "tags": [
+        "identity administration"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/users/{user_id}/broker-activation",
+      "tags": [
+        "identity administration"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/users",
+      "tags": [
+        "identity administration"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/users/{user_id}",
+      "tags": [
+        "identity administration"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/kyc/{user_id}/reconcile",
+      "tags": [
+        "identity administration"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/admin/users/{user_id}/premium",
+      "tags": [
+        "identity administration"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/users/{user_id}/roles",
+      "tags": [
+        "identity administration"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/users/{user_id}/roles",
+      "tags": [
+        "identity administration"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/admin/users/{user_id}/roles/{assignment_id}",
+      "tags": [
+        "identity administration"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/users/{user_id}/roles/{assignment_id}/revoke",
+      "tags": [
+        "identity administration"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/roles",
+      "tags": [
+        "identity administration"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/permissions",
+      "tags": [
+        "identity administration"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/roles/{role}/permissions",
+      "tags": [
+        "identity administration"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/admin/roles/{role}/permissions/{permission_code}",
+      "tags": [
+        "identity administration"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/audit-log",
+      "tags": [
+        "identity administration"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/refresh",
+      "tags": [
+        "sessions"
+      ],
+      "public": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/logout",
+      "tags": [
+        "sessions"
+      ],
+      "public": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/users/me/sessions",
+      "tags": [
+        "sessions"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/users/me/sessions/{session_id}",
+      "tags": [
+        "sessions"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/users/me/sessions/revoke-others",
+      "tags": [
+        "sessions"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/users/me",
+      "tags": [
+        "account"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/users/me",
+      "tags": [
+        "account"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/users/me/mfa/recovery-codes",
+      "tags": [
+        "account"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/users/me/interests",
+      "tags": [
+        "account"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/users/preferences/channels",
+      "tags": [
+        "preferences"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/users/preferences/channels",
+      "tags": [
+        "preferences"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/users/preferences/portfolio",
+      "tags": [
+        "preferences"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/users/preferences/portfolio",
+      "tags": [
+        "preferences"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/users/preferences/orders",
+      "tags": [
+        "preferences"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/users/preferences/orders",
+      "tags": [
+        "preferences"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/users/me/telegram",
+      "tags": [
+        "preferences"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/kyc/status",
+      "tags": [
+        "KYC"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/kyc/account",
+      "tags": [
+        "KYC"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/markets",
+      "tags": [
+        "Markets"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/markets/calendar",
+      "tags": [
+        "Markets"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/markets/clock",
+      "tags": [
+        "Markets"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/markets/{market_code}/status",
+      "tags": [
+        "Markets"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/instruments/search",
+      "tags": [
+        "Instruments"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/instruments/{symbol}/quote",
+      "tags": [
+        "Instruments"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/instruments/{symbol}/candles",
+      "tags": [
+        "Instruments"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/instruments/{symbol}/depth",
+      "tags": [
+        "Instruments"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/instruments/{symbol}",
+      "tags": [
+        "Instruments"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/admin/markets/{market_code}/default-schedule",
+      "tags": [
+        "Markets administration"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/admin/markets/{market_code}/default-schedule",
+      "tags": [
+        "Markets administration"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/markets/{market_code}/schedule-overrides",
+      "tags": [
+        "Markets administration"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/markets/{market_code}/schedule-overrides",
+      "tags": [
+        "Markets administration"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/admin/markets/{market_code}/schedule-overrides/{override_id}",
+      "tags": [
+        "Markets administration"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/admin/markets/{market_code}/schedule-overrides/{override_id}",
+      "tags": [
+        "Markets administration"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/watchlists",
+      "tags": [
+        "Watchlists"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/watchlists",
+      "tags": [
+        "Watchlists"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/watchlists/{watchlist_id}",
+      "tags": [
+        "Watchlists"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/watchlists/{watchlist_id}/items",
+      "tags": [
+        "Watchlists"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/watchlists/{watchlist_id}/items/{symbol}",
+      "tags": [
+        "Watchlists"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/price-alerts",
+      "tags": [
+        "Price alerts"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/price-alerts",
+      "tags": [
+        "Price alerts"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/price-alerts/{alert_id}/activate",
+      "tags": [
+        "Price alerts"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/price-alerts/{alert_id}/deactivate",
+      "tags": [
+        "Price alerts"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/price-alerts/{alert_id}",
+      "tags": [
+        "Price alerts"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/notifications",
+      "tags": [
+        "Notifications"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/dashboard",
+      "tags": [
+        "Dashboard"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/wallet/balances",
+      "tags": [
+        "wallet"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/wallet/currencies",
+      "tags": [
+        "wallet"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/wallet/bank-relationships",
+      "tags": [
+        "wallet"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/wallet/bank-relationships",
+      "tags": [
+        "wallet"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/wallet/bank-relationships/{id}",
+      "tags": [
+        "wallet"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/wallet/deposits",
+      "tags": [
+        "wallet"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/wallet/withdrawals",
+      "tags": [
+        "wallet"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/wallet/transfers",
+      "tags": [
+        "wallet"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/wallet/transfers/{id}",
+      "tags": [
+        "wallet"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/wallet/activities",
+      "tags": [
+        "wallet"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/subscriptions/plans",
+      "tags": [
+        "subscriptions"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/subscriptions/checkout",
+      "tags": [
+        "subscriptions"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/subscriptions/me/cancel",
+      "tags": [
+        "subscriptions"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/subscriptions/me",
+      "tags": [
+        "subscriptions"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/subscriptions/me/payments",
+      "tags": [
+        "subscriptions"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/subscriptions/me/payments/{id}",
+      "tags": [
+        "subscriptions"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/webhooks/stripe",
+      "tags": [
+        "subscriptions"
+      ],
+      "public": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/portfolio/positions",
+      "tags": [
+        "portfolio"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/portfolio/executions",
+      "tags": [
+        "portfolio"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/portfolio/statistics",
+      "tags": [
+        "portfolio"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/portfolio/risk-profile",
+      "tags": [
+        "portfolio"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/portfolio/reports",
+      "tags": [
+        "portfolio"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/portfolio/reports",
+      "tags": [
+        "portfolio"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/portfolio/reports/{report_id}",
+      "tags": [
+        "portfolio"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/portfolio/broker/reports",
+      "tags": [
+        "broker-portfolio"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/portfolio/broker/reports",
+      "tags": [
+        "broker-portfolio"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/portfolio/broker/reports/{report_id}",
+      "tags": [
+        "broker-portfolio"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/portfolio/broker/clients/{investor_id}/positions",
+      "tags": [
+        "broker-portfolio"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/portfolio/broker/clients/{investor_id}/reports/{report_id}",
+      "tags": [
+        "broker-portfolio"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/orders/preview",
+      "tags": [
+        "orders"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/orders",
+      "tags": [
+        "orders"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/orders",
+      "tags": [
+        "orders"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/orders/{id}",
+      "tags": [
+        "orders"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/orders/{id}/cancel",
+      "tags": [
+        "orders"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/orders/{id}/reauthorization",
+      "tags": [
+        "orders"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/orders/{id}/resubmit",
+      "tags": [
+        "orders"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/orders/{id}/resume",
+      "tags": [
+        "orders"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/broker/order-reviews",
+      "tags": [
+        "broker-reviews"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/broker/order-reviews/{id}/return",
+      "tags": [
+        "broker-reviews"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/broker/order-reviews/{id}/approve",
+      "tags": [
+        "broker-reviews"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/brokers/suggestions",
+      "tags": [
+        "brokers"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/brokers",
+      "tags": [
+        "brokers"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/brokers/me/profile",
+      "tags": [
+        "brokers"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/brokers/{broker_id}",
+      "tags": [
+        "brokers"
+      ],
+      "public": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/brokers/{broker_id}/reputation",
+      "tags": [
+        "brokers"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/brokers/{broker_id}/reviews",
+      "tags": [
+        "brokers"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/brokers/{broker_id}/rating",
+      "tags": [
+        "brokers"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/broker-links",
+      "tags": [
+        "broker-links"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/broker-links",
+      "tags": [
+        "broker-links"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/broker-links/current",
+      "tags": [
+        "broker-links"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/broker-links/{id}/cancel",
+      "tags": [
+        "broker-links"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/broker-links/{id}/end",
+      "tags": [
+        "broker-links"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/broker-links/{id}/order-review",
+      "tags": [
+        "broker-links"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/broker-links/{id}/trading-authorization",
+      "tags": [
+        "broker-links"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/broker-links/{id}/trading-authorization/revoke",
+      "tags": [
+        "broker-links"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/proposals",
+      "tags": [
+        "proposals"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/proposals/{id}",
+      "tags": [
+        "proposals"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/proposals/{id}/decision",
+      "tags": [
+        "proposals"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/proposals/{id}/messages",
+      "tags": [
+        "proposals"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/proposals/{id}/messages",
+      "tags": [
+        "proposals"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/broker/link-requests",
+      "tags": [
+        "broker-portal"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/broker/link-requests/{id}/accept",
+      "tags": [
+        "broker-portal"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/broker/link-requests/{id}/decline",
+      "tags": [
+        "broker-portal"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/broker/proposals",
+      "tags": [
+        "broker-portal"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/broker/proposals",
+      "tags": [
+        "broker-portal"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/broker/proposals/{id}",
+      "tags": [
+        "broker-portal"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/broker/proposals/{id}",
+      "tags": [
+        "broker-portal"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/broker/proposals/{id}/withdraw",
+      "tags": [
+        "broker-portal"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/broker/proposals/{id}/decision",
+      "tags": [
+        "broker-portal"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/broker/proposals/{id}/messages",
+      "tags": [
+        "broker-portal"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/broker/proposals/{id}/messages",
+      "tags": [
+        "broker-portal"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/broker/clients",
+      "tags": [
+        "broker-portal"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/broker/clients/{investor_id}/orders",
+      "tags": [
+        "broker-portal"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/fee-schedules",
+      "tags": [
+        "admin-fees"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/fee-schedules/{scope}/versions",
+      "tags": [
+        "admin-fees"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/fee-schedules/{scope}/versions",
+      "tags": [
+        "admin-fees"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/fee-schedules/{scope}/versions/{version_id}/cancel",
+      "tags": [
+        "admin-fees"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/commissions/quote",
+      "tags": [
+        "commissions"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/commissions",
+      "tags": [
+        "commissions"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/broker/commissions",
+      "tags": [
+        "commissions"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/commissions",
+      "tags": [
+        "commissions"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/markets",
+      "tags": [
+        "admin-markets"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/markets/{market_code}/schedule-changes",
+      "tags": [
+        "admin-markets"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/markets/{market_code}",
+      "tags": [
+        "admin-markets"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/trading-halts",
+      "tags": [
+        "admin-halts"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/trading-halts",
+      "tags": [
+        "admin-halts"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/trading-halts/{halt_id}/release",
+      "tags": [
+        "admin-halts"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/trading-halts/active",
+      "tags": [
+        "admin-halts"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/audit-trail",
+      "tags": [
+        "admin-audit"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/audit-trail/orders/{order_id}",
+      "tags": [
+        "admin-audit"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/compliance/restrictions",
+      "tags": [
+        "admin-compliance"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/compliance/restrictions",
+      "tags": [
+        "admin-compliance"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/compliance/restrictions/{restriction_id}/lift",
+      "tags": [
+        "admin-compliance"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/compliance/atypical-operations",
+      "tags": [
+        "admin-compliance"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/compliance/users/{user_id}/audit-reports",
+      "tags": [
+        "admin-compliance"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/compliance/users/{user_id}/audit-reports",
+      "tags": [
+        "admin-compliance"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/compliance/audit-reports/{report_id}",
+      "tags": [
+        "admin-compliance"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/kpis",
+      "tags": [
+        "admin-bi"
+      ],
+      "public": false,
+      "missing_cookie": 401,
+      "invalid_cookie": 401
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "tags": [
+        "health"
+      ],
+      "public": true
+    }
+  ]
+}

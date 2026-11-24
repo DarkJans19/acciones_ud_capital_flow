@@ -1,0 +1,14 @@
+{
+  "completed_utc": "2026-11-24T15:47:30.007079+00:00",
+  "audit_container_removed": true,
+  "audit_https_server_stopped": true,
+  "temporary_credential_and_tls_files_removed": [
+    "audit-accounts.json",
+    "audit-tls.key",
+    "audit-tls.crt"
+  ],
+  "shared_database_migrations_executed": false,
+  "shared_financial_mutations_executed": false,
+  "shared_auth_sessions_closed": 6,
+  "note": "Authentication audit events and application GET caches can persist in shared DB. The uv binary and sanitized JUnit results remain only in /tmp/opencode."
+}

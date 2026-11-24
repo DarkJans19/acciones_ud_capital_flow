@@ -1,0 +1,4538 @@
+{
+  "baseline-no-db": {
+    "total": 821,
+    "counts": {
+      "passed": 774,
+      "skipped": 47
+    },
+    "seconds": 205.393,
+    "by_module": {
+      "admin": {
+        "passed": 43,
+        "skipped": 9
+      },
+      "brokers": {
+        "passed": 90,
+        "skipped": 7
+      },
+      "identity": {
+        "passed": 272,
+        "skipped": 20
+      },
+      "market_data": {
+        "passed": 97
+      },
+      "migrations": {
+        "passed": 3,
+        "skipped": 6
+      },
+      "orders": {
+        "passed": 110,
+        "skipped": 1
+      },
+      "portfolio": {
+        "passed": 60,
+        "skipped": 3
+      },
+      "shared": {
+        "passed": 32
+      },
+      "unit": {
+        "passed": 1
+      },
+      "wallet": {
+        "passed": 66,
+        "skipped": 1
+      }
+    }
+  },
+  "baseline-postgres": {
+    "total": 821,
+    "counts": {
+      "passed": 821
+    },
+    "seconds": 229.326,
+    "by_module": {
+      "admin": {
+        "passed": 52
+      },
+      "brokers": {
+        "passed": 97
+      },
+      "identity": {
+        "passed": 292
+      },
+      "market_data": {
+        "passed": 97
+      },
+      "migrations": {
+        "passed": 9
+      },
+      "orders": {
+        "passed": 111
+      },
+      "portfolio": {
+        "passed": 63
+      },
+      "shared": {
+        "passed": 32
+      },
+      "unit": {
+        "passed": 1
+      },
+      "wallet": {
+        "passed": 67
+      }
+    }
+  },
+  "final": {
+    "total": 860,
+    "counts": {
+      "passed": 845,
+      "xfail": 15
+    },
+    "seconds": 226.375,
+    "by_module": {
+      "admin": {
+        "passed": 52
+      },
+      "brokers": {
+        "passed": 97
+      },
+      "identity": {
+        "passed": 292
+      },
+      "market_data": {
+        "passed": 97
+      },
+      "migrations": {
+        "passed": 9
+      },
+      "orders": {
+        "passed": 111
+      },
+      "portfolio": {
+        "passed": 63
+      },
+      "security": {
+        "passed": 24,
+        "xfail": 15
+      },
+      "shared": {
+        "passed": 32
+      },
+      "unit": {
+        "passed": 1
+      },
+      "wallet": {
+        "passed": 67
+      }
+    },
+    "cases": [
+      {
+        "test": "tests.admin.api.test_access_control.test_endpoint_access_matrix",
+        "status": "passed",
+        "seconds": 24.331
+      },
+      {
+        "test": "tests.admin.api.test_access_control.test_read_roles_cannot_create_privileged_assignments[auditor]",
+        "status": "passed",
+        "seconds": 0.212
+      },
+      {
+        "test": "tests.admin.api.test_access_control.test_read_roles_cannot_create_privileged_assignments[analyst]",
+        "status": "passed",
+        "seconds": 0.212
+      },
+      {
+        "test": "tests.admin.api.test_access_control.test_openapi_preserves_existing_schemas_and_exposes_new_contracts",
+        "status": "passed",
+        "seconds": 0.76
+      },
+      {
+        "test": "tests.admin.api.test_access_control.test_denials_log_request_metadata_without_body_or_totp",
+        "status": "passed",
+        "seconds": 0.227
+      },
+      {
+        "test": "tests.admin.api.test_admin_flow.test_admin_flow_decimal_contract_fixed_fees_halts_compliance_and_kpis",
+        "status": "passed",
+        "seconds": 0.293
+      },
+      {
+        "test": "tests.admin.property.test_rules.test_fee_resolution",
+        "status": "passed",
+        "seconds": 0.078
+      },
+      {
+        "test": "tests.admin.property.test_rules.test_fee_validation",
+        "status": "passed",
+        "seconds": 0.046
+      },
+      {
+        "test": "tests.admin.property.test_rules.test_commission_fraction_reference",
+        "status": "passed",
+        "seconds": 0.07
+      },
+      {
+        "test": "tests.admin.property.test_rules.test_commission_reproducibility",
+        "status": "passed",
+        "seconds": 0.135
+      },
+      {
+        "test": "tests.admin.property.test_rules.test_halt_intervals",
+        "status": "passed",
+        "seconds": 0.044
+      },
+      {
+        "test": "tests.admin.property.test_rules.test_audit_whitelist",
+        "status": "passed",
+        "seconds": 0.061
+      },
+      {
+        "test": "tests.admin.property.test_rules.test_audit_pagination",
+        "status": "passed",
+        "seconds": 0.081
+      },
+      {
+        "test": "tests.admin.property.test_rules.test_atypical_reference",
+        "status": "passed",
+        "seconds": 0.12
+      },
+      {
+        "test": "tests.admin.property.test_rules.test_digest_normalization",
+        "status": "passed",
+        "seconds": 0.064
+      },
+      {
+        "test": "tests.admin.property.test_rules.test_kpi_reference",
+        "status": "passed",
+        "seconds": 0.107
+      },
+      {
+        "test": "tests.admin.property.test_rules.test_known_commission_example_and_non_finite_values",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.admin.property.test_rules.test_period_dst_and_invalid_cursor",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.admin.property.test_services.TestFeeSequences.runTest",
+        "status": "passed",
+        "seconds": 0.732
+      },
+      {
+        "test": "tests.admin.property.test_services.TestHaltSequences.runTest",
+        "status": "passed",
+        "seconds": 0.63
+      },
+      {
+        "test": "tests.admin.property.test_services.TestRestrictionSequences.runTest",
+        "status": "passed",
+        "seconds": 0.502
+      },
+      {
+        "test": "tests.admin.property.test_services.TestDispatchSequences.runTest",
+        "status": "passed",
+        "seconds": 0.485
+      },
+      {
+        "test": "tests.admin.property.test_services.test_atomic_audit_rollback",
+        "status": "passed",
+        "seconds": 0.007
+      },
+      {
+        "test": "tests.admin.unit.test_behavior_and_cache.test_behavior_windows_thresholds_simultaneity_and_external_failures",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.admin.unit.test_behavior_and_cache.test_kpi_ttl_refresh_stale_missing_and_definition_change",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.admin.unit.test_behavior_and_cache.test_report_snapshot_digest_unknown_terms_and_atomic_failure",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.admin.unit.test_behavior_and_cache.test_step_up_rejections_do_not_expose_codes[False-123456-True-MFA_ENROLLMENT_REQUIRED]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.admin.unit.test_behavior_and_cache.test_step_up_rejections_do_not_expose_codes[True-None-True-EXTRA_AUTHORIZATION_REQUIRED]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.admin.unit.test_behavior_and_cache.test_step_up_rejections_do_not_expose_codes[True-invalid-sensitive-False-EXTRA_AUTHORIZATION_INVALID]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.admin.unit.test_behavior_and_cache.test_configuration_rejected_by_name_only[admin_atypical_absolute_usd-NaN]",
+        "status": "passed",
+        "seconds": 0.004
+      },
+      {
+        "test": "tests.admin.unit.test_behavior_and_cache.test_configuration_rejected_by_name_only[admin_atypical_absolute_usd-1.001]",
+        "status": "passed",
+        "seconds": 0.004
+      },
+      {
+        "test": "tests.admin.unit.test_behavior_and_cache.test_configuration_rejected_by_name_only[admin_atypical_multiplier-secret-invalid-value]",
+        "status": "passed",
+        "seconds": 0.005
+      },
+      {
+        "test": "tests.admin.unit.test_behavior_and_cache.test_configuration_rejected_by_name_only[admin_atypical_window_days-6]",
+        "status": "passed",
+        "seconds": 0.005
+      },
+      {
+        "test": "tests.admin.unit.test_behavior_and_cache.test_configuration_rejected_by_name_only[admin_kpi_cache_ttl_seconds--1]",
+        "status": "passed",
+        "seconds": 0.005
+      },
+      {
+        "test": "tests.admin.unit.test_behavior_and_cache.test_configuration_rejected_by_name_only[admin_order_frequency_count-1]",
+        "status": "passed",
+        "seconds": 0.004
+      },
+      {
+        "test": "tests.admin.unit.test_behavior_and_cache.test_configuration_rejected_by_name_only[admin_jobs_enabled-invalid-sensitive]",
+        "status": "passed",
+        "seconds": 0.004
+      },
+      {
+        "test": "tests.admin.unit.test_behavior_and_cache.test_configuration_rejected_by_name_only[admin_rejection_seconds-0]",
+        "status": "passed",
+        "seconds": 0.004
+      },
+      {
+        "test": "tests.admin.unit.test_composition.test_five_adapters_are_installed_and_resolved_after_startup",
+        "status": "passed",
+        "seconds": 0.005
+      },
+      {
+        "test": "tests.admin.unit.test_composition.test_schedule_audit_is_atomic_and_listener_runs_after_commit",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.admin.unit.test_composition.test_domain_and_application_import_without_framework_or_database",
+        "status": "passed",
+        "seconds": 0.06
+      },
+      {
+        "test": "tests.admin.unit.test_database.test_all_immutable_sources_reject_update_delete_truncate",
+        "status": "passed",
+        "seconds": 0.697
+      },
+      {
+        "test": "tests.admin.unit.test_database.test_conditional_guards_and_unique_restriction",
+        "status": "passed",
+        "seconds": 0.048
+      },
+      {
+        "test": "tests.admin.unit.test_database.test_order_terms_cannot_be_rewritten_and_historical_orders_stay_unknown",
+        "status": "passed",
+        "seconds": 0.041
+      },
+      {
+        "test": "tests.admin.unit.test_database.test_audit_view_filters_sanitization_custody_and_policy_adapters",
+        "status": "passed",
+        "seconds": 0.063
+      },
+      {
+        "test": "tests.admin.unit.test_database.test_rbac_seed_is_least_privilege",
+        "status": "passed",
+        "seconds": 0.012
+      },
+      {
+        "test": "tests.admin.unit.test_database.test_platform_filtered_ledger_volume_and_kpi_sources",
+        "status": "passed",
+        "seconds": 0.064
+      },
+      {
+        "test": "tests.admin.unit.test_database.test_production_evidence_repositories_expose_no_mutators",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.admin.unit.test_database.test_concurrent_fee_and_halt_requests_commit_once",
+        "status": "passed",
+        "seconds": 0.053
+      },
+      {
+        "test": "tests.admin.unit.test_database.test_schedule_change_audit_dispatch_and_history_on_postgres",
+        "status": "passed",
+        "seconds": 0.049
+      },
+      {
+        "test": "tests.admin.unit.test_migrations.test_admin_revisions_render_both_directions_offline[0010_admin_fees_audit]",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.admin.unit.test_migrations.test_admin_revisions_render_both_directions_offline[0011_admin_audit_trail_halts]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.admin.unit.test_migrations.test_admin_revisions_render_both_directions_offline[0012_admin_compliance_bi]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.brokers.api.test_broker.test_http_link_proposal_messages_acceptance_and_approval",
+        "status": "passed",
+        "seconds": 0.073
+      },
+      {
+        "test": "tests.brokers.api.test_broker.test_all_broker_endpoints_in_a_complete_investor_and_broker_journey",
+        "status": "passed",
+        "seconds": 0.402
+      },
+      {
+        "test": "tests.brokers.api.test_investor.test_directory_lists_every_broker_across_pages_without_a_search_filter",
+        "status": "passed",
+        "seconds": 0.026
+      },
+      {
+        "test": "tests.brokers.api.test_investor.test_public_profile_and_investor_link_flow",
+        "status": "passed",
+        "seconds": 0.035
+      },
+      {
+        "test": "tests.brokers.api.test_investor.test_investor_proposal_response_and_acceptance_contract",
+        "status": "passed",
+        "seconds": 0.037
+      },
+      {
+        "test": "tests.brokers.api.test_openapi.test_openapi_declares_safe_error_bodies_and_public_profile_exception",
+        "status": "passed",
+        "seconds": 0.133
+      },
+      {
+        "test": "tests.brokers.api.test_openapi.test_invalid_totp_and_validation_bodies_do_not_echo_secrets",
+        "status": "passed",
+        "seconds": 0.039
+      },
+      {
+        "test": "tests.brokers.api.test_postgres_flow.test_complete_broker_http_flow_uses_postgres_and_real_order_application[market]",
+        "status": "passed",
+        "seconds": 0.278
+      },
+      {
+        "test": "tests.brokers.api.test_postgres_flow.test_complete_broker_http_flow_uses_postgres_and_real_order_application[limit]",
+        "status": "passed",
+        "seconds": 0.263
+      },
+      {
+        "test": "tests.brokers.property.test_acceptance_totp.test_totp_boundary_preserves_all_state_on_invalid_acceptance",
+        "status": "passed",
+        "seconds": 0.177
+      },
+      {
+        "test": "tests.brokers.property.test_access_control.test_every_endpoint_enforces_auth_role_ownership_before_order_ports",
+        "status": "passed",
+        "seconds": 13.692
+      },
+      {
+        "test": "tests.brokers.property.test_link_end_cascade.test_link_end_cascade_and_atomic_rollback",
+        "status": "passed",
+        "seconds": 0.156
+      },
+      {
+        "test": "tests.brokers.property.test_link_membership.test_membership_matches_model_and_observes_immediate_revocation",
+        "status": "passed",
+        "seconds": 0.133
+      },
+      {
+        "test": "tests.brokers.property.test_link_state_machine.test_link_transition_model",
+        "status": "passed",
+        "seconds": 0.034
+      },
+      {
+        "test": "tests.brokers.property.test_link_uniqueness.TestLinkUniqueness.runTest",
+        "status": "passed",
+        "seconds": 0.921
+      },
+      {
+        "test": "tests.brokers.property.test_proposal_conversion.test_conversion_is_idempotent_and_preserves_accepted_on_unavailability",
+        "status": "passed",
+        "seconds": 0.698
+      },
+      {
+        "test": "tests.brokers.property.test_proposal_state_machine.test_proposal_transition_model",
+        "status": "passed",
+        "seconds": 0.022
+      },
+      {
+        "test": "tests.brokers.property.test_proposal_versions.test_proposal_versions_are_consecutive_immutable_and_checked_after_state",
+        "status": "passed",
+        "seconds": 0.371
+      },
+      {
+        "test": "tests.brokers.property.test_ratings.test_ratings_select_latest_eligible_link_and_replace",
+        "status": "passed",
+        "seconds": 0.216
+      },
+      {
+        "test": "tests.brokers.property.test_reputation.test_average_matches_exact_rational_rounding",
+        "status": "passed",
+        "seconds": 0.054
+      },
+      {
+        "test": "tests.brokers.property.test_trading_authorization.test_authorization_sequences",
+        "status": "passed",
+        "seconds": 0.129
+      },
+      {
+        "test": "tests.brokers.unit.test_associated_broker_api.test_users_me_resolves_optional_associated_broker_port",
+        "status": "passed",
+        "seconds": 0.013
+      },
+      {
+        "test": "tests.brokers.unit.test_broker_link_adapter.test_each_membership_operation_uses_one_uncached_query",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.brokers.unit.test_broker_link_adapter_db.test_sql_membership_changes_immediately_with_link_and_role",
+        "status": "passed",
+        "seconds": 0.043
+      },
+      {
+        "test": "tests.brokers.unit.test_clients.test_client_orders_are_gated_before_query_port_and_access_is_lost_on_end",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.brokers.unit.test_composition.test_same_membership_port_is_used_by_orders_and_portfolio_after_startup",
+        "status": "passed",
+        "seconds": 0.005
+      },
+      {
+        "test": "tests.brokers.unit.test_composition.test_missing_orders_port_fails_startup_explicitly",
+        "status": "passed",
+        "seconds": 0.004
+      },
+      {
+        "test": "tests.brokers.unit.test_composition.test_expiry_job_uses_configured_interval_and_stops",
+        "status": "passed",
+        "seconds": 0.004
+      },
+      {
+        "test": "tests.brokers.unit.test_constraints_db.test_partial_uniqueness_approved_check_and_immutable_evidence",
+        "status": "passed",
+        "seconds": 0.065
+      },
+      {
+        "test": "tests.brokers.unit.test_directory.test_profile_public_fields_and_validation",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.brokers.unit.test_directory.test_directory_excludes_self_paginates_and_checks_all_profile_limits",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.brokers.unit.test_domain_contracts.test_domain_records_are_frozen_and_have_no_infrastructure_dependencies",
+        "status": "passed",
+        "seconds": 0.005
+      },
+      {
+        "test": "tests.brokers.unit.test_expiry.test_expiry_handles_both_categories_once_in_same_cycle",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.brokers.unit.test_expiry.test_reconciliation_recovers_order_after_second_transaction_failure",
+        "status": "passed",
+        "seconds": 0.005
+      },
+      {
+        "test": "tests.brokers.unit.test_expiry.test_reconciliation_does_not_attach_an_order_with_different_content",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.brokers.unit.test_expiry.test_expiry_job_retries_after_failure_and_stops_cleanly",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.brokers.unit.test_expiry.test_notification_failure_does_not_roll_back_transition",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.brokers.unit.test_fakes.test_reference_repositories_enforce_uniqueness_and_transaction_rollback",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.brokers.unit.test_http_errors.test_broker_error_http_contract[BROKER_NOT_FOUND-404]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.brokers.unit.test_http_errors.test_broker_error_http_contract[CONSENT_REQUIRED-422]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.brokers.unit.test_http_errors.test_broker_error_http_contract[LINK_ALREADY_EXISTS-409]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.brokers.unit.test_http_errors.test_broker_error_http_contract[INVALID_LINK_STATE-409]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.brokers.unit.test_http_errors.test_broker_error_http_contract[LINK_NOT_FOUND-404]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.brokers.unit.test_http_errors.test_broker_error_http_contract[PROPOSAL_NOT_FOUND-404]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.brokers.unit.test_http_errors.test_broker_error_http_contract[PROPOSAL_VERSION_CONFLICT-409]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.brokers.unit.test_http_errors.test_broker_error_http_contract[INVALID_PROPOSAL_STATE-409]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.brokers.unit.test_http_errors.test_broker_error_http_contract[TRADING_AUTHORIZATION_REQUIRED-409]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.brokers.unit.test_http_errors.test_broker_error_http_contract[RATING_NOT_ALLOWED-409]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.brokers.unit.test_http_errors.test_broker_error_http_contract[CLIENT_NOT_FOUND-404]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.brokers.unit.test_http_errors.test_broker_error_http_contract[CONFIRMATION_REQUIRED-422]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.brokers.unit.test_identity_adapters_db.test_directory_observes_role_validity_and_private_readers",
+        "status": "passed",
+        "seconds": 0.035
+      },
+      {
+        "test": "tests.brokers.unit.test_link_rules.test_link_expiry_boundary_and_terminal_state",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.brokers.unit.test_links.test_request_accept_expiration_and_duplicate_guard",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.brokers.unit.test_links.test_authorization_is_separate_idempotent_and_revoked_on_end",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.brokers.unit.test_links.test_current_pending_selection_consent_and_history_period",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.brokers.unit.test_messages.test_messages_are_chronological_paginated_and_validate_body",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.brokers.unit.test_notifications_db.test_broker_notification_uses_default_preferences_and_persists_delivery",
+        "status": "passed",
+        "seconds": 0.278
+      },
+      {
+        "test": "tests.brokers.unit.test_proposal_orders.test_proposal_order_is_signed_scheduled_and_idempotent",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.brokers.unit.test_proposal_orders.test_proposal_order_submits_once_bypasses_only_extra_authorization",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.brokers.unit.test_proposal_orders.test_proposal_order_unavailable_before_commit_propagates",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.brokers.unit.test_proposal_orders.test_persisted_limit_prices_preserve_value_without_false_scale_errors[100.0000-True]",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.brokers.unit.test_proposal_orders.test_persisted_limit_prices_preserve_value_without_false_scale_errors[100.0010-False]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.brokers.unit.test_proposal_orders.test_persisted_limit_prices_preserve_value_without_false_scale_errors[0.12340000-True]",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.brokers.unit.test_proposal_orders.test_persisted_limit_prices_preserve_value_without_false_scale_errors[0.12345000-False]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.brokers.unit.test_proposal_rules.test_conversion_failure_and_version_conflict",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.brokers.unit.test_proposals.test_create_modify_withdraw_preserves_versions",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.brokers.unit.test_proposals.test_acceptance_checks_totp_without_recording_code",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.brokers.unit.test_proposals.test_concurrent_approval_creates_one_order_and_one_approval_event",
+        "status": "passed",
+        "seconds": 0.004
+      },
+      {
+        "test": "tests.brokers.unit.test_proposals.test_history_and_detail_compute_expiration_without_writes",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.brokers.unit.test_proposals.test_proposal_content_rejected_without_partial_version[changes0]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.brokers.unit.test_proposals.test_proposal_content_rejected_without_partial_version[changes1]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.brokers.unit.test_proposals.test_proposal_content_rejected_without_partial_version[changes2]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.brokers.unit.test_proposals.test_proposal_content_rejected_without_partial_version[changes3]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.brokers.unit.test_proposals.test_proposal_content_rejected_without_partial_version[changes4]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.brokers.unit.test_proposals.test_proposal_content_rejected_without_partial_version[changes5]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.brokers.unit.test_proposals.test_quotes_accounts_and_evidence_are_checked",
+        "status": "passed",
+        "seconds": 0.006
+      },
+      {
+        "test": "tests.brokers.unit.test_proposals.test_link_end_during_conversion_records_orphan_order_without_reopening_proposal",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.brokers.unit.test_proposals.test_estimate_overflow_is_rejected_before_writing_a_version",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.brokers.unit.test_pure_rules.test_estimates_use_half_even_and_totp_includes_equality",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.brokers.unit.test_pure_rules.test_period_uses_new_york_dst_and_rejects_reversed_dates",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.brokers.unit.test_pure_rules.test_link_history_interval_includes_active_links_and_terminal_response",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.brokers.unit.test_quote_reader.test_quote_reader_checks_active_and_tradable_and_preserves_database_errors",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.brokers.unit.test_ratings.test_rating_replaces_latest_eligible_link_and_updates_reputation",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.brokers.unit.test_ratings.test_latest_link_selection_review_pagination_and_experience_counts",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.brokers.unit.test_repository_db.test_repository_roundtrip_conditional_updates_pages_and_rating_upsert",
+        "status": "passed",
+        "seconds": 0.035
+      },
+      {
+        "test": "tests.brokers.unit.test_schemas.test_decimal_output_is_string_and_totp_is_redacted",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.brokers.unit.test_settings.test_invalid_brokers_configuration_refuses_startup[broker_link_request_ttl_days-0]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.brokers.unit.test_settings.test_invalid_brokers_configuration_refuses_startup[broker_link_request_ttl_days-91]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.brokers.unit.test_settings.test_invalid_brokers_configuration_refuses_startup[proposal_ttl_hours-0]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.brokers.unit.test_settings.test_invalid_brokers_configuration_refuses_startup[proposal_ttl_hours-721]",
+        "status": "passed",
+        "seconds": 0.004
+      },
+      {
+        "test": "tests.brokers.unit.test_settings.test_invalid_brokers_configuration_refuses_startup[brokers_expiry_interval_seconds-9]",
+        "status": "passed",
+        "seconds": 0.004
+      },
+      {
+        "test": "tests.brokers.unit.test_settings.test_invalid_brokers_configuration_refuses_startup[brokers_expiry_interval_seconds-86401]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.brokers.unit.test_settings.test_invalid_brokers_configuration_refuses_startup[brokers_expiry_interval_seconds-invalid]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.brokers.unit.test_settings.test_invalid_brokers_configuration_refuses_startup[broker_link_consent_version-]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.brokers.unit.test_settings.test_invalid_brokers_configuration_refuses_startup[broker_trading_consent_version-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.brokers.unit.test_settings.test_invalid_brokers_configuration_refuses_startup[brokers_jobs_enabled-maybe]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.brokers.unit.test_settings.test_default_brokers_configuration",
+        "status": "passed",
+        "seconds": 0.005
+      },
+      {
+        "test": "tests.identity.property.test_admin_query_properties.test_directory_invalid_parameters_are_named_together",
+        "status": "passed",
+        "seconds": 3.675
+      },
+      {
+        "test": "tests.identity.property.test_admin_query_properties.test_audit_invalid_parameters_are_named_together",
+        "status": "passed",
+        "seconds": 3.655
+      },
+      {
+        "test": "tests.identity.property.test_audit_properties.test_build_entry_enforces_the_payload_whitelist",
+        "status": "passed",
+        "seconds": 0.005
+      },
+      {
+        "test": "tests.identity.property.test_audit_properties.test_listing_matches_a_reference_model",
+        "status": "passed",
+        "seconds": 0.187
+      },
+      {
+        "test": "tests.identity.property.test_audit_properties.test_atomicity_across_administrative_operations",
+        "status": "passed",
+        "seconds": 0.12
+      },
+      {
+        "test": "tests.identity.property.test_audit_properties.test_a_failing_audit_write_rolls_back_the_change",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.property.test_audit_properties.test_a_successful_change_writes_exactly_one_entry",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.property.test_directory_properties.test_like_pattern_escapes_and_round_trips",
+        "status": "passed",
+        "seconds": 0.026
+      },
+      {
+        "test": "tests.identity.property.test_directory_properties.test_wildcards_in_q_are_literal_characters",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.property.test_directory_properties.test_q_matches_the_literal_substring",
+        "status": "passed",
+        "seconds": 0.038
+      },
+      {
+        "test": "tests.identity.property.test_directory_properties.test_kyc_fields_follow_the_link_state",
+        "status": "passed",
+        "seconds": 0.058
+      },
+      {
+        "test": "tests.identity.property.test_directory_properties.test_listing_matches_the_reference_model",
+        "status": "passed",
+        "seconds": 0.269
+      },
+      {
+        "test": "tests.identity.property.test_kyc_cache_properties.test_serve_cached_follows_the_ttl_rule",
+        "status": "passed",
+        "seconds": 0.037
+      },
+      {
+        "test": "tests.identity.property.test_kyc_cache_properties.test_apply_status_check_never_moves_backwards",
+        "status": "passed",
+        "seconds": 0.073
+      },
+      {
+        "test": "tests.identity.property.test_kyc_cache_properties.test_cycle_action_maps_each_outcome",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.identity.property.test_kyc_reconcile_properties.test_precheck_follows_the_table",
+        "status": "passed",
+        "seconds": 0.318
+      },
+      {
+        "test": "tests.identity.property.test_kyc_reconcile_properties.test_pick_candidate_counts_exact_email_matches",
+        "status": "passed",
+        "seconds": 0.063
+      },
+      {
+        "test": "tests.identity.property.test_kyc_reconcile_properties.test_alpaca_errors_map_without_symbol_not_found[error0-404-KYC_RECONCILE_NOT_FOUND]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.property.test_kyc_reconcile_properties.test_alpaca_errors_map_without_symbol_not_found[error1-503-ALPACA_RATE_LIMITED]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.property.test_kyc_reconcile_properties.test_alpaca_errors_map_without_symbol_not_found[error2-502-ALPACA_UNAVAILABLE]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.property.test_kyc_reconcile_properties.test_alpaca_errors_map_without_symbol_not_found[error3-500-INTERNAL_ERROR]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.property.test_kyc_reconcile_properties.test_alpaca_errors_map_without_symbol_not_found[error4-500-INTERNAL_ERROR]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.property.test_logout_properties.test_logout_revokes_exactly_the_reference_session",
+        "status": "passed",
+        "seconds": 0.904
+      },
+      {
+        "test": "tests.identity.property.test_logout_properties.test_logout_revokes_a_rotated_refresh_token_session",
+        "status": "passed",
+        "seconds": 0.046
+      },
+      {
+        "test": "tests.identity.property.test_logout_properties.test_logout_database_failure_clears_cookies_and_changes_nothing",
+        "status": "passed",
+        "seconds": 0.04
+      },
+      {
+        "test": "tests.identity.property.test_logout_properties.test_refresh_after_logout_is_rejected",
+        "status": "passed",
+        "seconds": 0.041
+      },
+      {
+        "test": "tests.identity.property.test_logout_properties.test_logout_without_credentials_is_204_and_changes_nothing",
+        "status": "passed",
+        "seconds": 0.035
+      },
+      {
+        "test": "tests.identity.property.test_protected_permissions.test_closed_administrative_role_allowlist",
+        "status": "passed",
+        "seconds": 0.056
+      },
+      {
+        "test": "tests.identity.test_account_kyc.test_account_defaults_and_atomic_rejection",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.identity.test_account_kyc.test_preference_merge",
+        "status": "passed",
+        "seconds": 0.106
+      },
+      {
+        "test": "tests.identity.test_account_kyc.test_invalid_prefs",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.identity.test_account_kyc.test_order_limits",
+        "status": "passed",
+        "seconds": 0.033
+      },
+      {
+        "test": "tests.identity.test_account_kyc.test_tax_redaction",
+        "status": "passed",
+        "seconds": 0.175
+      },
+      {
+        "test": "tests.identity.test_account_kyc.test_can_trade",
+        "status": "passed",
+        "seconds": 0.032
+      },
+      {
+        "test": "tests.identity.test_account_kyc.test_interests",
+        "status": "passed",
+        "seconds": 0.061
+      },
+      {
+        "test": "tests.identity.test_account_kyc.test_status_fallback_and_read_only_me",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_account_kyc.test_broker_errors_and_basic_auth[429-AlpacaRateLimited]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_account_kyc.test_broker_errors_and_basic_auth[500-AlpacaUnavailable]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_account_kyc.test_broker_errors_and_basic_auth[401-AlpacaAuthError]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_account_kyc.test_broker_creation_redacts_validation_and_rejects_bad_response",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_account_kyc.test_financial_ranges_require_approval",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_audit_api.test_listing_returns_page_and_filters",
+        "status": "passed",
+        "seconds": 0.041
+      },
+      {
+        "test": "tests.identity.test_audit_api.test_listing_requires_authentication",
+        "status": "passed",
+        "seconds": 0.031
+      },
+      {
+        "test": "tests.identity.test_audit_api.test_listing_requires_admin_rbac",
+        "status": "passed",
+        "seconds": 0.033
+      },
+      {
+        "test": "tests.identity.test_audit_api.test_invalid_parameters_are_rejected[params0]",
+        "status": "passed",
+        "seconds": 0.031
+      },
+      {
+        "test": "tests.identity.test_audit_api.test_invalid_parameters_are_rejected[params1]",
+        "status": "passed",
+        "seconds": 0.032
+      },
+      {
+        "test": "tests.identity.test_audit_api.test_invalid_parameters_are_rejected[params2]",
+        "status": "passed",
+        "seconds": 0.032
+      },
+      {
+        "test": "tests.identity.test_audit_api.test_invalid_parameters_are_rejected[params3]",
+        "status": "passed",
+        "seconds": 0.033
+      },
+      {
+        "test": "tests.identity.test_audit_api.test_invalid_parameters_are_rejected[params4]",
+        "status": "passed",
+        "seconds": 0.036
+      },
+      {
+        "test": "tests.identity.test_audit_api.test_invalid_parameters_are_rejected[params5]",
+        "status": "passed",
+        "seconds": 0.03
+      },
+      {
+        "test": "tests.identity.test_audit_api.test_invalid_parameters_are_rejected[params6]",
+        "status": "passed",
+        "seconds": 0.029
+      },
+      {
+        "test": "tests.identity.test_audit_api.test_invalid_parameters_are_named_together",
+        "status": "passed",
+        "seconds": 0.032
+      },
+      {
+        "test": "tests.identity.test_audit_api.test_no_writable_audit_path_is_exposed",
+        "status": "passed",
+        "seconds": 0.599
+      },
+      {
+        "test": "tests.identity.test_audit_api.test_service_returns_page_over_entries",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_authorization_contracts.test_registration_fields",
+        "status": "passed",
+        "seconds": 0.061
+      },
+      {
+        "test": "tests.identity.test_authorization_contracts.test_validity",
+        "status": "passed",
+        "seconds": 0.03
+      },
+      {
+        "test": "tests.identity.test_authorization_contracts.test_authentication_rejects_missing_bad_expired_and_revoked",
+        "status": "passed",
+        "seconds": 0.289
+      },
+      {
+        "test": "tests.identity.test_authorization_contracts.test_pending_broker_and_no_permission_cannot_modify",
+        "status": "passed",
+        "seconds": 0.048
+      },
+      {
+        "test": "tests.identity.test_authorization_contracts.test_administrator_input_and_privileged_assignment_guard",
+        "status": "passed",
+        "seconds": 0.035
+      },
+      {
+        "test": "tests.identity.test_authorization_contracts.test_openapi_errors_and_public_docs",
+        "status": "passed",
+        "seconds": 0.659
+      },
+      {
+        "test": "tests.identity.test_authorization_contracts.test_openapi_gap_endpoints_and_optional_logout",
+        "status": "passed",
+        "seconds": 0.671
+      },
+      {
+        "test": "tests.identity.test_broker_activation.test_activation_creates_broker_and_investor_assignments",
+        "status": "passed",
+        "seconds": 0.034
+      },
+      {
+        "test": "tests.identity.test_broker_activation.test_active_investor_with_broker_flag_is_not_activatable",
+        "status": "passed",
+        "seconds": 0.033
+      },
+      {
+        "test": "tests.identity.test_broker_activation.test_activation_of_unknown_user_is_404",
+        "status": "passed",
+        "seconds": 0.034
+      },
+      {
+        "test": "tests.identity.test_broker_activation.test_failed_second_insert_rolls_back_the_status_change",
+        "status": "passed",
+        "seconds": 0.034
+      },
+      {
+        "test": "tests.identity.test_broker_activation.test_requester_without_administrator_role_is_403",
+        "status": "passed",
+        "seconds": 0.034
+      },
+      {
+        "test": "tests.identity.test_broker_activation.test_role_assignment_keeps_the_broker_request_flag",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.identity.test_broker_activation.test_account_information_returns_the_broker_request_flag",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_database_error_classification.test_sql_failures_are_classified_without_leaking_data[42P01-500-DATABASE_SCHEMA_ERROR]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_database_error_classification.test_sql_failures_are_classified_without_leaking_data[42703-500-DATABASE_SCHEMA_ERROR]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_database_error_classification.test_sql_failures_are_classified_without_leaking_data[42501-500-DATABASE_PERMISSION_ERROR]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_database_error_classification.test_sql_failures_are_classified_without_leaking_data[28P01-500-DATABASE_PERMISSION_ERROR]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_database_error_classification.test_sql_failures_are_classified_without_leaking_data[23503-409-DATABASE_INTEGRITY_ERROR]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_database_error_classification.test_sql_failures_are_classified_without_leaking_data[23505-409-DATABASE_INTEGRITY_ERROR]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_database_error_classification.test_sql_failures_are_classified_without_leaking_data[23514-409-DATABASE_INTEGRITY_ERROR]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_database_error_classification.test_sql_failures_are_classified_without_leaking_data[22P02-500-DATABASE_DATA_ERROR]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_database_error_classification.test_sql_failures_are_classified_without_leaking_data[08006-503-DATABASE_UNAVAILABLE]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_database_error_classification.test_sql_failures_are_classified_without_leaking_data[malicious secret-503-DATABASE_UNAVAILABLE]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_database_error_classification.test_connection_failure_remains_retryable",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_database_error_classification.test_logout_clears_cookies_for_all_database_failures[500-DATABASE_SCHEMA_ERROR]",
+        "status": "passed",
+        "seconds": 0.038
+      },
+      {
+        "test": "tests.identity.test_database_error_classification.test_logout_clears_cookies_for_all_database_failures[500-DATABASE_PERMISSION_ERROR]",
+        "status": "passed",
+        "seconds": 0.107
+      },
+      {
+        "test": "tests.identity.test_database_error_classification.test_logout_clears_cookies_for_all_database_failures[409-DATABASE_INTEGRITY_ERROR]",
+        "status": "passed",
+        "seconds": 0.035
+      },
+      {
+        "test": "tests.identity.test_database_error_classification.test_logout_clears_cookies_for_all_database_failures[500-DATABASE_DATA_ERROR]",
+        "status": "passed",
+        "seconds": 0.035
+      },
+      {
+        "test": "tests.identity.test_database_unavailable.test_closed_database_returns_safe_503",
+        "status": "passed",
+        "seconds": 0.197
+      },
+      {
+        "test": "tests.identity.test_financial_profile.test_every_range_and_all_six_alpaca_fields[RANGE_1-0.00-24999.99]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_financial_profile.test_every_range_and_all_six_alpaca_fields[RANGE_2-25000.00-49999.99]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_financial_profile.test_every_range_and_all_six_alpaca_fields[RANGE_3-50000.00-99999.99]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_financial_profile.test_every_range_and_all_six_alpaca_fields[RANGE_4-100000.00-249999.99]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_financial_profile.test_every_range_and_all_six_alpaca_fields[RANGE_5-250000.00-499999.99]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_financial_profile.test_every_range_and_all_six_alpaca_fields[RANGE_6-500000.00-999999.99]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_financial_profile.test_custom_preserves_precision_and_has_no_catalog_ceiling[low0-high0]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_financial_profile.test_custom_preserves_precision_and_has_no_catalog_ceiling[low1-high1]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_financial_profile.test_custom_preserves_precision_and_has_no_catalog_ceiling[low2-high2]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_financial_profile.test_invalid_custom[None-None]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_financial_profile.test_invalid_custom[low1-None]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_financial_profile.test_invalid_custom[None-high2]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_financial_profile.test_invalid_custom[low3-high3]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_financial_profile.test_invalid_custom[low4-high4]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_financial_profile.test_invalid_custom[low5-high5]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_financial_profile.test_invalid_custom[low6-high6]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_financial_profile.test_invalid_custom[True-high7]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_financial_profile.test_invalid_custom[0.0-high8]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_financial_profile.test_preset_cannot_be_overridden_and_financial_consistency",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_financial_profile.test_custom_round_trip",
+        "status": "passed",
+        "seconds": 0.041
+      },
+      {
+        "test": "tests.identity.test_financial_profile.test_http_schema_uses_product_codes_and_validates_custom",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_interest_consistency.test_public_options_and_registration_edit_round_trip",
+        "status": "passed",
+        "seconds": 0.176
+      },
+      {
+        "test": "tests.identity.test_interest_consistency.test_registration_and_edit_reject_the_same_unknown_values[values0]",
+        "status": "passed",
+        "seconds": 0.165
+      },
+      {
+        "test": "tests.identity.test_interest_consistency.test_registration_and_edit_reject_the_same_unknown_values[values1]",
+        "status": "passed",
+        "seconds": 0.163
+      },
+      {
+        "test": "tests.identity.test_interest_consistency.test_registration_and_edit_reject_the_same_unknown_values[values2]",
+        "status": "passed",
+        "seconds": 0.187
+      },
+      {
+        "test": "tests.identity.test_interest_consistency.test_empty_registration_is_allowed_but_empty_replacement_is_not",
+        "status": "passed",
+        "seconds": 0.162
+      },
+      {
+        "test": "tests.identity.test_interest_consistency.test_legacy_interest_is_private_to_its_owner_and_can_be_removed",
+        "status": "passed",
+        "seconds": 0.174
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_supported_documents_preserve_identifier[PASSPORT-aB829461-COL]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_supported_documents_preserve_identifier[PASSPORT-842617395-COL]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_supported_documents_preserve_identifier[PASSPORT-A2-COL]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_supported_documents_preserve_identifier[PASSPORT-AB.82-46+1-COL]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_supported_documents_preserve_identifier[COL_NIT-900123456-7-COL]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_supported_documents_preserve_identifier[COL_NIT-900.123.456-7-COL]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_supported_documents_preserve_identifier[COL_NIT-1098765432-COL]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_supported_documents_preserve_identifier[USA_SSN-321-54-6789-USA]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_supported_documents_preserve_identifier[USA_ITIN-912345678-USA]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_supported_documents_preserve_identifier[NATIONAL_ID-ID849261-COL]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_supported_documents_preserve_identifier[PERMANENT_RESIDENT-PR849261-CAN]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_supported_documents_preserve_identifier[DRIVER_LICENSE-DL849261-CAN]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_supported_documents_preserve_identifier[OTHER_GOV_ID-G849261-CAN]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_invalid_document_rejected_before_reservation_or_alpaca[PASSPORT--COL]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_invalid_document_rejected_before_reservation_or_alpaca[PASSPORT-   -COL]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_invalid_document_rejected_before_reservation_or_alpaca[PASSPORT-ABCD-COL]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_invalid_document_rejected_before_reservation_or_alpaca[PASSPORT-A-COL]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_invalid_document_rejected_before_reservation_or_alpaca[PASSPORT- A829461 -COL]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_invalid_document_rejected_before_reservation_or_alpaca[PASSPORT-\\xc1829461-COL]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_invalid_document_rejected_before_reservation_or_alpaca[PASSPORT-A82/9461-COL]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_invalid_document_rejected_before_reservation_or_alpaca[PASSPORT-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA2-COL]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_invalid_document_rejected_before_reservation_or_alpaca[PASSPORT-11111111-COL]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_invalid_document_rejected_before_reservation_or_alpaca[PASSPORT-1234-COL]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_invalid_document_rejected_before_reservation_or_alpaca[PASSPORT-9876-COL]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_invalid_document_rejected_before_reservation_or_alpaca[UNKNOWN-842617395-COL]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_invalid_document_rejected_before_reservation_or_alpaca[NOT_SPECIFIED-842617395-COL]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_invalid_document_rejected_before_reservation_or_alpaca[COL_NIT-AB829461-COL]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_invalid_document_rejected_before_reservation_or_alpaca[COL_NIT-900123456-78-COL]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_invalid_document_rejected_before_reservation_or_alpaca[COL_NIT-90012.3456-7-COL]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_invalid_document_rejected_before_reservation_or_alpaca[COL_NIT-900123456-7-USA]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_invalid_document_rejected_before_reservation_or_alpaca[USA_SSN-321-54-6789-COL]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_invalid_document_rejected_before_reservation_or_alpaca[USA_SSN-AB829461-USA]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_invalid_document_rejected_before_reservation_or_alpaca[USA_SSN-32154678-USA]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_invalid_document_rejected_before_reservation_or_alpaca[USA_SSN-000-54-6789-USA]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_invalid_document_rejected_before_reservation_or_alpaca[USA_SSN-666-54-6789-USA]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_invalid_document_rejected_before_reservation_or_alpaca[USA_SSN-321-00-6789-USA]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_invalid_document_rejected_before_reservation_or_alpaca[USA_SSN-321-54-0000-USA]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_invalid_document_rejected_before_reservation_or_alpaca[USA_SSN-123-45-6789-USA]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_invalid_document_rejected_before_reservation_or_alpaca[USA_ITIN-987-65-4321-USA]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_age_uses_completed_calendar_years[2026-11-24-2008-11-24-True]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_age_uses_completed_calendar_years[2026-11-24-2008-11-25-False]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_age_uses_completed_calendar_years[2026-11-24-2009-01-01-False]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_age_uses_completed_calendar_years[2026-11-24-1980-05-20-True]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_age_uses_completed_calendar_years[2026-11-24-2026-11-25-False]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_age_uses_completed_calendar_years[2026-11-24-2026-11-24-False]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_age_uses_completed_calendar_years[2026-02-28-2008-02-29-False]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_age_uses_completed_calendar_years[2026-03-01-2008-02-29-True]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_age_uses_completed_calendar_years[2024-02-29-2004-02-29-True]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_age_uses_completed_calendar_years[2024-02-29-2008-02-29-False]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_age_uses_completed_calendar_years[2026-02-28-2008-02-28-True]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_http_invalid_identity_never_calls_provider[change0]",
+        "status": "passed",
+        "seconds": 0.047
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_http_invalid_identity_never_calls_provider[change1]",
+        "status": "passed",
+        "seconds": 0.049
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_http_invalid_identity_never_calls_provider[change2]",
+        "status": "passed",
+        "seconds": 0.048
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_http_invalid_identity_never_calls_provider[change3]",
+        "status": "passed",
+        "seconds": 0.046
+      },
+      {
+        "test": "tests.identity.test_kyc_identity_validation.test_http_invalid_identity_never_calls_provider[change4]",
+        "status": "passed",
+        "seconds": 0.05
+      },
+      {
+        "test": "tests.identity.test_kyc_reconcile.test_explicit_account_id_links_a_user_without_a_kyc_row",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_reconcile.test_link_reserved_requires_the_observed_reservation",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_reconcile.test_already_linked_does_not_call_alpaca",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_reconcile.test_a_different_account_id_is_a_conflict",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_reconcile.test_account_already_used_by_another_user_is_a_conflict",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_reconcile.test_fresh_reservation_blocks_reconciliation",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_reconcile.test_email_search_links_the_single_matching_account",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_reconcile.test_email_search_without_matches_is_404",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_reconcile.test_email_search_with_many_matches_is_ambiguous",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_reconcile.test_endpoint_requires_authentication",
+        "status": "passed",
+        "seconds": 0.029
+      },
+      {
+        "test": "tests.identity.test_kyc_reconcile.test_endpoint_requires_the_admin_permission",
+        "status": "passed",
+        "seconds": 0.03
+      },
+      {
+        "test": "tests.identity.test_kyc_reconcile.test_endpoint_rejects_unknown_user_and_malformed_uuids",
+        "status": "passed",
+        "seconds": 0.05
+      },
+      {
+        "test": "tests.identity.test_kyc_reconcile.test_endpoint_accepts_an_absent_body",
+        "status": "passed",
+        "seconds": 0.033
+      },
+      {
+        "test": "tests.identity.test_kyc_refresh_job.test_no_alpaca_call_without_a_linked_account",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_refresh_job.test_fresh_check_is_served_from_the_cache",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_refresh_job.test_stale_check_is_refreshed_and_stored",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_refresh_job.test_store_failure_still_returns_the_retrieved_status",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_refresh_job.test_database_failure_before_the_alpaca_call_is_503",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_refresh_job.test_alpaca_failure_marks_the_status_unavailable",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_refresh_job.test_cycle_stores_each_account_and_429_ends_it",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_refresh_job.test_cycle_skips_a_failing_account_and_continues",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_refresh_job.test_cycle_stores_nothing_once_stopping",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_refresh_job.test_first_cycle_waits_one_interval_and_cycles_do_not_overlap",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_kyc_refresh_job.test_disabled_flag_starts_no_job",
+        "status": "passed",
+        "seconds": 0.029
+      },
+      {
+        "test": "tests.identity.test_kyc_refresh_job.test_enabled_flag_starts_and_stops_the_job",
+        "status": "passed",
+        "seconds": 0.016
+      },
+      {
+        "test": "tests.identity.test_mfa_sessions.test_enrollment_recovery_regeneration_and_refresh",
+        "status": "passed",
+        "seconds": 2.882
+      },
+      {
+        "test": "tests.identity.test_mfa_sessions.test_replayed_totp_and_attempt_limit",
+        "status": "passed",
+        "seconds": 0.913
+      },
+      {
+        "test": "tests.identity.test_mfa_sessions.test_wrong_login_and_pending_recovery",
+        "status": "passed",
+        "seconds": 0.358
+      },
+      {
+        "test": "tests.identity.test_mfa_sessions.test_totp_window",
+        "status": "passed",
+        "seconds": 0.053
+      },
+      {
+        "test": "tests.identity.test_mfa_sessions.test_challenge_state",
+        "status": "passed",
+        "seconds": 0.071
+      },
+      {
+        "test": "tests.identity.test_mfa_sessions.test_mfa_input",
+        "status": "passed",
+        "seconds": 0.071
+      },
+      {
+        "test": "tests.identity.test_mfa_sessions.test_mfa_http_cookies_and_safe_response",
+        "status": "passed",
+        "seconds": 0.909
+      },
+      {
+        "test": "tests.identity.test_order_authorization.test_order_totp_requires_enrollment_and_prevents_reuse",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_postgres_api.test_full_identity_interests_preferences_and_kyc",
+        "status": "passed",
+        "seconds": 1.901
+      },
+      {
+        "test": "tests.identity.test_postgres_api.test_kyc_failure_cleans_reservation[422-ALPACA_REJECTED]",
+        "status": "passed",
+        "seconds": 1.263
+      },
+      {
+        "test": "tests.identity.test_postgres_api.test_kyc_failure_cleans_reservation[500-ALPACA_UNAVAILABLE]",
+        "status": "passed",
+        "seconds": 0.953
+      },
+      {
+        "test": "tests.identity.test_postgres_api.test_kyc_failure_cleans_reservation[429-ALPACA_RATE_LIMITED]",
+        "status": "passed",
+        "seconds": 0.902
+      },
+      {
+        "test": "tests.identity.test_postgres_api.test_kyc_invalid_body_no_external_call",
+        "status": "passed",
+        "seconds": 0.9
+      },
+      {
+        "test": "tests.identity.test_postgres_api.test_sessions_refresh_and_mfa_recovery_race",
+        "status": "passed",
+        "seconds": 1.831
+      },
+      {
+        "test": "tests.identity.test_postgres_api.test_future_cancellation_preserves_dates_and_is_never_effective",
+        "status": "passed",
+        "seconds": 1.806
+      },
+      {
+        "test": "tests.identity.test_postgres_api.test_totp_reuse_and_regeneration_concurrency",
+        "status": "passed",
+        "seconds": 2.315
+      },
+      {
+        "test": "tests.identity.test_postgres_api.test_kyc_reservation_concurrency_and_stale_recovery",
+        "status": "passed",
+        "seconds": 0.925
+      },
+      {
+        "test": "tests.identity.test_postgres_api.test_last_administrator_race_and_fresh_permissions",
+        "status": "passed",
+        "seconds": 1.884
+      },
+      {
+        "test": "tests.identity.test_postgres_api.test_administrator_registration_and_permission_changes",
+        "status": "passed",
+        "seconds": 1.891
+      },
+      {
+        "test": "tests.identity.test_postgres_api.test_registration_partial_write_is_rolled_back",
+        "status": "passed",
+        "seconds": 0.158
+      },
+      {
+        "test": "tests.identity.test_postgres_concurrency.test_duplicate_registration_and_atomic_activation",
+        "status": "passed",
+        "seconds": 0.202
+      },
+      {
+        "test": "tests.identity.test_profile_interests_postgres.test_real_catalog_registration_profile_and_kyc_lock",
+        "status": "passed",
+        "seconds": 1.752
+      },
+      {
+        "test": "tests.identity.test_profile_interests_postgres.test_legacy_data_is_retained_only_for_owner",
+        "status": "passed",
+        "seconds": 1.778
+      },
+      {
+        "test": "tests.identity.test_profile_interests_postgres.test_uncommitted_kyc_reservation_serializes_profile_update",
+        "status": "passed",
+        "seconds": 0.844
+      },
+      {
+        "test": "tests.identity.test_profile_interests_postgres.test_profile_write_failure_rolls_back",
+        "status": "passed",
+        "seconds": 0.887
+      },
+      {
+        "test": "tests.identity.test_profile_interests_postgres.test_document_is_forwarded_without_destructive_normalization[PASSPORT-Ab829461]",
+        "status": "passed",
+        "seconds": 0.871
+      },
+      {
+        "test": "tests.identity.test_profile_interests_postgres.test_document_is_forwarded_without_destructive_normalization[PASSPORT-842617395]",
+        "status": "passed",
+        "seconds": 0.94
+      },
+      {
+        "test": "tests.identity.test_profile_interests_postgres.test_document_is_forwarded_without_destructive_normalization[COL_NIT-900.123.456-7]",
+        "status": "passed",
+        "seconds": 0.91
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_partial_update_and_get_preserve_omitted_and_protected_fields[active]",
+        "status": "passed",
+        "seconds": 0.046
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_partial_update_and_get_preserve_omitted_and_protected_fields[pending_broker_activation]",
+        "status": "passed",
+        "seconds": 0.043
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_invalid_or_protected_fields_are_atomic[body0]",
+        "status": "passed",
+        "seconds": 0.042
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_invalid_or_protected_fields_are_atomic[body1]",
+        "status": "passed",
+        "seconds": 0.046
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_invalid_or_protected_fields_are_atomic[body2]",
+        "status": "passed",
+        "seconds": 0.036
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_invalid_or_protected_fields_are_atomic[body3]",
+        "status": "passed",
+        "seconds": 0.036
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_invalid_or_protected_fields_are_atomic[body4]",
+        "status": "passed",
+        "seconds": 0.037
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_invalid_or_protected_fields_are_atomic[body5]",
+        "status": "passed",
+        "seconds": 0.035
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_invalid_or_protected_fields_are_atomic[body6]",
+        "status": "passed",
+        "seconds": 0.036
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_invalid_or_protected_fields_are_atomic[body7]",
+        "status": "passed",
+        "seconds": 0.036
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_invalid_or_protected_fields_are_atomic[body8]",
+        "status": "passed",
+        "seconds": 0.037
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_invalid_or_protected_fields_are_atomic[body9]",
+        "status": "passed",
+        "seconds": 0.035
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_invalid_or_protected_fields_are_atomic[body10]",
+        "status": "passed",
+        "seconds": 0.037
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_invalid_or_protected_fields_are_atomic[body11]",
+        "status": "passed",
+        "seconds": 0.043
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_invalid_or_protected_fields_are_atomic[body12]",
+        "status": "passed",
+        "seconds": 0.038
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_invalid_or_protected_fields_are_atomic[body13]",
+        "status": "passed",
+        "seconds": 0.036
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_invalid_or_protected_fields_are_atomic[body14]",
+        "status": "passed",
+        "seconds": 0.037
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_invalid_or_protected_fields_are_atomic[body15]",
+        "status": "passed",
+        "seconds": 0.037
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_invalid_or_protected_fields_are_atomic[body16]",
+        "status": "passed",
+        "seconds": 0.035
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_invalid_or_protected_fields_are_atomic[body17]",
+        "status": "passed",
+        "seconds": 0.035
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_invalid_or_protected_fields_are_atomic[body18]",
+        "status": "passed",
+        "seconds": 0.037
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_invalid_or_protected_fields_are_atomic[body19]",
+        "status": "passed",
+        "seconds": 0.036
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_invalid_or_protected_fields_are_atomic[body20]",
+        "status": "passed",
+        "seconds": 0.045
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_invalid_or_protected_fields_are_atomic[body21]",
+        "status": "passed",
+        "seconds": 0.041
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_invalid_or_protected_fields_are_atomic[body22]",
+        "status": "passed",
+        "seconds": 0.04
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_invalid_or_protected_fields_are_atomic[body23]",
+        "status": "passed",
+        "seconds": 0.04
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_invalid_or_protected_fields_are_atomic[body24]",
+        "status": "passed",
+        "seconds": 0.04
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_invalid_or_protected_fields_are_atomic[body25]",
+        "status": "passed",
+        "seconds": 0.039
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_any_kyc_reservation_or_link_blocks_personal_edits[kyc0]",
+        "status": "passed",
+        "seconds": 0.043
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_any_kyc_reservation_or_link_blocks_personal_edits[kyc1]",
+        "status": "passed",
+        "seconds": 0.038
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_any_kyc_reservation_or_link_blocks_personal_edits[kyc2]",
+        "status": "passed",
+        "seconds": 0.036
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_any_kyc_reservation_or_link_blocks_personal_edits[kyc3]",
+        "status": "passed",
+        "seconds": 0.371
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_any_kyc_reservation_or_link_blocks_personal_edits[kyc4]",
+        "status": "passed",
+        "seconds": 0.044
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_any_kyc_reservation_or_link_blocks_personal_edits[kyc5]",
+        "status": "passed",
+        "seconds": 0.045
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_profile_requires_authentication",
+        "status": "passed",
+        "seconds": 0.037
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_application_enforces_allowlist_without_http",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_profile_update.test_openapi_profile_and_catalog_contract",
+        "status": "passed",
+        "seconds": 0.686
+      },
+      {
+        "test": "tests.identity.test_rbac_admin.test_admin_api_guards_activation_and_last_admin",
+        "status": "passed",
+        "seconds": 0.044
+      },
+      {
+        "test": "tests.identity.test_rbac_admin.test_assignment_and_permission_changes",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_recovery_properties.test_recovery_sets_and_salts",
+        "status": "passed",
+        "seconds": 3.293
+      },
+      {
+        "test": "tests.identity.test_recovery_properties.test_recovery_consumption",
+        "status": "passed",
+        "seconds": 0.374
+      },
+      {
+        "test": "tests.identity.test_registration_security.test_registration_mapping[investor-investor-active]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.identity.test_registration_security.test_registration_mapping[broker-None-pending_broker_activation]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_registration_security.test_registration_mapping[administrator-administrator-active]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_registration_security.test_email_normalization",
+        "status": "passed",
+        "seconds": 0.07
+      },
+      {
+        "test": "tests.identity.test_registration_security.test_password_hash",
+        "status": "passed",
+        "seconds": 26.017
+      },
+      {
+        "test": "tests.identity.test_registration_security.test_access_tokens",
+        "status": "passed",
+        "seconds": 0.101
+      },
+      {
+        "test": "tests.identity.test_registration_security.test_effective_roles",
+        "status": "passed",
+        "seconds": 0.043
+      },
+      {
+        "test": "tests.identity.test_registration_security.test_last_admin",
+        "status": "passed",
+        "seconds": 0.008
+      },
+      {
+        "test": "tests.identity.test_registration_security.test_terms_are_strict[False]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_registration_security.test_terms_are_strict[true]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_registration_security.test_terms_are_strict[1]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_registration_security.test_terms_are_strict[None]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.identity.test_registration_security.test_registration_api_uses_safe_response",
+        "status": "passed",
+        "seconds": 0.16
+      },
+      {
+        "test": "tests.identity.test_user_directory_api.test_list_returns_page_and_echoes_paging",
+        "status": "passed",
+        "seconds": 0.032
+      },
+      {
+        "test": "tests.identity.test_user_directory_api.test_list_combines_filters",
+        "status": "passed",
+        "seconds": 0.035
+      },
+      {
+        "test": "tests.identity.test_user_directory_api.test_pending_broker_lists_no_effective_roles",
+        "status": "passed",
+        "seconds": 0.078
+      },
+      {
+        "test": "tests.identity.test_user_directory_api.test_detail_returns_the_entry_without_secrets",
+        "status": "passed",
+        "seconds": 0.029
+      },
+      {
+        "test": "tests.identity.test_user_directory_api.test_unknown_and_malformed_user_ids",
+        "status": "passed",
+        "seconds": 0.033
+      },
+      {
+        "test": "tests.identity.test_user_directory_api.test_unauthenticated_request_wins_over_invalid_parameters",
+        "status": "passed",
+        "seconds": 0.028
+      },
+      {
+        "test": "tests.identity.test_user_directory_api.test_unprivileged_request_wins_over_invalid_parameters",
+        "status": "passed",
+        "seconds": 0.031
+      },
+      {
+        "test": "tests.identity.test_user_directory_api.test_invalid_parameters_are_rejected[params0]",
+        "status": "passed",
+        "seconds": 0.03
+      },
+      {
+        "test": "tests.identity.test_user_directory_api.test_invalid_parameters_are_rejected[params1]",
+        "status": "passed",
+        "seconds": 0.03
+      },
+      {
+        "test": "tests.identity.test_user_directory_api.test_invalid_parameters_are_rejected[params2]",
+        "status": "passed",
+        "seconds": 0.038
+      },
+      {
+        "test": "tests.identity.test_user_directory_api.test_invalid_parameters_are_rejected[params3]",
+        "status": "passed",
+        "seconds": 0.03
+      },
+      {
+        "test": "tests.identity.test_user_directory_api.test_invalid_parameters_are_rejected[params4]",
+        "status": "passed",
+        "seconds": 0.03
+      },
+      {
+        "test": "tests.identity.test_user_directory_api.test_invalid_parameters_are_rejected[params5]",
+        "status": "passed",
+        "seconds": 0.032
+      },
+      {
+        "test": "tests.identity.test_user_directory_api.test_invalid_parameters_are_rejected[params6]",
+        "status": "passed",
+        "seconds": 0.031
+      },
+      {
+        "test": "tests.identity.test_user_directory_api.test_invalid_parameters_are_rejected[params7]",
+        "status": "passed",
+        "seconds": 0.03
+      },
+      {
+        "test": "tests.identity.test_user_directory_api.test_invalid_parameters_are_rejected[params8]",
+        "status": "passed",
+        "seconds": 0.03
+      },
+      {
+        "test": "tests.identity.test_user_directory_api.test_invalid_parameters_are_rejected[params9]",
+        "status": "passed",
+        "seconds": 0.03
+      },
+      {
+        "test": "tests.identity.test_user_directory_api.test_invalid_parameters_are_named_together",
+        "status": "passed",
+        "seconds": 0.03
+      },
+      {
+        "test": "tests.identity.test_user_directory_api.test_database_failure_returns_503_without_partial_body",
+        "status": "passed",
+        "seconds": 0.029
+      },
+      {
+        "test": "tests.market_data.property.test_alert_properties.test_alert_engine_triggers_at_most_once",
+        "status": "passed",
+        "seconds": 0.09
+      },
+      {
+        "test": "tests.market_data.property.test_alert_properties.test_above_and_below_boundaries_are_inclusive",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.market_data.property.test_alert_properties.test_crosses_requires_opposite_sides_or_equality",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.market_data.property.test_bars_mapping_properties.test_bars_mapping_filters_orders_and_caps",
+        "status": "passed",
+        "seconds": 0.228
+      },
+      {
+        "test": "tests.market_data.property.test_bars_validation_properties.test_bars_validation_accepts_exactly_the_documented_domain",
+        "status": "passed",
+        "seconds": 0.083
+      },
+      {
+        "test": "tests.market_data.property.test_bars_validation_properties.test_date_only_end_means_end_of_day_utc",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.market_data.property.test_calendar_properties.test_calendar_expansion_and_resolution",
+        "status": "passed",
+        "seconds": 0.133
+      },
+      {
+        "test": "tests.market_data.property.test_calendar_properties.test_status_equals_the_calendar_entry",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.market_data.property.test_calendar_properties.test_range_longer_than_366_days_is_rejected",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.market_data.property.test_catalog_merge_properties.test_catalog_merge_preserves_sectors",
+        "status": "passed",
+        "seconds": 0.136
+      },
+      {
+        "test": "tests.market_data.property.test_catalog_merge_properties.test_single_asset_merge_matches_catalog_merge",
+        "status": "passed",
+        "seconds": 0.138
+      },
+      {
+        "test": "tests.market_data.property.test_clock_watch_properties.test_clock_watcher_emits_exactly_on_transitions",
+        "status": "passed",
+        "seconds": 0.079
+      },
+      {
+        "test": "tests.market_data.property.test_dashboard_properties.test_dashboard_assembly",
+        "status": "passed",
+        "seconds": 0.493
+      },
+      {
+        "test": "tests.market_data.property.test_depth_properties.test_depth_never_fabricates_levels",
+        "status": "passed",
+        "seconds": 0.078
+      },
+      {
+        "test": "tests.market_data.property.test_freshness_properties.test_freshness_fields_follow_their_formulas",
+        "status": "passed",
+        "seconds": 0.081
+      },
+      {
+        "test": "tests.market_data.property.test_freshness_properties.test_candle_metadata_is_the_documented_subset",
+        "status": "passed",
+        "seconds": 0.004
+      },
+      {
+        "test": "tests.market_data.property.test_notifier_delivery_properties.test_delivery_isolation",
+        "status": "passed",
+        "seconds": 0.083
+      },
+      {
+        "test": "tests.market_data.property.test_notifier_properties.test_channel_selection",
+        "status": "passed",
+        "seconds": 0.123
+      },
+      {
+        "test": "tests.market_data.property.test_notifier_properties.test_only_the_selected_event_type_is_considered",
+        "status": "passed",
+        "seconds": 0.086
+      },
+      {
+        "test": "tests.market_data.property.test_quote_fallback_properties.test_quote_fallback_decision",
+        "status": "passed",
+        "seconds": 0.156
+      },
+      {
+        "test": "tests.market_data.property.test_quote_fallback_properties.test_quote_without_catalog_symbol_sends_no_alpaca_request",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.market_data.property.test_quotes_properties.test_snapshot_mapping_keeps_present_fields_and_nulls_omitted",
+        "status": "passed",
+        "seconds": 0.149
+      },
+      {
+        "test": "tests.market_data.property.test_schedule_validation_properties.test_override_validation",
+        "status": "passed",
+        "seconds": 0.118
+      },
+      {
+        "test": "tests.market_data.property.test_schedule_validation_properties.test_default_schedule_validation",
+        "status": "passed",
+        "seconds": 0.118
+      },
+      {
+        "test": "tests.market_data.property.test_search_properties.test_search_matches_the_reference_model",
+        "status": "passed",
+        "seconds": 0.155
+      },
+      {
+        "test": "tests.market_data.property.test_streaming_properties.test_stream_fan_out",
+        "status": "passed",
+        "seconds": 0.168
+      },
+      {
+        "test": "tests.market_data.property.test_symbol_properties.test_symbol_validation_matches_reference",
+        "status": "passed",
+        "seconds": 0.044
+      },
+      {
+        "test": "tests.market_data.property.test_symbol_properties.test_symbol_validation_accepts_canonical_forms[aapl-AAPL]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.market_data.property.test_symbol_properties.test_symbol_validation_accepts_canonical_forms[ brk.b -BRK.B]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.market_data.property.test_symbol_properties.test_symbol_validation_accepts_canonical_forms[BRK/B-BRK/B]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.market_data.property.test_symbol_properties.test_symbol_validation_accepts_canonical_forms[a-1-A-1]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.market_data.property.test_symbol_properties.test_symbol_validation_rejects_invalid_forms[]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.market_data.property.test_symbol_properties.test_symbol_validation_rejects_invalid_forms[   ]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.market_data.property.test_symbol_properties.test_symbol_validation_rejects_invalid_forms[AAAAAAAAAAAAAAAAAAAAA]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.market_data.property.test_symbol_properties.test_symbol_validation_rejects_invalid_forms[AAPL$]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.market_data.property.test_symbol_properties.test_symbol_validation_rejects_invalid_forms[AAP L]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.market_data.property.test_symbol_properties.test_symbol_validation_rejects_invalid_forms[\\xc1APL]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.market_data.property.test_timezone_properties.test_conversion_preserves_the_instant",
+        "status": "passed",
+        "seconds": 0.069
+      },
+      {
+        "test": "tests.market_data.property.test_timezone_properties.test_unknown_time_zone_is_rejected",
+        "status": "passed",
+        "seconds": 0.068
+      },
+      {
+        "test": "tests.market_data.property.test_timezone_properties.test_market_instant_uses_new_york_offset_in_winter_and_summer",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.market_data.test_catalog_service.test_empty_catalog_reloads_from_alpaca",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.market_data.test_catalog_service.test_failed_reload_uses_cache_when_populated",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.market_data.test_catalog_service.test_failed_reload_without_cache_raises_502",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.market_data.test_catalog_service.test_asset_detail_reads_alpaca_and_upserts",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.market_data.test_catalog_service.test_asset_detail_unknown_symbol_writes_nothing",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.market_data.test_composition.test_raw_http_client_is_not_used_as_the_data_port",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.market_data.test_composition.test_explicit_override_wins",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.market_data.test_dashboard_api.test_dashboard_matches_interests",
+        "status": "passed",
+        "seconds": 0.085
+      },
+      {
+        "test": "tests.market_data.test_dashboard_api.test_dashboard_falls_back_to_defaults",
+        "status": "passed",
+        "seconds": 0.091
+      },
+      {
+        "test": "tests.market_data.test_dashboard_api.test_dashboard_degrades_on_quote_and_clock_failures",
+        "status": "passed",
+        "seconds": 0.089
+      },
+      {
+        "test": "tests.market_data.test_engine_jobs.test_clock_watcher_emits_only_transitions",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.market_data.test_engine_jobs.test_alert_engine_triggers_and_notifies_once",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.market_data.test_engine_jobs.test_alert_engine_skips_unavailable_prices",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.market_data.test_instrument_repository_batching.test_catalog_upsert_is_batched_below_the_parameter_limit",
+        "status": "passed",
+        "seconds": 0.12
+      },
+      {
+        "test": "tests.market_data.test_instruments_api.test_requires_authentication",
+        "status": "passed",
+        "seconds": 0.062
+      },
+      {
+        "test": "tests.market_data.test_instruments_api.test_search_returns_paged_results",
+        "status": "passed",
+        "seconds": 0.059
+      },
+      {
+        "test": "tests.market_data.test_instruments_api.test_search_classification_filter",
+        "status": "passed",
+        "seconds": 0.057
+      },
+      {
+        "test": "tests.market_data.test_instruments_api.test_blank_query_is_rejected",
+        "status": "passed",
+        "seconds": 0.058
+      },
+      {
+        "test": "tests.market_data.test_instruments_api.test_markets_list",
+        "status": "passed",
+        "seconds": 0.065
+      },
+      {
+        "test": "tests.market_data.test_instruments_api.test_symbol_with_slash_reaches_the_validator",
+        "status": "passed",
+        "seconds": 0.374
+      },
+      {
+        "test": "tests.market_data.test_instruments_api.test_invalid_symbol_is_rejected_before_alpaca",
+        "status": "passed",
+        "seconds": 0.06
+      },
+      {
+        "test": "tests.market_data.test_markets_api.test_calendar_expands_every_date",
+        "status": "passed",
+        "seconds": 0.049
+      },
+      {
+        "test": "tests.market_data.test_markets_api.test_calendar_uses_market_defaults_and_overrides",
+        "status": "passed",
+        "seconds": 0.068
+      },
+      {
+        "test": "tests.market_data.test_markets_api.test_market_status_matches_calendar",
+        "status": "passed",
+        "seconds": 0.053
+      },
+      {
+        "test": "tests.market_data.test_markets_api.test_clock_converts_to_requested_zone",
+        "status": "passed",
+        "seconds": 0.052
+      },
+      {
+        "test": "tests.market_data.test_markets_api.test_unknown_market_and_invalid_tz",
+        "status": "passed",
+        "seconds": 0.053
+      },
+      {
+        "test": "tests.market_data.test_markets_api.test_schedule_admin_lifecycle",
+        "status": "passed",
+        "seconds": 0.125
+      },
+      {
+        "test": "tests.market_data.test_markets_api.test_schedule_validation_and_unknown_market",
+        "status": "passed",
+        "seconds": 0.094
+      },
+      {
+        "test": "tests.market_data.test_quote_candles_api.test_quote_returns_live_snapshot_and_stores_it",
+        "status": "passed",
+        "seconds": 0.069
+      },
+      {
+        "test": "tests.market_data.test_quote_candles_api.test_quote_falls_back_to_the_stored_snapshot",
+        "status": "passed",
+        "seconds": 0.068
+      },
+      {
+        "test": "tests.market_data.test_quote_candles_api.test_quote_without_snapshot_maps_alpaca_failures[error0-502]",
+        "status": "passed",
+        "seconds": 0.071
+      },
+      {
+        "test": "tests.market_data.test_quote_candles_api.test_quote_without_snapshot_maps_alpaca_failures[error1-503]",
+        "status": "passed",
+        "seconds": 0.083
+      },
+      {
+        "test": "tests.market_data.test_quote_candles_api.test_quote_unknown_symbol_skips_alpaca",
+        "status": "passed",
+        "seconds": 0.063
+      },
+      {
+        "test": "tests.market_data.test_quote_candles_api.test_delayed_sip_is_marked_delayed",
+        "status": "passed",
+        "seconds": 0.061
+      },
+      {
+        "test": "tests.market_data.test_quote_candles_api.test_candles_map_bars_and_pass_the_page_token",
+        "status": "passed",
+        "seconds": 0.07
+      },
+      {
+        "test": "tests.market_data.test_quote_candles_api.test_candles_reject_unknown_timeframe_before_alpaca",
+        "status": "passed",
+        "seconds": 0.112
+      },
+      {
+        "test": "tests.market_data.test_quote_candles_api.test_depth_one_sided_quote_keeps_missing_values_null",
+        "status": "passed",
+        "seconds": 0.061
+      },
+      {
+        "test": "tests.market_data.test_quote_candles_api.test_depth_without_quote_object_returns_no_levels",
+        "status": "passed",
+        "seconds": 0.059
+      },
+      {
+        "test": "tests.market_data.test_quote_candles_api.test_depth_rejects_invalid_and_unknown_symbols_before_alpaca",
+        "status": "passed",
+        "seconds": 0.061
+      },
+      {
+        "test": "tests.market_data.test_quote_candles_api.test_depth_failure_maps_to_502_without_writing",
+        "status": "passed",
+        "seconds": 0.059
+      },
+      {
+        "test": "tests.market_data.test_senders.test_log_senders_when_nothing_configured",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.market_data.test_senders.test_real_email_sender_when_smtp_host_is_set",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.market_data.test_senders.test_real_telegram_sender_when_token_is_set",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.market_data.test_senders.test_sms_is_always_simulated_even_with_everything_set",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.market_data.test_senders.test_smtp_sender_without_email_raises_no_destination",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.market_data.test_senders.test_telegram_sender_without_chat_id_raises_no_destination",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.market_data.test_senders.test_dispatch_records_no_destination_and_keeps_in_app",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.market_data.test_stream_api.test_invalid_subscription_keeps_the_previous_one",
+        "status": "passed",
+        "seconds": 0.077
+      },
+      {
+        "test": "tests.market_data.test_stream_api.test_unknown_action_keeps_the_previous_subscription",
+        "status": "passed",
+        "seconds": 0.076
+      },
+      {
+        "test": "tests.market_data.test_stream_api.test_disabled_streaming_closes_the_socket",
+        "status": "passed",
+        "seconds": 0.074
+      },
+      {
+        "test": "tests.market_data.test_watchlists_alerts_api.test_non_premium_is_rejected",
+        "status": "passed",
+        "seconds": 0.075
+      },
+      {
+        "test": "tests.market_data.test_watchlists_alerts_api.test_watchlist_lifecycle_and_duplicates",
+        "status": "passed",
+        "seconds": 0.083
+      },
+      {
+        "test": "tests.market_data.test_watchlists_alerts_api.test_watchlist_limits",
+        "status": "passed",
+        "seconds": 0.143
+      },
+      {
+        "test": "tests.market_data.test_watchlists_alerts_api.test_watchlist_ownership_is_a_404",
+        "status": "passed",
+        "seconds": 0.071
+      },
+      {
+        "test": "tests.market_data.test_watchlists_alerts_api.test_alert_lifecycle",
+        "status": "passed",
+        "seconds": 0.109
+      },
+      {
+        "test": "tests.market_data.test_watchlists_alerts_api.test_alert_validation_and_unknown_symbol",
+        "status": "passed",
+        "seconds": 0.082
+      },
+      {
+        "test": "tests.market_data.test_watchlists_alerts_api.test_notifications_listing_and_page_size",
+        "status": "passed",
+        "seconds": 0.08
+      },
+      {
+        "test": "tests.migrations.test_bootstrap_vocabulary.test_bootstrap_uses_historical_preferences",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.migrations.test_identity_schema.test_identity_seed_and_rls",
+        "status": "passed",
+        "seconds": 0.023
+      },
+      {
+        "test": "tests.migrations.test_initial_admin_existing.test_existing_email_variant_is_never_promoted_or_replaced",
+        "status": "passed",
+        "seconds": 2.364
+      },
+      {
+        "test": "tests.migrations.test_migration_smoke.test_migration_round_trip_and_failed_revision_keeps_previous",
+        "status": "passed",
+        "seconds": 2.268
+      },
+      {
+        "test": "tests.migrations.test_migration_smoke.test_cancellation_upgrade_preserves_existing_assignments",
+        "status": "passed",
+        "seconds": 0.706
+      },
+      {
+        "test": "tests.migrations.test_migration_smoke.test_admin_downgrade_removes_additional_read_role_grants",
+        "status": "passed",
+        "seconds": 0.294
+      },
+      {
+        "test": "tests.migrations.test_migration_smoke.test_failing_ddl_revision_rolls_back_only_that_revision",
+        "status": "passed",
+        "seconds": 0.084
+      },
+      {
+        "test": "tests.migrations.test_offline_schema.test_identity_schema_renders_postgresql_and_reverses",
+        "status": "passed",
+        "seconds": 0.013
+      },
+      {
+        "test": "tests.migrations.test_offline_schema.test_admin_gaps_revision_renders_postgresql_and_reverses",
+        "status": "passed",
+        "seconds": 0.006
+      },
+      {
+        "test": "tests.orders.api.test_broker_api.test_broker_review_workflow_via_api",
+        "status": "passed",
+        "seconds": 0.026
+      },
+      {
+        "test": "tests.orders.api.test_deadline.test_deadline_rejects_invalid_configuration[-1]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.orders.api.test_deadline.test_deadline_rejects_invalid_configuration[121]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.orders.api.test_deadline.test_deadline_rejects_invalid_configuration[inf]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.orders.api.test_deadline.test_deadline_rejects_invalid_configuration[nan]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.orders.api.test_deadline.test_disabled_deadline_allows_slow_creation_without_duplicate_submission",
+        "status": "passed",
+        "seconds": 0.075
+      },
+      {
+        "test": "tests.orders.api.test_deadline.test_response_deadline_preserves_staged_order_for_idempotent_retry",
+        "status": "passed",
+        "seconds": 0.041
+      },
+      {
+        "test": "tests.orders.api.test_openapi.test_orders_openapi_is_complete",
+        "status": "passed",
+        "seconds": 0.717
+      },
+      {
+        "test": "tests.orders.api.test_orders_api.test_preview_create_detail_list_and_cancel",
+        "status": "passed",
+        "seconds": 0.03
+      },
+      {
+        "test": "tests.orders.api.test_ownership.test_foreign_resources_equal_missing",
+        "status": "passed",
+        "seconds": 2.687
+      },
+      {
+        "test": "tests.orders.api.test_ownership.test_each_endpoint_requires_session_and_correct_role",
+        "status": "passed",
+        "seconds": 0.088
+      },
+      {
+        "test": "tests.orders.property.test_executions.test_execution_ledger",
+        "status": "passed",
+        "seconds": 0.643
+      },
+      {
+        "test": "tests.orders.property.test_idempotency.test_creation_idempotency",
+        "status": "passed",
+        "seconds": 0.273
+      },
+      {
+        "test": "tests.orders.property.test_idempotency.test_at_most_once_submission",
+        "status": "passed",
+        "seconds": 0.364
+      },
+      {
+        "test": "tests.orders.property.test_reauthorization.test_price_change_prevents_submission",
+        "status": "passed",
+        "seconds": 0.149
+      },
+      {
+        "test": "tests.orders.property.test_reauthorization.test_reauthorization_answer",
+        "status": "passed",
+        "seconds": 0.201
+      },
+      {
+        "test": "tests.orders.property.test_reservations.test_ledger_invariant",
+        "status": "passed",
+        "seconds": 0.412
+      },
+      {
+        "test": "tests.orders.property.test_reservations.test_no_overcommit",
+        "status": "passed",
+        "seconds": 0.167
+      },
+      {
+        "test": "tests.orders.property.test_state_machine.test_state_sequences",
+        "status": "passed",
+        "seconds": 0.086
+      },
+      {
+        "test": "tests.orders.property.test_state_machine.test_provider_mapping",
+        "status": "passed",
+        "seconds": 0.039
+      },
+      {
+        "test": "tests.orders.property.test_state_machine.test_transition_events_are_atomic",
+        "status": "passed",
+        "seconds": 0.134
+      },
+      {
+        "test": "tests.orders.property.test_trading_gate.test_trading_gate_blocks_before_order_writes_or_provider",
+        "status": "passed",
+        "seconds": 0.163
+      },
+      {
+        "test": "tests.orders.property.test_trading_gate.test_order_terms_survive_configuration_changes_and_revalidation",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.orders.property.test_trading_gate.test_proposal_conversion_distinguishes_unavailability_and_business_rejection[TRADING_HALTED]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.orders.property.test_trading_gate.test_proposal_conversion_distinguishes_unavailability_and_business_rejection[ACCOUNT_TRADING_RESTRICTED]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.orders.property.test_validation.test_validation_reference",
+        "status": "passed",
+        "seconds": 0.188
+      },
+      {
+        "test": "tests.orders.unit.test_buying_power.test_buying_power_and_null_broker_contract",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.orders.unit.test_cancellation.test_local_cancel_releases_and_provider_cancel_waits_for_reconciliation",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.orders.unit.test_composition.test_registration_is_lazy_and_broker_port_can_be_installed_later",
+        "status": "passed",
+        "seconds": 0.005
+      },
+      {
+        "test": "tests.orders.unit.test_composition.test_enabled_jobs_use_configured_intervals_and_stop",
+        "status": "passed",
+        "seconds": 0.005
+      },
+      {
+        "test": "tests.orders.unit.test_creation.test_preview_creation_and_scheduling",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.orders.unit.test_creation.test_large_quantity_rejects_for_funds_before_persistence",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.orders.unit.test_creation.test_creation_failures_have_no_order[no_confirmation-VALIDATION_ERROR]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.orders.unit.test_creation.test_creation_failures_have_no_order[no_account-ORDER_ACCOUNT_NOT_ACTIVE]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.orders.unit.test_creation.test_creation_failures_have_no_order[no_asset-ASSET_NOT_TRADABLE]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.orders.unit.test_creation.test_creation_failures_have_no_order[no_quote-QUOTE_UNAVAILABLE]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.orders.unit.test_creation.test_creation_failures_have_no_order[daily_limit-DAILY_ORDER_LIMIT_REACHED]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.orders.unit.test_creation.test_creation_failures_have_no_order[high_amount-EXTRA_AUTHORIZATION_REQUIRED]",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.orders.unit.test_creation.test_creation_failures_have_no_order[mfa_disabled-MFA_ENROLLMENT_REQUIRED]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.orders.unit.test_creation.test_creation_failures_have_no_order[mfa_invalid-EXTRA_AUTHORIZATION_INVALID]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.orders.unit.test_estimates.test_rounding_threshold_and_canonical_hash",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.orders.unit.test_http_errors.test_order_error_http_contract[TRADING_HALTED-503]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.orders.unit.test_http_errors.test_order_error_http_contract[ACCOUNT_TRADING_RESTRICTED-403]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.orders.unit.test_http_errors.test_order_error_http_contract[INVALID_PERIOD-422]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.orders.unit.test_http_errors.test_order_error_http_contract[ACCOUNT_NOT_LINKED-409]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.orders.unit.test_http_errors.test_order_error_http_contract[ORDER_ACCOUNT_NOT_ACTIVE-409]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.orders.unit.test_http_errors.test_order_error_http_contract[QUOTE_UNAVAILABLE-503]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.orders.unit.test_http_errors.test_order_error_http_contract[ASSET_NOT_TRADABLE-422]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.orders.unit.test_http_errors.test_order_error_http_contract[INSUFFICIENT_BUYING_POWER-409]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.orders.unit.test_http_errors.test_order_error_http_contract[INSUFFICIENT_POSITION-409]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.orders.unit.test_http_errors.test_order_error_http_contract[DAILY_ORDER_LIMIT_REACHED-409]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.orders.unit.test_http_errors.test_order_error_http_contract[EXTRA_AUTHORIZATION_REQUIRED-409]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.orders.unit.test_http_errors.test_order_error_http_contract[EXTRA_AUTHORIZATION_INVALID-401]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.orders.unit.test_http_errors.test_order_error_http_contract[ORDER_REJECTED-422]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.orders.unit.test_http_errors.test_order_error_http_contract[ORDER_NOT_FOUND-404]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.orders.unit.test_http_errors.test_order_error_http_contract[INVALID_ORDER_STATE-409]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.orders.unit.test_http_errors.test_order_error_http_contract[ORDER_NOT_CANCELLABLE-409]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.orders.unit.test_http_errors.test_order_error_http_contract[MARKET_CLOSED-409]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.orders.unit.test_http_errors.test_order_error_http_contract[MFA_ENROLLMENT_REQUIRED-409]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.orders.unit.test_jobs.test_jobs_stop_while_work_is_waiting",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.orders.unit.test_market_adapters.test_quote_unavailable_does_not_hide_database_failure",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.orders.unit.test_market_adapters.test_market_session_uses_effective_calendar",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.orders.unit.test_memory_repositories.test_execution_deduplication_and_transaction_rollback",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.orders.unit.test_migration.test_orders_migration_renders_and_reverses",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.orders.unit.test_orders_client.test_submission_classification[429-OrderSubmissionNotReceived]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.orders.unit.test_orders_client.test_submission_classification[422-AlpacaRejectedError]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.orders.unit.test_orders_client.test_submission_classification[503-OrderSubmissionUnknown]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.orders.unit.test_orders_client.test_submission_classification[outcome3-OrderSubmissionUnknown]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.orders.unit.test_orders_client.test_submission_classification[outcome4-OrderSubmissionNotReceived]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.orders.unit.test_parallel_validation.test_quote_and_controls_reads_overlap_without_skipping_validation",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.orders.unit.test_persistence.test_scheduler_uses_skip_locked_and_owner_lock_is_transactional",
+        "status": "passed",
+        "seconds": 0.01
+      },
+      {
+        "test": "tests.orders.unit.test_reconciler.test_timeout_is_resolved_by_lookup_or_two_misses",
+        "status": "passed",
+        "seconds": 0.007
+      },
+      {
+        "test": "tests.orders.unit.test_reconciler.test_filled_status_waits_for_activity_and_bracket_legs_are_recorded",
+        "status": "passed",
+        "seconds": 0.007
+      },
+      {
+        "test": "tests.orders.unit.test_reconciliation_edges.test_cancel_with_missing_external_id_is_deferred_then_confirmed",
+        "status": "passed",
+        "seconds": 0.005
+      },
+      {
+        "test": "tests.orders.unit.test_reconciliation_edges.test_schedule_resume_cannot_bypass_broker_return",
+        "status": "passed",
+        "seconds": 0.008
+      },
+      {
+        "test": "tests.orders.unit.test_reconciliation_edges.test_account_failure_does_not_stop_other_accounts",
+        "status": "passed",
+        "seconds": 0.007
+      },
+      {
+        "test": "tests.orders.unit.test_reservation_lock_db.test_concurrent_creations_cannot_overreserve",
+        "status": "passed",
+        "seconds": 0.098
+      },
+      {
+        "test": "tests.orders.unit.test_reviews.test_broker_return_resubmit_and_approve",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.orders.unit.test_scheduler_schedule.test_schedule_change_is_once_per_investor_and_resume_recalculates",
+        "status": "passed",
+        "seconds": 0.005
+      },
+      {
+        "test": "tests.orders.unit.test_scheduler_schedule.test_missed_day_session_expires_before_scheduler_can_send",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.orders.unit.test_schemas.test_decimal_inputs_are_strings_and_totp_is_not_in_domain",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.orders.unit.test_settings.test_invalid_order_configuration[order_reference_commission_rate-1.01]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.orders.unit.test_settings.test_invalid_order_configuration[order_reference_commission_rate--0.01]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.orders.unit.test_settings.test_invalid_order_configuration[order_reauth_price_deviation_pct-0]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.orders.unit.test_settings.test_invalid_order_configuration[order_reauth_price_deviation_pct-101]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.orders.unit.test_settings.test_invalid_order_configuration[order_reauth_window_minutes-0]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.orders.unit.test_settings.test_invalid_order_configuration[order_reauth_window_minutes-1441]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.orders.unit.test_settings.test_invalid_order_configuration[order_local_max_age_days-0]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.orders.unit.test_settings.test_invalid_order_configuration[order_local_max_age_days-91]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.orders.unit.test_settings.test_invalid_order_configuration[order_reconcile_interval_seconds-4]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.orders.unit.test_settings.test_invalid_order_configuration[order_reconcile_interval_seconds-3601]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.orders.unit.test_settings.test_invalid_order_configuration[order_scheduler_interval_seconds-4]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.orders.unit.test_settings.test_invalid_order_configuration[order_scheduler_interval_seconds-3601]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.orders.unit.test_settings.test_invalid_order_configuration[order_alpaca_submit_timeout_seconds-0.9]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.orders.unit.test_settings.test_invalid_order_configuration[order_alpaca_submit_timeout_seconds-4.1]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.orders.unit.test_settings.test_invalid_order_configuration[orders_jobs_enabled-invalid]",
+        "status": "passed",
+        "seconds": 0.004
+      },
+      {
+        "test": "tests.orders.unit.test_settings.test_invalid_order_configuration[order_reference_commission_rate-NaN]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.orders.unit.test_settings.test_independent_default[order_reference_commission_rate-0.02]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.orders.unit.test_settings.test_independent_default[order_reauth_price_deviation_pct-1.00]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.orders.unit.test_settings.test_independent_default[order_reauth_window_minutes-30]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.orders.unit.test_settings.test_independent_default[order_local_max_age_days-5]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.orders.unit.test_settings.test_independent_default[order_reconcile_interval_seconds-15]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.orders.unit.test_settings.test_independent_default[order_scheduler_interval_seconds-30]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.orders.unit.test_settings.test_independent_default[order_alpaca_submit_timeout_seconds-4]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.orders.unit.test_settings.test_independent_default[orders_jobs_enabled-true]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.orders.unit.test_submitter.test_submitter_persists_outcome[None-SUBMITTED-transferred]",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.orders.unit.test_submitter.test_submitter_persists_outcome[outcome1-REJECTED-released]",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.orders.unit.test_submitter.test_submitter_persists_outcome[outcome2-FAILED-released]",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.orders.unit.test_submitter.test_submitter_persists_outcome[outcome3-SUBMITTED-active]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.orders.unit.test_validation_examples.test_collects_invalid_fields",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.orders.unit.test_waited_revalidation.test_failed_waited_validation_is_committed_before_error",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.portfolio.api.test_errors_openapi.test_alpaca_errors_safe_and_failed_report_not_stored[error0-502-ALPACA_UNAVAILABLE]",
+        "status": "passed",
+        "seconds": 0.019
+      },
+      {
+        "test": "tests.portfolio.api.test_errors_openapi.test_alpaca_errors_safe_and_failed_report_not_stored[error1-503-ALPACA_RATE_LIMITED]",
+        "status": "passed",
+        "seconds": 0.025
+      },
+      {
+        "test": "tests.portfolio.api.test_errors_openapi.test_database_error_and_post_period_validation",
+        "status": "passed",
+        "seconds": 0.03
+      },
+      {
+        "test": "tests.portfolio.api.test_errors_openapi.test_every_error_response_uses_error_body_and_decimal_schemas",
+        "status": "passed",
+        "seconds": 0.052
+      },
+      {
+        "test": "tests.portfolio.api.test_portfolio_api.test_routes_and_invalid_period",
+        "status": "passed",
+        "seconds": 0.042
+      },
+      {
+        "test": "tests.portfolio.api.test_postgres_flow.test_authenticated_portfolio_reports_and_scheduler_on_postgres",
+        "status": "passed",
+        "seconds": 2.097
+      },
+      {
+        "test": "tests.portfolio.property.test_access_endpoints.test_endpoint_decision_model",
+        "status": "passed",
+        "seconds": 4.071
+      },
+      {
+        "test": "tests.portfolio.property.test_pnl.test_reference",
+        "status": "passed",
+        "seconds": 0.161
+      },
+      {
+        "test": "tests.portfolio.property.test_pnl.test_conservation",
+        "status": "passed",
+        "seconds": 0.136
+      },
+      {
+        "test": "tests.portfolio.property.test_pnl.test_confluence",
+        "status": "passed",
+        "seconds": 0.176
+      },
+      {
+        "test": "tests.portfolio.property.test_risk_profitability.test_risk_model",
+        "status": "passed",
+        "seconds": 0.11
+      },
+      {
+        "test": "tests.portfolio.property.test_risk_profitability.test_concentration",
+        "status": "passed",
+        "seconds": 0.05
+      },
+      {
+        "test": "tests.portfolio.property.test_risk_profitability.test_profitability",
+        "status": "passed",
+        "seconds": 0.06
+      },
+      {
+        "test": "tests.portfolio.property.test_rounding.test_output_rounding",
+        "status": "passed",
+        "seconds": 0.444
+      },
+      {
+        "test": "tests.portfolio.property.test_serialization.test_decimal_round_trip",
+        "status": "passed",
+        "seconds": 0.049
+      },
+      {
+        "test": "tests.portfolio.property.test_statistics.test_breakdowns",
+        "status": "passed",
+        "seconds": 0.126
+      },
+      {
+        "test": "tests.portfolio.property.test_valuation.test_valuation",
+        "status": "passed",
+        "seconds": 0.071
+      },
+      {
+        "test": "tests.portfolio.unit.test_access.test_active_roles_only",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.portfolio.unit.test_arrange.test_arrange[asc-symbol]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.portfolio.unit.test_arrange.test_arrange[asc-market_value]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.portfolio.unit.test_arrange.test_arrange[asc-gain_loss]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.portfolio.unit.test_arrange.test_arrange[asc-allocation]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.portfolio.unit.test_arrange.test_arrange[desc-symbol]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.portfolio.unit.test_arrange.test_arrange[desc-market_value]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.portfolio.unit.test_arrange.test_arrange[desc-gain_loss]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.portfolio.unit.test_arrange.test_arrange[desc-allocation]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.portfolio.unit.test_commission.test_default_ports",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.portfolio.unit.test_composition.test_registration_injects_orders_and_late_extension_ports",
+        "status": "passed",
+        "seconds": 0.004
+      },
+      {
+        "test": "tests.portfolio.unit.test_composition.test_scheduler_interval_and_cancellation",
+        "status": "passed",
+        "seconds": 0.004
+      },
+      {
+        "test": "tests.portfolio.unit.test_execution_db.test_broker_signature_and_ledger_page",
+        "status": "passed",
+        "seconds": 0.035
+      },
+      {
+        "test": "tests.portfolio.unit.test_execution_ledger.test_ledger_query_uses_last_broker_signature_and_exclusive_end",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.portfolio.unit.test_execution_ledger.test_keyset_cursor_with_text_execution_id",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.portfolio.unit.test_identity_readers.test_defaults_and_unlinked_account",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.portfolio.unit.test_job.test_job_cancels_in_flight_cycle",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.portfolio.unit.test_market_readers.test_session_uses_closed_calendar_days",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.portfolio.unit.test_market_readers.test_no_recipient_is_not_notified",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.portfolio.unit.test_metric_services.test_empty_statistics_without_linked_account",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.portfolio.unit.test_metric_services.test_empty_risk_and_missing_equity",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.portfolio.unit.test_migration.test_portfolio_migration_renders_and_reverses",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.portfolio.unit.test_order_readers.test_reads_preserve_order_contracts",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.portfolio.unit.test_period.test_inclusive_limits_and_dst",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.portfolio.unit.test_portfolio_service.test_fallback_mismatch_and_hidden_totals",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.portfolio.unit.test_portfolio_service.test_unlinked_and_unrelated_client_stop_before_alpaca",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.portfolio.unit.test_position_port.test_available_absent_and_error_propagation",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.portfolio.unit.test_positions_client.test_classified_errors[429-AlpacaRateLimited]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.portfolio.unit.test_positions_client.test_classified_errors[500-AlpacaUnavailable]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.portfolio.unit.test_positions_client.test_mapping_and_absent_position",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.portfolio.unit.test_reports.test_null_broker_report_is_empty_with_zero_totals",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.portfolio.unit.test_reports.test_report_replays_prior_buys_but_sums_only_period_sales",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.portfolio.unit.test_reports.test_broker_attribution_uses_signer_and_alpaca_failure_stores_nothing",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.portfolio.unit.test_reports_db.test_scheduled_uniqueness_pagination_and_immutability",
+        "status": "passed",
+        "seconds": 0.039
+      },
+      {
+        "test": "tests.portfolio.unit.test_risk.test_insufficient_data",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.portfolio.unit.test_scheduler.test_daily_empty_skipped_monthly_generated_and_period_uses_new_york",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.portfolio.unit.test_scheduler.test_notification_only_retry_and_then_no_duplicates",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.portfolio.unit.test_scheduler.test_failure_isolated_and_retried_without_secret_logs",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.portfolio.unit.test_schemas.test_output_contracts_and_period_alias",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.portfolio.unit.test_settings.test_invalid_configuration_names_only[portfolio_risk_window_days-6]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.portfolio.unit.test_settings.test_invalid_configuration_names_only[portfolio_risk_window_days-366]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.portfolio.unit.test_settings.test_invalid_configuration_names_only[portfolio_risk_window_days-secret-value]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.portfolio.unit.test_settings.test_invalid_configuration_names_only[portfolio_report_interval_seconds-59]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.portfolio.unit.test_settings.test_invalid_configuration_names_only[portfolio_report_interval_seconds-86401]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.portfolio.unit.test_settings.test_invalid_configuration_names_only[portfolio_report_interval_seconds-1.2]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.portfolio.unit.test_settings.test_invalid_configuration_names_only[portfolio_jobs_enabled-invalid]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.security.test_admin_matrix.test_every_admin_route_against_every_role_and_session[valid-administrator]",
+        "status": "passed",
+        "seconds": 0.355
+      },
+      {
+        "test": "tests.security.test_admin_matrix.test_every_admin_route_against_every_role_and_session[valid-auditor]",
+        "status": "passed",
+        "seconds": 0.317
+      },
+      {
+        "test": "tests.security.test_admin_matrix.test_every_admin_route_against_every_role_and_session[valid-analyst]",
+        "status": "passed",
+        "seconds": 0.386
+      },
+      {
+        "test": "tests.security.test_admin_matrix.test_every_admin_route_against_every_role_and_session[valid-investor]",
+        "status": "passed",
+        "seconds": 0.282
+      },
+      {
+        "test": "tests.security.test_admin_matrix.test_every_admin_route_against_every_role_and_session[valid-broker]",
+        "status": "passed",
+        "seconds": 0.269
+      },
+      {
+        "test": "tests.security.test_admin_matrix.test_every_admin_route_against_every_role_and_session[missing-administrator]",
+        "status": "passed",
+        "seconds": 0.293
+      },
+      {
+        "test": "tests.security.test_admin_matrix.test_every_admin_route_against_every_role_and_session[missing-auditor]",
+        "status": "passed",
+        "seconds": 0.271
+      },
+      {
+        "test": "tests.security.test_admin_matrix.test_every_admin_route_against_every_role_and_session[missing-analyst]",
+        "status": "passed",
+        "seconds": 0.269
+      },
+      {
+        "test": "tests.security.test_admin_matrix.test_every_admin_route_against_every_role_and_session[missing-investor]",
+        "status": "passed",
+        "seconds": 0.566
+      },
+      {
+        "test": "tests.security.test_admin_matrix.test_every_admin_route_against_every_role_and_session[missing-broker]",
+        "status": "passed",
+        "seconds": 0.293
+      },
+      {
+        "test": "tests.security.test_admin_matrix.test_every_admin_route_against_every_role_and_session[inactive-administrator]",
+        "status": "passed",
+        "seconds": 0.309
+      },
+      {
+        "test": "tests.security.test_admin_matrix.test_every_admin_route_against_every_role_and_session[inactive-auditor]",
+        "status": "passed",
+        "seconds": 0.32
+      },
+      {
+        "test": "tests.security.test_admin_matrix.test_every_admin_route_against_every_role_and_session[inactive-analyst]",
+        "status": "passed",
+        "seconds": 0.348
+      },
+      {
+        "test": "tests.security.test_admin_matrix.test_every_admin_route_against_every_role_and_session[inactive-investor]",
+        "status": "passed",
+        "seconds": 0.346
+      },
+      {
+        "test": "tests.security.test_admin_matrix.test_every_admin_route_against_every_role_and_session[inactive-broker]",
+        "status": "passed",
+        "seconds": 0.308
+      },
+      {
+        "test": "tests.security.test_admin_matrix.test_every_admin_route_against_every_role_and_session[permission_removed-administrator]",
+        "status": "passed",
+        "seconds": 0.279
+      },
+      {
+        "test": "tests.security.test_admin_matrix.test_every_admin_route_against_every_role_and_session[permission_removed-auditor]",
+        "status": "passed",
+        "seconds": 0.27
+      },
+      {
+        "test": "tests.security.test_admin_matrix.test_every_admin_route_against_every_role_and_session[permission_removed-analyst]",
+        "status": "passed",
+        "seconds": 0.276
+      },
+      {
+        "test": "tests.security.test_admin_matrix.test_every_admin_route_against_every_role_and_session[permission_removed-investor]",
+        "status": "passed",
+        "seconds": 0.37
+      },
+      {
+        "test": "tests.security.test_admin_matrix.test_every_admin_route_against_every_role_and_session[permission_removed-broker]",
+        "status": "passed",
+        "seconds": 0.557
+      },
+      {
+        "test": "tests.security.test_attack_surface.test_all_protected_operations_reject_missing_or_invalid_cookie[missing]",
+        "status": "passed",
+        "seconds": 0.732
+      },
+      {
+        "test": "tests.security.test_attack_surface.test_all_protected_operations_reject_missing_or_invalid_cookie[invalid]",
+        "status": "passed",
+        "seconds": 0.8
+      },
+      {
+        "test": "tests.security.test_attack_surface.test_untrusted_cors_origin_cannot_read_credentialed_responses",
+        "status": "passed",
+        "seconds": 0.006
+      },
+      {
+        "test": "tests.security.test_cross_module_journey.test_seven_module_journey_and_cross_tenant_denials",
+        "status": "passed",
+        "seconds": 5.806
+      },
+      {
+        "test": "tests.security.test_known_findings.test_profile_patch_preflight_is_allowed",
+        "status": "xfail",
+        "seconds": 0.007,
+        "reason": "AUD-01: PATCH absent from CORS allow_methods"
+      },
+      {
+        "test": "tests.security.test_known_findings.test_invalid_login_never_reaches_credential_verification[empty-email]",
+        "status": "xfail",
+        "seconds": 0.011,
+        "reason": "AUD-02: login violates requirement 3.11"
+      },
+      {
+        "test": "tests.security.test_known_findings.test_invalid_login_never_reaches_credential_verification[invalid-email]",
+        "status": "xfail",
+        "seconds": 0.01,
+        "reason": "AUD-02: login violates requirement 3.11"
+      },
+      {
+        "test": "tests.security.test_known_findings.test_invalid_login_never_reaches_credential_verification[oversize-email]",
+        "status": "xfail",
+        "seconds": 0.01,
+        "reason": "AUD-02: login violates requirement 3.11"
+      },
+      {
+        "test": "tests.security.test_known_findings.test_invalid_login_never_reaches_credential_verification[empty-password]",
+        "status": "xfail",
+        "seconds": 0.01,
+        "reason": "AUD-02: login violates requirement 3.11"
+      },
+      {
+        "test": "tests.security.test_known_findings.test_extreme_commission_input_is_a_client_error[1e100-1]",
+        "status": "xfail",
+        "seconds": 0.202,
+        "reason": "AUD-03: unbounded quote decimals cause HTTP 500"
+      },
+      {
+        "test": "tests.security.test_known_findings.test_extreme_commission_input_is_a_client_error[1-1e100]",
+        "status": "xfail",
+        "seconds": 0.184,
+        "reason": "AUD-03: unbounded quote decimals cause HTTP 500"
+      },
+      {
+        "test": "tests.security.test_known_findings.test_extreme_commission_input_is_a_client_error[1e999999-1]",
+        "status": "xfail",
+        "seconds": 0.188,
+        "reason": "AUD-03: unbounded quote decimals cause HTTP 500"
+      },
+      {
+        "test": "tests.security.test_known_findings.test_websocket_invalid_frame_is_handled_without_uncaught_exception[[]]",
+        "status": "xfail",
+        "seconds": 0.079,
+        "reason": "AUD-04: malformed WS frame escapes the protocol loop"
+      },
+      {
+        "test": "tests.security.test_known_findings.test_websocket_invalid_frame_is_handled_without_uncaught_exception[null]",
+        "status": "xfail",
+        "seconds": 0.074,
+        "reason": "AUD-04: malformed WS frame escapes the protocol loop"
+      },
+      {
+        "test": "tests.security.test_known_findings.test_websocket_invalid_frame_is_handled_without_uncaught_exception[1]",
+        "status": "xfail",
+        "seconds": 0.087,
+        "reason": "AUD-04: malformed WS frame escapes the protocol loop"
+      },
+      {
+        "test": "tests.security.test_known_findings.test_websocket_invalid_frame_is_handled_without_uncaught_exception[\"text\"]",
+        "status": "xfail",
+        "seconds": 0.081,
+        "reason": "AUD-04: malformed WS frame escapes the protocol loop"
+      },
+      {
+        "test": "tests.security.test_known_findings.test_websocket_invalid_frame_is_handled_without_uncaught_exception[{]",
+        "status": "xfail",
+        "seconds": 0.075,
+        "reason": "AUD-04: malformed WS frame escapes the protocol loop"
+      },
+      {
+        "test": "tests.security.test_known_findings.test_websocket_revoked_session_cannot_resubscribe",
+        "status": "xfail",
+        "seconds": 0.077,
+        "reason": "AUD-05: WebSocket authorization checked only at handshake"
+      },
+      {
+        "test": "tests.security.test_known_findings.test_login_has_a_bounded_attempt_budget",
+        "status": "xfail",
+        "seconds": 0.018,
+        "reason": "AUD-06: password endpoint has no application throttling"
+      },
+      {
+        "test": "tests.shared.test_alpaca_oauth.test_oauth_is_distinct_from_basic_and_serializes_token_refresh",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.shared.test_alpaca_oauth.test_bad_oauth_token_never_reaches_broker",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.shared.test_alpaca_oauth.test_oauth_provider_failures_are_classified_without_retry[429-AlpacaRateLimited]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.shared.test_alpaca_oauth.test_oauth_provider_failures_are_classified_without_retry[503-AlpacaUnavailable]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.shared.test_alpaca_oauth.test_legacy_names_are_explicit_and_oauth_does_not_need_basic",
+        "status": "passed",
+        "seconds": 0.015
+      },
+      {
+        "test": "tests.shared.test_foundation.test_settings_accept_valid",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.shared.test_foundation.test_kyc_refresh_config_defaults",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.shared.test_foundation.test_kyc_refresh_config_accepts_values[kyc_status_refresh_enabled-TRUE-enabled-True]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.shared.test_foundation.test_kyc_refresh_config_accepts_values[kyc_status_refresh_enabled-False-enabled-False]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.shared.test_foundation.test_kyc_refresh_config_accepts_values[kyc_status_refresh_interval_seconds-60-interval_seconds-60]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.shared.test_foundation.test_kyc_refresh_config_accepts_values[kyc_status_refresh_interval_seconds-86400-interval_seconds-86400]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.shared.test_foundation.test_kyc_refresh_config_accepts_values[kyc_status_cache_ttl_seconds-0-cache_ttl_seconds-0]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.shared.test_foundation.test_kyc_refresh_config_accepts_values[kyc_status_cache_ttl_seconds-3600-cache_ttl_seconds-3600]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.shared.test_foundation.test_kyc_refresh_config_rejects_invalid[kyc_status_refresh_enabled-]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.shared.test_foundation.test_kyc_refresh_config_rejects_invalid[kyc_status_refresh_enabled-yes]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.shared.test_foundation.test_kyc_refresh_config_rejects_invalid[kyc_status_refresh_interval_seconds-]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.shared.test_foundation.test_kyc_refresh_config_rejects_invalid[kyc_status_refresh_interval_seconds-59]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.shared.test_foundation.test_kyc_refresh_config_rejects_invalid[kyc_status_refresh_interval_seconds-86401]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.shared.test_foundation.test_kyc_refresh_config_rejects_invalid[kyc_status_refresh_interval_seconds-900.0]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.shared.test_foundation.test_kyc_refresh_config_rejects_invalid[kyc_status_cache_ttl_seconds-]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.shared.test_foundation.test_kyc_refresh_config_rejects_invalid[kyc_status_cache_ttl_seconds--1]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.shared.test_foundation.test_kyc_refresh_config_rejects_invalid[kyc_status_cache_ttl_seconds-3601]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.shared.test_foundation.test_bad_config_never_echoes_values",
+        "status": "passed",
+        "seconds": 0.298
+      },
+      {
+        "test": "tests.shared.test_foundation.test_unexpected_error_is_safe",
+        "status": "passed",
+        "seconds": 25.918
+      },
+      {
+        "test": "tests.shared.test_foundation.test_validation_drops_input",
+        "status": "passed",
+        "seconds": 0.266
+      },
+      {
+        "test": "tests.shared.test_foundation.test_cors_exact_allowlist",
+        "status": "passed",
+        "seconds": 25.523
+      },
+      {
+        "test": "tests.shared.test_foundation.test_alpaca_classification",
+        "status": "passed",
+        "seconds": 0.026
+      },
+      {
+        "test": "tests.shared.test_foundation.test_cookie_attributes",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.shared.test_foundation.test_redaction_handles_args_and_exception",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.shared.test_foundation.test_lifespan_and_health",
+        "status": "passed",
+        "seconds": 0.267
+      },
+      {
+        "test": "tests.shared.test_foundation.test_invalid_lifespan_refuses_startup",
+        "status": "passed",
+        "seconds": 0.009
+      },
+      {
+        "test": "tests.shared.test_foundation.test_invalid_kyc_status_config_refuses_startup",
+        "status": "passed",
+        "seconds": 0.009
+      },
+      {
+        "test": "tests.unit.test_health.test_health_endpoint",
+        "status": "passed",
+        "seconds": 0.241
+      },
+      {
+        "test": "tests.wallet.api.test_contracted_plan.test_users_me_contract_plan",
+        "status": "passed",
+        "seconds": 0.041
+      },
+      {
+        "test": "tests.wallet.api.test_openapi.test_wallet_openapi",
+        "status": "passed",
+        "seconds": 0.704
+      },
+      {
+        "test": "tests.wallet.api.test_wallet_api.test_deposit_withdrawal_and_signed_webhook",
+        "status": "passed",
+        "seconds": 0.122
+      },
+      {
+        "test": "tests.wallet.api.test_wallet_api.test_every_wallet_endpoint_requires_session_and_investor",
+        "status": "passed",
+        "seconds": 0.767
+      },
+      {
+        "test": "tests.wallet.api.test_wallet_api.test_checkout_payment_unlocks_a_premium_watchlist",
+        "status": "passed",
+        "seconds": 0.133
+      },
+      {
+        "test": "tests.wallet.property.test_funding.test_invalid_without_provider_calls",
+        "status": "passed",
+        "seconds": 0.009
+      },
+      {
+        "test": "tests.wallet.property.test_funding.test_withdrawal_limit",
+        "status": "passed",
+        "seconds": 0.089
+      },
+      {
+        "test": "tests.wallet.property.test_funding.test_transfer_idempotency",
+        "status": "passed",
+        "seconds": 0.243
+      },
+      {
+        "test": "tests.wallet.property.test_funding.test_ownership",
+        "status": "passed",
+        "seconds": 0.129
+      },
+      {
+        "test": "tests.wallet.property.test_money.test_amount_reference",
+        "status": "passed",
+        "seconds": 0.076
+      },
+      {
+        "test": "tests.wallet.property.test_money.test_exact_amount",
+        "status": "passed",
+        "seconds": 0.026
+      },
+      {
+        "test": "tests.wallet.property.test_signature.test_signature",
+        "status": "passed",
+        "seconds": 0.046
+      },
+      {
+        "test": "tests.wallet.property.test_transitions.test_transition_reference",
+        "status": "passed",
+        "seconds": 0.085
+      },
+      {
+        "test": "tests.wallet.property.test_webhooks.test_webhook_idempotency",
+        "status": "passed",
+        "seconds": 0.158
+      },
+      {
+        "test": "tests.wallet.property.test_webhooks.test_premium_sequence",
+        "status": "passed",
+        "seconds": 0.191
+      },
+      {
+        "test": "tests.wallet.property.test_webhooks.test_unassociated",
+        "status": "passed",
+        "seconds": 0.048
+      },
+      {
+        "test": "tests.wallet.property.test_webhooks.test_invalid_signature_no_effects",
+        "status": "passed",
+        "seconds": 0.031
+      },
+      {
+        "test": "tests.wallet.property.test_webhooks.test_payment_ownership",
+        "status": "passed",
+        "seconds": 0.059
+      },
+      {
+        "test": "tests.wallet.unit.test_access.test_investor_guard[roles0-active-True]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.wallet.unit.test_access.test_investor_guard[roles1-active-False]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.wallet.unit.test_access.test_investor_guard[roles2-restricted-False]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.wallet.unit.test_balances.test_balances_unavailable[failure0]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.wallet.unit.test_balances.test_balances_unavailable[failure1]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.wallet.unit.test_balances.test_balances_unavailable[failure2]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.wallet.unit.test_currencies_activities.test_currencies_activities_and_period",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.wallet.unit.test_edge_cases.test_bank_validation_and_rejected_transfer_release_key",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.wallet.unit.test_edge_cases.test_unapproved_bank_and_inactive_account",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.wallet.unit.test_funding_client.test_transfer_sends_exact_amount_and_ach_route",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.wallet.unit.test_hash.test_hash_is_canonical",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.wallet.unit.test_invoice_lifecycle.test_failed_invoice_can_later_be_paid_without_duplicate_payment",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.wallet.unit.test_migration.test_wallet_migration_reverses",
+        "status": "passed",
+        "seconds": 0.008
+      },
+      {
+        "test": "tests.wallet.unit.test_modern_stripe_events.test_both_subscription_period_formats_persist_exact_dates[False]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.wallet.unit.test_modern_stripe_events.test_both_subscription_period_formats_persist_exact_dates[True]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.wallet.unit.test_modern_stripe_events.test_modern_invoice_matches_subscription_without_customer_fallback",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.wallet.unit.test_modern_stripe_events.test_invoice_with_null_parent_is_ignored_when_unassociated",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.wallet.unit.test_pagination.test_cursor_sorts_instants_across_timezones",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.wallet.unit.test_plan_reader.test_current_plan",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.wallet.unit.test_preferences.test_balance_preferences",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.wallet.unit.test_premium_effect.test_premium_effect[active-True]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.wallet.unit.test_premium_effect.test_premium_effect[trialing-True]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.wallet.unit.test_premium_effect.test_premium_effect[canceled-False]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.wallet.unit.test_premium_effect.test_premium_effect[unpaid-False]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.wallet.unit.test_premium_effect.test_premium_effect[incomplete_expired-False]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.wallet.unit.test_premium_effect.test_premium_effect[past_due-None]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.wallet.unit.test_premium_effect.test_premium_effect[incomplete-None]",
+        "status": "passed",
+        "seconds": 0.0
+      },
+      {
+        "test": "tests.wallet.unit.test_recipient.test_recipient_filters_in_sql_and_respects_channels",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.wallet.unit.test_reconciler.test_transfer_and_fill_notifications_are_at_most_once",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.wallet.unit.test_reconciler.test_transfer_returned_complete_by_creation_is_notified_once",
+        "status": "passed",
+        "seconds": 0.002
+      },
+      {
+        "test": "tests.wallet.unit.test_repositories.test_conditional_update_and_unique_insert",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.wallet.unit.test_repositories.test_transaction_rolls_back",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.wallet.unit.test_schema_db.test_wallet_constraints_and_rls",
+        "status": "passed",
+        "seconds": 0.023
+      },
+      {
+        "test": "tests.wallet.unit.test_settings.test_invalid_configuration_names_only[stripe_secret_key-sk_live_do_not_echo]",
+        "status": "passed",
+        "seconds": 0.004
+      },
+      {
+        "test": "tests.wallet.unit.test_settings.test_invalid_configuration_names_only[stripe_webhook_secret-None]",
+        "status": "passed",
+        "seconds": 0.004
+      },
+      {
+        "test": "tests.wallet.unit.test_settings.test_invalid_configuration_names_only[stripe_price_monthly_id-bad]",
+        "status": "passed",
+        "seconds": 0.004
+      },
+      {
+        "test": "tests.wallet.unit.test_settings.test_invalid_configuration_names_only[stripe_price_annual_id-bad]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.wallet.unit.test_settings.test_invalid_configuration_names_only[wallet_max_transfer_amount-1.001]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.wallet.unit.test_settings.test_invalid_configuration_names_only[wallet_max_transfer_amount-1.000]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.wallet.unit.test_settings.test_invalid_configuration_names_only[wallet_max_transfer_amount-NaN]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.wallet.unit.test_settings.test_invalid_configuration_names_only[wallet_reconcile_interval_seconds-9]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.wallet.unit.test_settings.test_invalid_configuration_names_only[wallet_reconcile_interval_seconds-3601]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.wallet.unit.test_settings.test_invalid_configuration_names_only[wallet_reconciler_enabled-yes]",
+        "status": "passed",
+        "seconds": 0.003
+      },
+      {
+        "test": "tests.wallet.unit.test_sql_mapping.test_database_audit_columns_are_not_passed_into_domain",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.wallet.unit.test_stripe_client.test_stripe_classification[429-StripeUnavailableError]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.wallet.unit.test_stripe_client.test_stripe_classification[503-StripeUnavailableError]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.wallet.unit.test_stripe_client.test_stripe_classification[400-StripeRejectedError]",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.wallet.unit.test_subscriptions.test_checkout_cancel_and_failure_rollback",
+        "status": "passed",
+        "seconds": 0.001
+      },
+      {
+        "test": "tests.wallet.unit.test_webhook_database.test_database_failure_is_logged_unapplied",
+        "status": "passed",
+        "seconds": 0.408
+      }
+    ]
+  },
+  "unmasked-findings": {
+    "total": 15,
+    "counts": {
+      "failed": 15
+    },
+    "seconds": 1.544,
+    "by_module": {
+      "security": {
+        "failed": 15
+      }
+    },
+    "cases": [
+      {
+        "test": "tests.security.test_known_findings.test_profile_patch_preflight_is_allowed",
+        "status": "failed",
+        "seconds": 0.012
+      },
+      {
+        "test": "tests.security.test_known_findings.test_invalid_login_never_reaches_credential_verification[empty-email]",
+        "status": "failed",
+        "seconds": 0.014
+      },
+      {
+        "test": "tests.security.test_known_findings.test_invalid_login_never_reaches_credential_verification[invalid-email]",
+        "status": "failed",
+        "seconds": 0.012
+      },
+      {
+        "test": "tests.security.test_known_findings.test_invalid_login_never_reaches_credential_verification[oversize-email]",
+        "status": "failed",
+        "seconds": 0.014
+      },
+      {
+        "test": "tests.security.test_known_findings.test_invalid_login_never_reaches_credential_verification[empty-password]",
+        "status": "failed",
+        "seconds": 0.014
+      },
+      {
+        "test": "tests.security.test_known_findings.test_extreme_commission_input_is_a_client_error[1e100-1]",
+        "status": "failed",
+        "seconds": 0.286
+      },
+      {
+        "test": "tests.security.test_known_findings.test_extreme_commission_input_is_a_client_error[1-1e100]",
+        "status": "failed",
+        "seconds": 0.221
+      },
+      {
+        "test": "tests.security.test_known_findings.test_extreme_commission_input_is_a_client_error[1e999999-1]",
+        "status": "failed",
+        "seconds": 0.257
+      },
+      {
+        "test": "tests.security.test_known_findings.test_websocket_invalid_frame_is_handled_without_uncaught_exception[[]]",
+        "status": "failed",
+        "seconds": 0.102
+      },
+      {
+        "test": "tests.security.test_known_findings.test_websocket_invalid_frame_is_handled_without_uncaught_exception[null]",
+        "status": "failed",
+        "seconds": 0.103
+      },
+      {
+        "test": "tests.security.test_known_findings.test_websocket_invalid_frame_is_handled_without_uncaught_exception[1]",
+        "status": "failed",
+        "seconds": 0.092
+      },
+      {
+        "test": "tests.security.test_known_findings.test_websocket_invalid_frame_is_handled_without_uncaught_exception[\"text\"]",
+        "status": "failed",
+        "seconds": 0.085
+      },
+      {
+        "test": "tests.security.test_known_findings.test_websocket_invalid_frame_is_handled_without_uncaught_exception[{]",
+        "status": "failed",
+        "seconds": 0.088
+      },
+      {
+        "test": "tests.security.test_known_findings.test_websocket_revoked_session_cannot_resubscribe",
+        "status": "failed",
+        "seconds": 0.093
+      },
+      {
+        "test": "tests.security.test_known_findings.test_login_has_a_bounded_attempt_budget",
+        "status": "failed",
+        "seconds": 0.021
+      }
+    ]
+  }
+}
