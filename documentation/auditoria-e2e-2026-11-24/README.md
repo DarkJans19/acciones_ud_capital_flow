@@ -89,7 +89,7 @@ PATCH preflight 400, candles válidas 200 y **30×401, cero 429**.
 
 `live-http.json` contiene estado/código/Request-ID y forma de respuesta, no cuerpos
 de éxito ni cookies/contraseñas. Sus tiempos incluyen espera en la cola del
-semáforo: **no son un benchmark de latencia del servidor**. Los tiempos del
+semáforo: **no son un benchmark de latencia del servidor**. Los tiempos del
 seguimiento son secuenciales y no incluyen esa cola.
 
 ### C. Recorrido integrado aislado, con autenticación y SQL reales

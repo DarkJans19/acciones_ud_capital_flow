@@ -15,7 +15,7 @@ El código actual incluye `identity`, `market_data`, `orders`, `wallet`,
 La guía distingue implementación, decisiones vigentes y asuntos pendientes;
 no declara el sistema certificado para producción.
 
-## Inicio rÃƒÂ¡pido
+## Inicio rápido
 
 Requiere Python 3.12 y `uv`.
 
@@ -24,7 +24,7 @@ uv sync
 uv run uvicorn acciones_ud.main:app --reload
 ```
 
-La API estarÃƒÂ¡ disponible en `http://localhost:8000` y su documentaciÃƒÂ³n en
+La API estará disponible en `http://localhost:8000` y su documentación en
 `/docs`. El endpoint inicial es `GET /health`.
 
 ## Docker y Stripe CLI local
@@ -57,13 +57,13 @@ Copia `.env.example` a `.env` y configura las credenciales sandbox.
 La API queda en `http://localhost:8000`, con `/docs` y `/health`. API y
 migraciones reciben `.env` mediante `env_file.format: raw`, preservando `$`.
 El archivo queda excluido de la imagen por `.dockerignore`. Stripe CLI corre
-fuera de Docker y usa su propia autenticacion local.
+fuera de Docker y usa su propia autenticación local.
 
 Tras cambiar `.env`, vuelve a ejecutar el comando de inicio para recrear la API.
 Si cambias de cuenta o clave Stripe, verifica el secreto del listener. Si cambias
-`API_PORT`, ajusta tambien el puerto de `--forward-to`.
+`API_PORT`, ajusta también el puerto de `--forward-to`.
 
-Las migraciones se ejecutan explicitamente, solo cuando corresponda modificar
+Las migraciones se ejecutan explícitamente, solo cuando corresponda modificar
 la base indicada por `MIGRATION_DATABASE_URL`:
 
 ```powershell
@@ -80,10 +80,10 @@ publiques `docker inspect` ni la salida completa de `docker compose config`.
 Para validar sin mostrar valores:
 `docker compose --env-file .env.example --profile tools config --quiet`.
 
-El diseno y la evidencia estan en
+El diseño y la evidencia están en
 [el spec Docker](.kiro/specs/identity-market-backend/docker.md).
 
-## ValidaciÃƒÂ³n
+## Validación
 
 ```powershell
 uv run ruff check .
@@ -95,22 +95,22 @@ Consulta [`AGENTS.md`](./AGENTS.md), [`constitution.md`](./constitution.md) y
 [`.kiro/specs/`](./.kiro/specs/) para las convenciones de arquitectura y SDD.
 El spec activo de MOD-01 y MOD-02 es
 [`.kiro/specs/identity-market-backend/`](./.kiro/specs/identity-market-backend/);
-`specs/` quedÃƒÂ³ reemplazada y se conserva solo como referencia histÃƒÂ³rica.
+`specs/` quedó reemplazada y se conserva solo como referencia histórica.
 
 Las migraciones de Supabase PostgreSQL se gestionan con Alembic en
 [`migrations/`](./migrations/).
-Esta carpeta debe conservarse porque los cambios de tablas, ÃƒÂ­ndices y restricciones
+Esta carpeta debe conservarse porque los cambios de tablas, índices y restricciones
 deben quedar versionados y poder aplicarse de forma reproducible.
 
-## ConexiÃƒÂ³n a Supabase
+## Conexión a Supabase
 
 Copia `.env.example` como `.env` y reemplaza los marcadores con los datos de
-`Connect` en Supabase. Para este backend persistente se usa una conexiÃƒÂ³n directa
+`Connect` en Supabase. Para este backend persistente se usa una conexión directa
 cuando el despliegue dispone de IPv6 o el Session pooler cuando solo dispone de
 IPv4. Alembic usa su propia URL, preferiblemente directa.
 
 Las URL de este proyecto llevan el dialecto `postgresql+asyncpg` y
-`ssl=require`. Si se copia una URL genÃƒÂ©rica de Supabase, hay que reemplazar
+`ssl=require`. Si se copia una URL genérica de Supabase, hay que reemplazar
 `postgresql://` y `sslmode=require` por esos valores compatibles con SQLAlchemy y
-`asyncpg`. No se debe usar el Transaction pooler sin configurar ademÃƒÂ¡s sus
-restricciones de prepared statements y tamaÃƒÂ±o de pool.
+`asyncpg`. No se debe usar el Transaction pooler sin configurar además sus
+restricciones de prepared statements y tamaño de pool.
