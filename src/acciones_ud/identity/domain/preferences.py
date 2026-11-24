@@ -1,4 +1,5 @@
 EVENT_TYPES = (
+    "market_schedule_changes",
     "market_open",
     "market_close",
     "proposals",

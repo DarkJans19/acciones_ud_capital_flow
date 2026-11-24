@@ -10,6 +10,19 @@ from sqlalchemy.engine import make_url
 
 
 class Settings(BaseSettings):
+    admin_jobs_enabled: str = "true"
+    admin_schedule_dispatch_interval_seconds: str = "30"
+    admin_kpi_cache_ttl_seconds: str = "300"
+    admin_atypical_absolute_usd: str = "10000.00"
+    admin_atypical_multiplier: str = "3"
+    admin_atypical_window_days: str = "90"
+    admin_atypical_min_history: str = "5"
+    admin_order_frequency_count: str = "20"
+    admin_order_frequency_seconds: str = "300"
+    admin_cancellation_count: str = "10"
+    admin_cancellation_seconds: str = "300"
+    admin_rejection_count: str = "5"
+    admin_rejection_seconds: str = "3600"
     broker_link_request_ttl_days: str = "7"
     proposal_ttl_hours: str = "72"
     broker_link_consent_version: str = "v1"
@@ -142,9 +155,51 @@ REQUIRED = (
 )
 
 
+ADMIN_INTEGER_BOUNDS = {
+    "admin_schedule_dispatch_interval_seconds": (5, 3600),
+    "admin_kpi_cache_ttl_seconds": (0, 86400),
+    "admin_atypical_window_days": (7, 365),
+    "admin_atypical_min_history": (1, 1000),
+    "admin_order_frequency_count": (2, 10000),
+    "admin_order_frequency_seconds": (1, 86400),
+    "admin_cancellation_count": (2, 10000),
+    "admin_cancellation_seconds": (1, 86400),
+    "admin_rejection_count": (2, 10000),
+    "admin_rejection_seconds": (1, 86400),
+}
+
+
+def invalid_admin_settings(settings: Settings) -> set[str]:
+    invalid = set()
+    for name, (low, high) in ADMIN_INTEGER_BOUNDS.items():
+        try:
+            if not low <= int(getattr(settings, name)) <= high:
+                invalid.add(name.upper())
+        except (ValueError, TypeError):
+            invalid.add(name.upper())
+    for name, decimal_low, decimal_high in (
+        ("admin_atypical_absolute_usd", Decimal("0.01"), Decimal("1000000000000")),
+        ("admin_atypical_multiplier", Decimal(1), Decimal(100)),
+    ):
+        try:
+            value = Decimal(getattr(settings, name))
+            if not value.is_finite() or not decimal_low <= value <= decimal_high:
+                invalid.add(name.upper())
+            exponent = value.as_tuple().exponent
+            if name == "admin_atypical_absolute_usd" and (
+                not isinstance(exponent, int) or exponent < -2
+            ):
+                invalid.add(name.upper())
+        except (InvalidOperation, TypeError, ValueError):
+            invalid.add(name.upper())
+    if settings.admin_jobs_enabled.lower() not in {"true", "false"}:
+        invalid.add("ADMIN_JOBS_ENABLED")
+    return invalid
+
+
 def require_api_settings(settings: Settings) -> None:
     """RF-02, RNF configuration: report variable names, never their values."""
-    invalid: set[str] = set()
+    invalid: set[str] = invalid_admin_settings(settings)
     for name, decimal_low, decimal_high in (
         ("order_reference_commission_rate", Decimal(0), Decimal(1)),
         ("order_reauth_price_deviation_pct", Decimal(0), Decimal(100)),

@@ -210,15 +210,13 @@ def test_unprivileged_request_wins_over_invalid_parameters(api_settings: Setting
         {"q": "   "},
         {"q": "x" * 101},
         {"account_status": "deleted"},
-        {"role": "auditor"},
+        {"role": "unsupported_role"},
         {"broker_requested": "yes"},
         {"kyc_status": "submitted"},
         {"kyc_link_state": "linked "},
     ],
 )
-def test_invalid_parameters_are_rejected(
-    api_settings: Settings, params: dict[str, object]
-) -> None:
+def test_invalid_parameters_are_rejected(api_settings: Settings, params: dict[str, object]) -> None:
     client = make_app(api_settings, population())
 
     response = client.get("/api/v1/admin/users", params=params)

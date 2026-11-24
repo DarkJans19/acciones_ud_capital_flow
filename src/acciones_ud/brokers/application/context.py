@@ -26,6 +26,7 @@ class BrokerContext:
     notifier: p.BrokersNotifierPort
     clock: Clock
     config: e.BrokersConfig
+    commission_terms: p.CommissionTermsBySymbolPort | None = None
 
     async def require_role(self, user_id: UUID, role: Literal["broker", "investor"]) -> None:
         if not await self.directory.has_role(user_id, role):

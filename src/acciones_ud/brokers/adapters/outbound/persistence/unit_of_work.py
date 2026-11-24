@@ -32,7 +32,7 @@ class SqlBrokerWork:
     messages: p.MessageRepository
     ratings: p.RatingRepository
     profiles: p.ProfileRepository
-    events: p.Repository[e.BrokerEvent]
+    events: p.EvidenceRepository[e.BrokerEvent]
 
     async def lock_investor(self, investor_id: UUID) -> None:
         await self.session.execute(

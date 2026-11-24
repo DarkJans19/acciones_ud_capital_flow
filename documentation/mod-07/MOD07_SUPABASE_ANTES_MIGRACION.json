@@ -1,0 +1,90 @@
+[
+  {
+    "method": "GET",
+    "path": "/health",
+    "status": 200,
+    "response": {
+      "status": "ok"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/login",
+    "status": 200,
+    "response": {
+      "mfa_token": "<REDACTED>",
+      "mfa_expires_at": "2026-11-24T14:02:55.309297Z",
+      "totp_enrollment": null
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/mfa/verify",
+    "status": 200,
+    "response": {
+      "user": {
+        "user_id": "932792e8-d8b7-43ac-a268-122eb5cfaea7",
+        "email": "admin.ti@accionesud.com",
+        "account_status": "active"
+      },
+      "recovery_codes": null,
+      "recovery_codes_remaining": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/fee-schedules",
+    "status": 403,
+    "response": {
+      "code": "FORBIDDEN",
+      "message": "Permission required.",
+      "details": null
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/logout",
+    "status": 204,
+    "response": null
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/login",
+    "status": 200,
+    "response": {
+      "mfa_token": "<REDACTED>",
+      "mfa_expires_at": "2026-11-24T14:03:01.526030Z",
+      "totp_enrollment": null
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/mfa/verify",
+    "status": 200,
+    "response": {
+      "user": {
+        "user_id": "c0674321-9a64-4f13-9070-e57dfb35b4e8",
+        "email": "investor.ti@accionesud.com",
+        "account_status": "active"
+      },
+      "recovery_codes": null,
+      "recovery_codes_remaining": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/commissions/quote?symbol=AAPL&side=buy&qty=10&price=187.35&with_broker=true",
+    "status": 500,
+    "response": {
+      "code": "DATABASE_SCHEMA_ERROR",
+      "message": "Database schema or query requires attention.",
+      "details": null
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/logout",
+    "status": 204,
+    "response": null
+  }
+]

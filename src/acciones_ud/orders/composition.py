@@ -1,5 +1,6 @@
 """MOD-03 composition. Application services depend exclusively on their ports."""
 
+from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from typing import cast
 from uuid import UUID
@@ -34,9 +35,11 @@ from acciones_ud.orders.application.order_scheduler import OrderScheduler
 from acciones_ud.orders.application.order_service import OrderService
 from acciones_ud.orders.application.proposal_orders import OrderQueries, ProposalOrders
 from acciones_ud.orders.application.schedule_change import ScheduleChangeService
+from acciones_ud.orders.domain.admin_defaults import AllowAllGate, ReferenceCommissionTerms
 from acciones_ud.orders.domain.model import OrderConfig
-from acciones_ud.orders.domain.ports import BrokerLinkPort
+from acciones_ud.orders.domain.ports import BrokerLinkPort, CommissionTermsPort, TradingGatePort
 from acciones_ud.shared.domain.clock import SystemClock
+from acciones_ud.shared.domain.trading import CommissionTerms, GateDecision
 
 
 class InstalledBrokerLink:
@@ -57,6 +60,25 @@ class InstalledBrokerLink:
 
     async def linked_investors(self, broker_id: UUID) -> list[UUID]:
         return await self.port.linked_investors(broker_id)
+
+
+class InstalledCommissionTerms:
+    def __init__(self, app: FastAPI) -> None:
+        self.app = app
+
+    async def terms(self, exchange: str, at: datetime) -> CommissionTerms:
+        default = ReferenceCommissionTerms(order_config(self.app.state.settings).commission_rate)
+        port = cast(CommissionTermsPort, getattr(self.app.state, "order_commission_terms", default))
+        return await port.terms(exchange, at)
+
+
+class InstalledTradingGate:
+    def __init__(self, app: FastAPI) -> None:
+        self.app = app
+
+    async def check(self, user_id: UUID, exchange: str, at: datetime) -> GateDecision:
+        port = cast(TradingGatePort, getattr(self.app.state, "order_trading_gate", AllowAllGate()))
+        return await port.check(user_id, exchange, at)
 
 
 def order_config(settings: Settings) -> OrderConfig:
@@ -112,7 +134,8 @@ def register(app: FastAPI) -> None:
         sessions=MarketSessionAdapter(lambda: market_data.calendar_service(scope)),
         buying_power=WalletBuyingPowerAdapter(app.state.wallet_funding_port),
         positions=getattr(
-            app.state, "order_position_port",
+            app.state,
+            "order_position_port",
             AlpacaPositionsClient(lambda: app.state.alpaca_broker),
         ),
         alpaca=AlpacaOrdersClient(lambda: app.state.alpaca_broker),
@@ -120,6 +143,8 @@ def register(app: FastAPI) -> None:
         notifier=OrderNotifierAdapter(market_data.directory_uow, market_data.notifier(scope)),
         clock=clock,
         config=order_config(settings),
+        commission_terms=InstalledCommissionTerms(app),
+        trading_gate=InstalledTradingGate(app),
     )
     service = OrderService(context)
     app.state.order_context = context

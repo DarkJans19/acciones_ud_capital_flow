@@ -1,5 +1,13 @@
 # Design Document
 
+> Enmienda arquitectónica D3 por MOD-07/H1: se admiten cinco roles; auditor
+> recibe `admin:audit` y `admin:compliance:read`, analyst recibe `admin:bi`.
+> Los permisos de control y `admin:rbac` permanecen reservados a administrator.
+> `protect_permission` aplica listas cerradas antes de abrir la transacción y
+> MOD-07 comprueba permiso y rol en cada endpoint. Esta enmienda prevalece
+> sobre las referencias históricas a exactamente tres roles de este documento.
+> Ver [ADR-6 y decisiones MOD-07](../admin-mod-07/implementation-decisions.md).
+
 ## Overview
 
 This design describes the backend for MOD-01 (Identity, Security and Access Control) and MOD-02 (Market Explorer and Stock Quotes) of AccionesUD Capital Flow. It is a single FastAPI application that:

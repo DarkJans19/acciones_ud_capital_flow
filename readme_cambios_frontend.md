@@ -552,3 +552,143 @@ Auditoría de activaciones de broker:
 ```
 GET /api/v1/admin/audit-log?action=broker_activated&limit=50
 ```
+
+## MOD-07 — Administración, comisiones y cumplimiento
+
+Spec vigente: `.kiro/specs/admin-mod-07/`, incluidas las decisiones H1/H3/H7 en
+`implementation-decisions.md`. OpenAPI (`/openapi.json`) declara los contratos
+de entrada, salida y errores. Todas las rutas siguientes tienen prefijo `/api/v1`.
+
+### Acceso por rol y permiso
+
+| Rol | Capacidades de MOD-07 |
+| --- | --- |
+| `administrator` | Tarifas, comisiones, mercados, interruptores, auditoría, restricciones, reportes y BI; permisos `admin:fees`, `admin:commissions`, `admin:markets`, `admin:halts`, `admin:audit`, `admin:compliance`, `admin:compliance:read`, `admin:bi` |
+| `auditor` | Solo lectura de evidencia, restricciones, señales y reportes guardados: `admin:audit`, `admin:compliance:read` |
+| `analyst` | Solo BI agregado: `admin:bi`; no accede a evidencia ni datos individuales |
+| `investor` | Cotización y comisiones propias |
+| `broker` | Cotización y comisiones firmadas para clientes con vinculación activa |
+
+La gestión de roles, permisos, asignaciones y directorio sigue usando los
+endpoints existentes de `identity`. Asignar `auditor` o `analyst` exige un
+administrador. No hay registro público de estos roles. Los roles son aditivos:
+el administrador debe revisar las demás asignaciones vigentes de cada cuenta.
+`PROTECTED_PERMISSION` (409) impide conceder permisos de control a otros roles,
+conceder permisos de lectura fuera de la matriz y quitar `admin:rbac` al administrador.
+
+### Rutas
+
+| Método | Ruta | Permiso o rol |
+| --- | --- | --- |
+| GET | `/admin/fee-schedules` | admin:fees |
+| GET, POST | `/admin/fee-schedules/{scope}/versions` | admin:fees |
+| POST | `/admin/fee-schedules/{scope}/versions/{version_id}/cancel` | admin:fees |
+| GET | `/commissions/quote?symbol&side&qty&price&with_broker` | investor o broker |
+| GET | `/commissions?from&to&symbol` | investor |
+| GET | `/broker/commissions?from&to&investor_id` | broker |
+| GET | `/admin/commissions?from&to&broker_id&investor_id&market` | admin:commissions |
+| GET | `/admin/markets` | admin:markets |
+| GET | `/admin/markets/{market_code}` | admin:markets |
+| GET | `/admin/markets/{market_code}/schedule-changes?from&to` | admin:markets |
+| GET, POST | `/admin/trading-halts` | admin:halts |
+| POST | `/admin/trading-halts/{halt_id}/release` | admin:halts |
+| GET | `/trading-halts/active` | autenticado |
+| GET | `/admin/audit-trail?from&to&user_id&source&action&entity_type&entity_id` | admin:audit |
+| GET | `/admin/audit-trail/orders/{order_id}` | admin:audit |
+| POST | `/admin/compliance/restrictions` | admin:compliance |
+| POST | `/admin/compliance/restrictions/{restriction_id}/lift` | admin:compliance |
+| GET | `/admin/compliance/restrictions?user_id&status` | admin:compliance:read |
+| GET | `/admin/compliance/atypical-operations?from&to&user_id&min_amount` | admin:compliance:read |
+| POST | `/admin/compliance/users/{user_id}/audit-reports` | admin:compliance |
+| GET | `/admin/compliance/audit-reports/{report_id}` | admin:compliance:read |
+| GET | `/admin/compliance/users/{user_id}/audit-reports` | admin:compliance:read |
+| GET | `/admin/kpis?from&to&refresh` | admin:bi |
+
+Los listados admiten `cursor` y `page_size` (1–100, por defecto 20; auditoría 50).
+El Period obligatorio usa fechas inclusivas `from`/`to` de America/New_York,
+máximo 366 días. Los importes, porcentajes, cantidades y precios son cadenas
+decimales exactas; el consumidor no debe convertirlos a coma flotante para cálculos.
+La escala puede normalizarse: `"1.75"` y `"1.7500"` representan el mismo porcentaje.
+
+### Escrituras críticas y tarifas
+
+Crear/cancelar tarifa, activar/liberar interruptor y restringir/rehabilitar reciben
+`reason` (1–500 caracteres) y `totp_code` en JSON. El código no se devuelve,
+persiste ni registra. Sin TOTP confirmado: 409 `MFA_ENROLLMENT_REQUIRED`;
+sin código: 409 `EXTRA_AUTHORIZATION_REQUIRED`; inválido o reutilizado:
+401 `EXTRA_AUTHORIZATION_INVALID`.
+
+Crear tarifa recibe `commission_rate_pct` (0–10, hasta 4 decimales),
+`platform_share_pct` (0–100, hasta 2), `expected_latest_version` y
+`effective_from` opcional con zona horaria. Scope: `default` o código de mercado.
+No se admiten vigencias retroactivas. `FEE_VERSION_CONFLICT` (409) incluye
+`latest_version`; el cliente recarga el historial. Solo versiones futuras pueden
+cancelarse; de otro modo responde `FEE_VERSION_NOT_CANCELABLE` (409).
+La matriz incluye `terms`, la versión `current`, `origin` y versiones `scheduled`.
+
+Los términos quedan fijos al crear la orden y se exponen aditivamente en su
+detalle: `fee_version_id`, `commission_rate_pct`, `platform_share_pct`. Cada
+ejecución parcial calcula y redondea su comisión half-even; el total es su suma.
+Las órdenes anteriores sin evidencia conservan términos nulos. Sus ejecuciones
+devuelven `commission_status=historical_terms_unknown`, importes oficiales nulos
+y se cuentan en `historical_terms_unknown_count`; `totals.complete=false` y los
+indicadores de ingresos muestran `complete=false`. Portfolio mantiene en esos
+casos una estimación `commission_source=reference`, nunca `official`.
+
+La cotización es informativa (`binding=false`). El reparto se aplica solo a
+ejecuciones con firma de broker. Los totales incluyen todo el Period, no solo
+la página visible. Un broker sin vinculación activa al `investor_id` consultado
+recibe 404 `CLIENT_NOT_FOUND`; se pierde el acceso al terminar la vinculación.
+En el desglose administrativo, `unassigned` representa ejecuciones sin broker.
+
+### Negociación y cambios de horario
+
+`scope` de un interruptor admite `global` o mercado; `starts_at` y `ends_at`
+definen su vigencia. Errores: 409 `TRADING_HALT_OVERLAP` o
+`TRADING_HALT_NOT_RELEASABLE`. Su consulta pública omite motivos y actores.
+La creación/vista previa de órdenes puede responder 503 `TRADING_HALTED` o
+403 `ACCOUNT_TRADING_RESTRICTED`; también afectan a la conversión de propuestas.
+Con 503 la propuesta permanece aceptada para reintentar; una restricción de
+cuenta es un rechazo de negocio. Los envíos pendientes se aplazan sin perder
+estado ni reserva, con un solo aviso por causa. Se mantienen las reglas de
+expiración y nueva autorización por cambio de precio.
+
+Los horarios se editan con los endpoints actuales de `market_data` (default-schedule
+y schedule-overrides). Cada cambio se audita atómicamente y se propaga a órdenes
+con reintento idempotente. Se añade el evento de preferencias y notificaciones
+`market_schedule_changes`, inicialmente habilitado en `in_app` para cuentas
+nuevas y existentes. El historial muestra fecha efectiva, valores anterior/nuevo
+y estado del despacho. Las notificaciones de horario son a lo sumo un intento
+por destinatario; puede perderse el aviso si el proceso cae después del marcador.
+
+### Cumplimiento, evidencia e indicadores
+
+Una restricción recibe `user_id`, `restriction_type=trading`, `evidence_text`
+(hasta 2000 caracteres) y `evidence_refs` (hasta 20 objetos `{source,id}`).
+Errores 409: `RESTRICTION_ALREADY_ACTIVE`, `RESTRICTION_NOT_ACTIVE`.
+No altera sesiones, roles, billetera ni órdenes enviadas. La detección no bloquea
+automáticamente: las decisiones requieren administrador y TOTP.
+
+`atypical-v2` informa reglas `absolute_threshold`, `relative_to_history`,
+`order_frequency`, `cancellation_frequency`, `repeated_rejections`, con valores
+observados, referencias, versión y configuración. Una señal es evidencia para
+revisión humana. Los fallos externos no cuentan como rechazos del usuario.
+
+Generar un reporte recibe `{from,to}`. Se guarda contenido inmutable y
+`content_sha256`; recuperarlo no recalcula el contenido. La auditoría reúne
+fuentes `admin`, `orders`, `brokers`, `auth` y filtra por actor/afectado/relacionado.
+Los triggers protegen la evidencia frente a mutaciones ordinarias; el propietario
+del esquema o un superusuario puede deshabilitarlos. Esa limitación también
+figura en OpenAPI. El tablero devuelve definiciones, `computed_at`, `as_of`,
+`cache_hit` y `stale`; un respaldo vencido se identifica explícitamente.
+
+| Componente de referencia del frontend | Contratos principales |
+| --- | --- |
+| ExecutiveKpiDashboard | `/admin/kpis` |
+| CommissionFeeMatrixEditor | `/admin/fee-schedules`, `/admin/commissions` |
+| MarketHoursScheduler | `/admin/markets`, endpoints actuales de horarios, `/admin/trading-halts` |
+| AuditTrailViewer | `/admin/audit-trail`, `/admin/compliance/*` |
+| UserAccessControlManager | endpoints existentes de identity y `/admin/compliance/restrictions` |
+
+Las migraciones 0010–0012 quedan listas para aplicación manual por el equipo
+con Alembic. La implementación no aplica migraciones a Supabase compartido.

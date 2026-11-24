@@ -5,15 +5,28 @@ from typing import Literal, Protocol
 from uuid import UUID
 
 from acciones_ud.orders.domain import model as m
+from acciones_ud.shared.domain.trading import CommissionTerms, GateDecision
+
+
+class CommissionTermsPort(Protocol):
+    async def terms(self, exchange: str, at: datetime) -> CommissionTerms: ...
+
+
+class TradingGatePort(Protocol):
+    async def check(self, user_id: UUID, exchange: str, at: datetime) -> GateDecision: ...
+
 
 OrderEventType = Literal["order_executions", "order_updates"]
 CancelOutcome = Literal["accepted", "not_cancelable"]
 
 
-class Repository[T](Protocol):
+class EvidenceRepository[T](Protocol):
     async def get(self, **filters: object) -> T | None: ...
     async def list(self, **filters: object) -> list[T]: ...
     async def insert(self, value: T) -> bool: ...
+
+
+class Repository[T](EvidenceRepository[T], Protocol):
     async def save(self, value: T, **expected: object) -> bool: ...
     async def delete(self, **filters: object) -> None: ...
 
@@ -39,8 +52,8 @@ class OrderRepository(Repository[m.Order], Protocol):
 class OrderWork(Protocol):
     orders: OrderRepository
     legs: Repository[m.OrderLeg]
-    events: Repository[m.OrderEvent]
-    executions: Repository[m.Execution]
+    events: EvidenceRepository[m.OrderEvent]
+    executions: EvidenceRepository[m.Execution]
     reservations: Repository[m.Reservation]
     reauthorizations: Repository[m.ReauthorizationRequest]
     cancels: Repository[m.CancelRequest]
@@ -80,6 +93,7 @@ class AssetReader(Protocol):
 class MarketSessionPort(Protocol):
     async def is_open(self, exchange: str, at: datetime) -> bool: ...
     async def next_open(self, exchange: str, at: datetime) -> m.SessionWindow: ...
+    async def current_window(self, exchange: str, at: datetime) -> m.SessionWindow | None: ...
 
 
 class BuyingPowerPort(Protocol):

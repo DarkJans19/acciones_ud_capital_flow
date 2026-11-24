@@ -213,7 +213,12 @@ class ProposalService:
             await self.ctx.quotes.last_price(content.symbol) if content.type == "market" else None
         )
         price = reference_price(content.type, content.limit_price, last)
-        cost = estimated_cost(content.qty, price, self.ctx.config.commission_rate)
+        rate = (
+            (await self.ctx.commission_terms.rate_pct(content.symbol, self.ctx.clock.now())) / 100
+            if self.ctx.commission_terms
+            else self.ctx.config.commission_rate
+        )
+        cost = estimated_cost(content.qty, price, rate)
         if not cost.is_finite() or cost >= 10**18:
             raise ValidationError("estimated_cost", "numeric_range")
         return e.ProposalVersion(

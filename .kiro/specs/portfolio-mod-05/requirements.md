@@ -1,5 +1,11 @@
 # Requirements Document
 
+> Integración MOD-07 (H3, RF-43): Commission_Port utiliza los términos de la
+> orden en cada ejecución y devuelve `official` cuando hay evidencia guardada.
+> Sin términos históricos conserva la estimación `reference`, nunca una comisión
+> oficial inventada. Las consultas e ingresos oficiales de MOD-07 identifican
+> y excluyen esos casos. Véase [admin-mod-07](../admin-mod-07/implementation-decisions.md).
+
 ## Introduction
 
 Este spec cubre el módulo de desarrollo MOD-05 "Portafolio de Inversiones y Métricas Financieras" del backend de Acciones UD (responsable: Juan José León Gómez). El módulo se implementa como el paquete `portfolio` dentro del monolito modular hexagonal (`src/acciones_ud/portfolio/`). Depende de MOD-01 (`identity`) y MOD-02 (`market_data`), ya implementados en `identity-market-backend`, de MOD-04 (`wallet`, spec `wallet-mod-04`) y de MOD-03 (`orders`, spec `orders-mod-03`). Por eso se construye después de MOD-03 y antes de MOD-06 y MOD-07, según el orden del catálogo (MOD-04 → MOD-03 → MOD-05 → MOD-06 → MOD-07).

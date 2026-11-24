@@ -1,5 +1,12 @@
 # Requirements Document
 
+> Integración MOD-07 (H3, RF-43/45/46): la orden guarda versión, tasa y reparto
+> al crearla; revalidación, reenvío y ejecución parcial conservan esos términos.
+> Los adaptadores instalados sustituyen la tasa de referencia en estimaciones
+> y aplican Trading_Gate antes de crear o enviar. Sin admin se mantiene el
+> adaptador de referencia. Las órdenes históricas conservan NULL sin backfill.
+> Véase [admin-mod-07](../admin-mod-07/implementation-decisions.md).
+
 ## Estabilización de despliegue (2026-11-15)
 
 RF-29–35, RFP-10: aplicar 0007 sobre una base poblada debe ampliar previamente

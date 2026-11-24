@@ -1,0 +1,155 @@
+{
+  "revision": [
+    {
+      "version_num": "0012_admin_compliance_bi"
+    }
+  ],
+  "view_access": [
+    {
+      "relname": "audit_trail",
+      "reloptions": null,
+      "anon_select": false,
+      "authenticated_select": false,
+      "owner": "postgres"
+    }
+  ],
+  "rls": [
+    {
+      "relname": "admin_account_restrictions",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "admin_audit_log",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "admin_compliance_reports",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "admin_fee_versions",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "admin_kpi_snapshots",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "admin_schedule_dispatches",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "admin_trading_halts",
+      "relrowsecurity": true
+    }
+  ],
+  "triggers": [
+    {
+      "event_object_table": "admin_account_restrictions",
+      "trigger_name": "admin_restrictions_guard",
+      "event_manipulation": "DELETE"
+    },
+    {
+      "event_object_table": "admin_account_restrictions",
+      "trigger_name": "admin_restrictions_guard",
+      "event_manipulation": "UPDATE"
+    },
+    {
+      "event_object_table": "admin_audit_log",
+      "trigger_name": "trg_admin_audit_log_immutable",
+      "event_manipulation": "DELETE"
+    },
+    {
+      "event_object_table": "admin_audit_log",
+      "trigger_name": "trg_admin_audit_log_immutable",
+      "event_manipulation": "UPDATE"
+    },
+    {
+      "event_object_table": "admin_compliance_reports",
+      "trigger_name": "admin_reports_immutable",
+      "event_manipulation": "DELETE"
+    },
+    {
+      "event_object_table": "admin_compliance_reports",
+      "trigger_name": "admin_reports_immutable",
+      "event_manipulation": "UPDATE"
+    },
+    {
+      "event_object_table": "admin_fee_versions",
+      "trigger_name": "admin_fee_versions_guard",
+      "event_manipulation": "DELETE"
+    },
+    {
+      "event_object_table": "admin_fee_versions",
+      "trigger_name": "admin_fee_versions_guard",
+      "event_manipulation": "UPDATE"
+    },
+    {
+      "event_object_table": "admin_trading_halts",
+      "trigger_name": "admin_trading_halts_guard",
+      "event_manipulation": "DELETE"
+    },
+    {
+      "event_object_table": "admin_trading_halts",
+      "trigger_name": "admin_trading_halts_guard",
+      "event_manipulation": "UPDATE"
+    },
+    {
+      "event_object_table": "auth_events",
+      "trigger_name": "auth_events_admin_immutable",
+      "event_manipulation": "DELETE"
+    },
+    {
+      "event_object_table": "auth_events",
+      "trigger_name": "auth_events_admin_immutable",
+      "event_manipulation": "UPDATE"
+    },
+    {
+      "event_object_table": "broker_events",
+      "trigger_name": "broker_events_immutable",
+      "event_manipulation": "DELETE"
+    },
+    {
+      "event_object_table": "broker_events",
+      "trigger_name": "broker_events_immutable",
+      "event_manipulation": "UPDATE"
+    },
+    {
+      "event_object_table": "order_events",
+      "trigger_name": "order_events_admin_immutable",
+      "event_manipulation": "DELETE"
+    },
+    {
+      "event_object_table": "order_events",
+      "trigger_name": "order_events_admin_immutable",
+      "event_manipulation": "UPDATE"
+    },
+    {
+      "event_object_table": "order_executions",
+      "trigger_name": "order_executions_admin_immutable",
+      "event_manipulation": "DELETE"
+    },
+    {
+      "event_object_table": "order_executions",
+      "trigger_name": "order_executions_admin_immutable",
+      "event_manipulation": "UPDATE"
+    },
+    {
+      "event_object_table": "orders",
+      "trigger_name": "order_commission_terms_guard",
+      "event_manipulation": "UPDATE"
+    }
+  ],
+  "anonymous_data_api": {
+    "method": "GET",
+    "path": "/rest/v1/audit_trail?select=source,event_id,action&limit=1",
+    "authentication": "Solo clave pública publishable; sin login, JWT de usuario ni service_role",
+    "status": 401,
+    "response": {
+      "code": "42501",
+      "details": null,
+      "hint": null,
+      "message": "permission denied for view audit_trail"
+    }
+  }
+}

@@ -9,9 +9,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from acciones_ud.orders.adapters.outbound.persistence import tables as t
 from acciones_ud.orders.adapters.outbound.persistence.order_repository import OrderRepository
 from acciones_ud.orders.domain import model as m
+from acciones_ud.orders.domain.ports import EvidenceRepository as EvidencePort
 from acciones_ud.orders.domain.ports import OrderRepository as OrderRepositoryPort
 from acciones_ud.orders.domain.ports import Repository
 from acciones_ud.shared.infrastructure.entity_repository import EntityRepository
+from acciones_ud.shared.infrastructure.evidence_repository import EvidenceRepository
 
 
 @dataclass
@@ -19,8 +21,8 @@ class OrderWork:
     session: AsyncSession
     orders: OrderRepositoryPort
     legs: Repository[m.OrderLeg]
-    events: Repository[m.OrderEvent]
-    executions: Repository[m.Execution]
+    events: EvidencePort[m.OrderEvent]
+    executions: EvidencePort[m.Execution]
     reservations: Repository[m.Reservation]
     reauthorizations: Repository[m.ReauthorizationRequest]
     cancels: Repository[m.CancelRequest]
@@ -41,8 +43,8 @@ def build_work(session: AsyncSession) -> OrderWork:
         session,
         OrderRepository(session),
         EntityRepository(session, t.legs, m.OrderLeg),
-        EntityRepository(session, t.events, m.OrderEvent),
-        EntityRepository(session, t.executions, m.Execution),
+        EvidenceRepository(session, t.events, m.OrderEvent),
+        EvidenceRepository(session, t.executions, m.Execution),
         EntityRepository(session, t.reservations, m.Reservation),
         EntityRepository(session, t.reauthorizations, m.ReauthorizationRequest),
         EntityRepository(session, t.cancels, m.CancelRequest),

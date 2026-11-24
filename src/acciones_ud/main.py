@@ -6,6 +6,7 @@ import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from acciones_ud.admin import composition as admin
 from acciones_ud.brokers import composition as brokers
 from acciones_ud.config.settings import Settings, get_settings, require_api_settings
 from acciones_ud.identity import composition as identity
@@ -67,6 +68,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             await portfolio.startup(app)
             await brokers.startup(app)
             stack.push_async_callback(brokers.shutdown, app)
+            await admin.startup(app)
+            stack.push_async_callback(admin.shutdown, app)
             yield
 
     app = FastAPI(title=settings.app_name, version="0.1.0", lifespan=lifespan)
@@ -86,6 +89,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     portfolio.register(app)
     orders.register(app)
     brokers.register(app)
+    admin.register(app)
 
     default_openapi = app.openapi
 

@@ -1,6 +1,7 @@
 import asyncio
 from dataclasses import replace
 from datetime import timedelta
+from decimal import Decimal
 from time import monotonic
 from uuid import UUID, uuid4
 
@@ -13,12 +14,13 @@ from acciones_ud.orders.domain.errors import (
     OrderSubmissionUnknown,
     not_found,
 )
-from acciones_ud.orders.domain.model import Order, Raw, ReauthorizationRequest
+from acciones_ud.orders.domain.model import Order, OrderEvent, Raw, ReauthorizationRequest
 from acciones_ud.orders.domain.model import OrderStatus as S
 from acciones_ud.orders.domain.ports import OrderWork
 from acciones_ud.orders.domain.reauthorization import requires_reauthorization
 from acciones_ud.shared.domain.alpaca_errors import AlpacaError
 from acciones_ud.shared.domain.errors import AppError, ErrorCode
+from acciones_ud.shared.domain.trading import CommissionTerms
 
 
 class OrderSubmitter:
@@ -35,6 +37,12 @@ class OrderSubmitter:
             or order.submit_attempted_at is not None
         ):
             return order
+        try:
+            await self.ctx.check_gate(order.user_id, order.exchange)
+        except AppError as exc:
+            if exc.code in {ErrorCode.TRADING_HALTED, ErrorCode.ACCOUNT_TRADING_RESTRICTED}:
+                return await self._defer(order, exc.code.value.lower())
+            raise
         if not await self.ctx.sessions.is_open(order.exchange, self.ctx.clock.now()):
             session = await self.ctx.sessions.next_open(order.exchange, self.ctx.clock.now())
             async with self.ctx.uow() as work:
@@ -55,9 +63,23 @@ class OrderSubmitter:
         if waited:
             try:
                 prepared = await self.ctx.prepare(
-                    order.user_id, request_from(order), authorize=False, check_session=False
+                    order.user_id,
+                    request_from(order),
+                    authorize=False,
+                    check_session=False,
+                    terms=CommissionTerms(
+                        order.fee_version_id,
+                        order.commission_rate_pct
+                        if order.commission_rate_pct is not None
+                        else self.ctx.config.commission_rate * 100,
+                        order.platform_share_pct
+                        if order.platform_share_pct is not None
+                        else Decimal("60.00"),
+                    ),
                 )
             except AppError as exc:
+                if exc.code in {ErrorCode.TRADING_HALTED, ErrorCode.ACCOUNT_TRADING_RESTRICTED}:
+                    return await self._defer(order, exc.code.value.lower())
                 if exc.code not in {
                     ErrorCode.ORDER_ACCOUNT_NOT_ACTIVE,
                     ErrorCode.ASSET_NOT_TRADABLE,
@@ -133,6 +155,50 @@ class OrderSubmitter:
             await self.ctx.notify(order, "price_changed")
             return order
         return await self._dispatch(order)
+
+    async def _defer(self, order: Order, cause: str) -> Order:
+        now, notify = self.ctx.clock.now(), False
+        window = (
+            await self.ctx.sessions.current_window(order.exchange, now)
+            if order.scheduled_session_end is None
+            else None
+        )
+        async with self.ctx.uow() as work:
+            await work.lock_user(order.user_id)
+            current = await work.orders.get(id=order.id)
+            if (
+                current is None
+                or current.status not in {S.PENDING, S.BROKER_SIGNED}
+                or current.submit_attempted_at is not None
+            ):
+                return current or order
+            events = await work.events.list(order_id=order.id)
+            notify = not any(e.metadata.get("deferred_by") == cause for e in events)
+            order = replace(
+                current,
+                scheduled_for=current.scheduled_for or now,
+                updated_at=now,
+                scheduled_session_end=current.scheduled_session_end
+                or (window.closes_at if window else None),
+            )
+            await work.orders.save(order, status=current.status)
+            if notify:
+                await work.events.insert(
+                    OrderEvent(
+                        uuid4(),
+                        order.id,
+                        order.status,
+                        order.status,
+                        cause,
+                        "system",
+                        None,
+                        now,
+                        {"deferred_by": cause},
+                    )
+                )
+        if notify:
+            await self.ctx.notify(order, cause)
+        return order
 
     async def stage(self, work: OrderWork, order: Order) -> Order:
         return await change(

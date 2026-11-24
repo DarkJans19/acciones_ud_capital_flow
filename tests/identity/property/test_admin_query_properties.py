@@ -24,7 +24,7 @@ ADMIN = uuid4()
 
 DIRECTORY_INVALID = {
     "account_status": st.sampled_from(["deleted", "ACTIVE", ""]),
-    "role": st.sampled_from(["auditor", "Investor", ""]),
+    "role": st.sampled_from(["unsupported_role", "Investor", ""]),
     "q": st.sampled_from(["", "   ", "x" * 101]),
     "broker_requested": st.sampled_from(["yes", "1", ""]),
     "kyc_status": st.sampled_from(["submitted", "DONE", ""]),
@@ -47,9 +47,7 @@ def invalid_pairs(
     strategies: dict[str, st.SearchStrategy[object]],
 ) -> st.SearchStrategy[list[tuple[str, object]]]:
     options = [st.tuples(st.just(key), value) for key, value in strategies.items()]
-    return st.lists(
-        st.one_of(*options), min_size=1, max_size=3, unique_by=lambda pair: pair[0]
-    )
+    return st.lists(st.one_of(*options), min_size=1, max_size=3, unique_by=lambda pair: pair[0])
 
 
 class EmptyAuditRepository:
@@ -94,7 +92,8 @@ def assert_every_invalid_parameter_is_named(
 ) -> None:
     assert response.status_code == 422  # type: ignore[attr-defined]
     fields = {
-        error["field"] for error in response.json()["details"]["errors"]  # type: ignore[attr-defined]
+        error["field"]
+        for error in response.json()["details"]["errors"]  # type: ignore[attr-defined]
     }
     assert {f"query.{key}" for key, _ in pairs} <= fields
 
